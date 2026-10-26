@@ -1,20 +1,129 @@
 <template>
   <view class="page">
-    <text class="title">喂养</text>
-    <text class="desc">亲喂计时/瓶喂/奶粉快捷记录 + 日汇总（docs/03 M5.1）。</text>
-    <text class="todo-note">页面完整交互按 docs/03 对应小节实现中（见 docs/DEV-PROGRESS.md）。</text>
+    <view class="card">
+      <text class="label">喂养方式</text>
+      <view class="opts">
+        <view class="opt" v-for="(m, i) in modes" :key="i" :class="mode == m.value ? 'opt-active' : ''" @click="mode = m.value">
+          <text class="opt-text" :class="mode == m.value ? 'opt-text-active' : ''">{{ m.label }}</text>
+        </view>
+      </view>
+      <view v-if="mode == 'breastmilk_bottle' || mode == 'formula' || mode == 'mixed'">
+        <text class="label">奶量（ml）</text>
+        <view class="stepper">
+          <view class="step-btn" @click="step(-10)"><text class="step-text">−</text></view>
+          <text class="step-num">{{ ml }}</text>
+          <view class="step-btn" @click="step(10)"><text class="step-text">＋</text></view>
+        </view>
+      </view>
+      <view v-if="mode == 'nursing'">
+        <button class="btn-save" @click="goTimer">⏱ 打开亲喂计时器</button>
+      </view>
+      <button class="btn-save" v-if="mode != 'nursing'" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</button>
+    </view>
+
+    <view class="card" v-if="summary != null">
+      <text class="card-title">今天：{{ feedCount }} 次 · 共 {{ totalMl }}ml（亲喂 {{ nursingMin }} 分钟）</text>
+      <view class="f-row" v-for="(f, i) in feedings" :key="i">
+        <text class="f-time">{{ f.time }}</text>
+        <text class="f-desc">{{ f.desc }}</text>
+      </view>
+    </view>
   </view>
 </template>
 
 <script>
+  import { luckyBaby } from '../../utils/request.uts'
+  import { journeyState } from '../../store/journeyStore.uts'
+
+  type FOpt = { value: string, label: string }
+
   export default {
-    data() { return {} }
+    data() {
+      return {
+        mode: 'breastmilk_bottle', ml: 60, saving: false,
+        babyId: '', summary: null,
+        modes: [
+          { value: 'nursing', label: '🍼 亲喂' },
+          { value: 'breastmilk_bottle', label: '瓶喂母乳' },
+          { value: 'formula', label: '配方奶' },
+          { value: 'mixed', label: '混合' }
+        ] as FOpt[]
+      }
+    },
+    computed: {
+      feedCount(): number { return ((this.summary as UTSJSONObject | null)?.getJSON('feeding') as UTSJSONObject | null)?.getNumber('count')?.toInt() ?? 0 },
+      totalMl(): number { return ((this.summary as UTSJSONObject | null)?.getJSON('feeding') as UTSJSONObject | null)?.getNumber('totalMl')?.toInt() ?? 0 },
+      nursingMin(): number { return (((this.summary as UTSJSONObject | null)?.getJSON('feeding') as UTSJSONObject | null)?.getNumber('nursingSec')?.toInt() ?? 0) / 60 | 0 },
+      feedings(): FRow[] {
+        const arr = ((this.summary as UTSJSONObject | null)?.getJSON('feeding') as UTSJSONObject | null)?.getArray('items') ?? []
+        const rows: FRow[] = []
+        for (let i = 0; i < arr.length; i++) {
+          const f = arr[i] as UTSJSONObject
+          const mode = f.getString('mode') ?? ''
+          const ml = (f.getNumber('ml') ?? 0).toInt()
+          const dur = Math.floor((f.getNumber('duration_sec') ?? 0).toInt() / 60)
+          rows.push({ time: this.timeStr(f), desc: mode == 'nursing' ? `亲喂 ${dur} 分钟` : `${ml} ml` })
+        }
+        return rows
+      }
+    },
+    onLoad() {
+      const stored = uni.getStorageSync('current_baby_id') as string
+      this.babyId = stored ?? ''
+      if (this.babyId.length == 0) {
+        uni.showToast({ title: '请先在宝宝页选择宝宝', icon: 'none' })
+        setTimeout(() => { uni.reLaunch({ url: '/pages/baby/baby-home' }) }, 800)
+        return
+      }
+      this.load()
+    },
+    methods: {
+      goTimer() { uni.navigateTo({ url: '/pages/record/nursing-timer' }) },
+      step(d: number) { this.ml = Math.max(0, this.ml + d) },
+      timeStr(f: UTSJSONObject): string {
+        const ts = f.getNumber('ts') ?? 0
+        const d = new Date(ts)
+        const hh = d.getHours() < 10 ? '0' + d.getHours() : '' + d.getHours()
+        const mm = d.getMinutes() < 10 ? '0' + d.getMinutes() : '' + d.getMinutes()
+        return `${hh}:${mm}`
+      },
+      async load() {
+        try {
+          this.summary = await luckyBaby('dailySummary', { journeyId: journeyState.journeyId, babyId: this.babyId } as UTSJSONObject)
+        } catch (e) { /* 忽略 */ }
+      },
+      async save() {
+        this.saving = true
+        try {
+          await luckyBaby('addFeeding', { journeyId: journeyState.journeyId, babyId: this.babyId, mode: this.mode, ml: this.ml } as UTSJSONObject)
+          uni.showToast({ title: '已记录 ✓', icon: 'success' })
+          this.load()
+        } catch (e) {
+          uni.showToast({ title: (e as Error).message, icon: 'none' })
+        } finally { this.saving = false }
+      }
+    }
   }
+
+  type FRow = { time: string, desc: string }
 </script>
 
 <style>
-  .page { flex: 1; background-color: #F7F6F4; align-items: center; padding-top: 200rpx; }
-  .title { font-size: 40rpx; font-weight: bold; color: #1F2329; }
-  .desc { font-size: 26rpx; color: #6B7280; margin-top: 24rpx; width: 600rpx; text-align: center; }
-  .todo-note { font-size: 22rpx; color: #A3AAB5; margin-top: 48rpx; width: 600rpx; text-align: center; }
+  .page { flex: 1; background-color: #F7F6F4; padding: 24rpx; align-items: center; }
+  .card { width: 700rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 40rpx; margin-top: 24rpx; align-items: center; }
+  .label { font-size: 26rpx; color: #1F2329; margin: 16rpx 0 16rpx 0; }
+  .opts { flex-direction: row; flex-wrap: wrap; justify-content: center; }
+  .opt { background-color: #F7F6F4; border-radius: 16rpx; padding: 16rpx 24rpx; margin: 8rpx; }
+  .opt-active { background-color: #FFEFEA; }
+  .opt-text { font-size: 26rpx; color: #6B7280; }
+  .opt-text-active { color: #FF7A6B; font-weight: bold; }
+  .stepper { flex-direction: row; align-items: center; margin: 16rpx 0; }
+  .step-btn { width: 96rpx; height: 96rpx; border-radius: 24rpx; background-color: #FFEFEA; align-items: center; justify-content: center; }
+  .step-text { font-size: 44rpx; color: #E85D4E; }
+  .step-num { width: 200rpx; text-align: center; font-size: 56rpx; font-weight: bold; color: #1F2329; }
+  .btn-save { width: 620rpx; height: 96rpx; line-height: 96rpx; background-color: #FF7A6B; color: #FFFFFF; font-size: 32rpx; border-radius: 44rpx; margin-top: 24rpx; }
+  .card-title { font-size: 28rpx; font-weight: bold; color: #1F2329; margin-bottom: 16rpx; }
+  .f-row { flex-direction: row; padding: 10rpx 0; }
+  .f-time { width: 120rpx; font-size: 24rpx; color: #A3AAB5; }
+  .f-desc { font-size: 26rpx; color: #1F2329; }
 </style>

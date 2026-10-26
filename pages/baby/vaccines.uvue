@@ -1,20 +1,94 @@
 <template>
   <view class="page">
-    <text class="title">疫苗接种</text>
-    <text class="desc">免疫规划程序表 + 接种记录 + 漏种提醒（docs/03 M5.5）。</text>
-    <text class="todo-note">页面完整交互按 docs/03 对应小节实现中（见 docs/DEV-PROGRESS.md）。</text>
+    <view class="card">
+      <text class="card-title">免疫规划疫苗（免费，共 {{ plan.length }} 剂次）</text>
+      <view class="v-row" v-for="(v, i) in plan" :key="i">
+        <view class="v-dot" :class="v.getString('status') == 'done' ? 'v-dot-done' : (v.getString('status') == 'due' ? 'v-dot-due' : 'v-dot-upcoming')" />
+        <view class="v-body">
+          <text class="v-name">{{ v.getString('name') ?? '' }} 第 {{ v.getNumber('dose')?.toInt() }} 剂</text>
+          <text class="v-sub">{{ v.getNumber('ageMonths')?.toInt() }} 月龄 · 应接种 {{ v.getString('dueDate') ?? '' }}</text>
+          <text class="v-record" v-if="v.getString('status') == 'done'">已接种 {{ (v.getJSON('record') as UTSJSONObject | null)?.getString('date') ?? '' }}</text>
+        </view>
+        <button class="btn-record" v-if="v.getString('status') != 'done'" @click="record(v)">接种了</button>
+      </view>
+      <text class="hint">漏种会持续提醒；不同省份程序细节略有差异，可在接种门诊核实后微调</text>
+    </view>
+
+    <view class="card">
+      <text class="card-title">自费疫苗（自愿，咨询接种门诊）</text>
+      <view class="v-row" v-for="(v, i) in selfPaid" :key="i">
+        <view class="v-body">
+          <text class="v-name">{{ v.getString('name') ?? '' }}</text>
+          <text class="v-sub">{{ v.getString('ages') ?? '' }}</text>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
 <script>
+  import { luckyBaby } from '../../utils/request.uts'
+  import { journeyState } from '../../store/journeyStore.uts'
+
   export default {
-    data() { return {} }
+    data() {
+      return { babyId: '', plan: [] as UTSJSONObject[], selfPaid: [] as UTSJSONObject[] }
+    },
+    onLoad() {
+      const stored = uni.getStorageSync('current_baby_id') as string
+      this.babyId = stored ?? ''
+      if (this.babyId.length == 0) {
+        uni.showToast({ title: '请先在宝宝页选择宝宝', icon: 'none' })
+        setTimeout(() => { uni.reLaunch({ url: '/pages/baby/baby-home' }) }, 800)
+        return
+      }
+      this.load()
+    },
+    methods: {
+      async load() {
+        try {
+          const res = await luckyBaby('getVaccinePlan', { journeyId: journeyState.journeyId, babyId: this.babyId } as UTSJSONObject)
+          this.plan = res.getArray('plan') ?? []
+          this.selfPaid = res.getArray('selfPaidCatalog') ?? []
+        } catch (e) { /* 忽略 */ }
+      },
+      async record(v: UTSJSONObject) {
+        const now = new Date()
+        const today = `${now.getFullYear()}-${now.getMonth() + 1 < 10 ? '0' + (now.getMonth() + 1) : '' + (now.getMonth() + 1)}-${now.getDate() < 10 ? '0' + now.getDate() : '' + now.getDate()}`
+        try {
+          const res = await luckyBaby('recordVaccine', {
+            journeyId: journeyState.journeyId, babyId: this.babyId,
+            code: v.getString('code') ?? '', name: v.getString('name') ?? '',
+            dose: v.getNumber('dose')?.toInt() ?? 1, free: v.getBoolean('free') ?? true, date: today
+          } as UTSJSONObject)
+          const rl = res.getJSON('redline')
+          if (rl != null) {
+            uni.showModal({ title: '接种反应提示', content: (rl as UTSJSONObject).getString('message') ?? '', showCancel: false })
+          } else {
+            uni.showToast({ title: '已记录 ✓', icon: 'success' })
+          }
+          this.load()
+        } catch (e) {
+          uni.showToast({ title: (e as Error).message, icon: 'none' })
+        }
+      }
+    }
   }
 </script>
 
 <style>
-  .page { flex: 1; background-color: #F7F6F4; align-items: center; padding-top: 200rpx; }
-  .title { font-size: 40rpx; font-weight: bold; color: #1F2329; }
-  .desc { font-size: 26rpx; color: #6B7280; margin-top: 24rpx; width: 600rpx; text-align: center; }
-  .todo-note { font-size: 22rpx; color: #A3AAB5; margin-top: 48rpx; width: 600rpx; text-align: center; }
+  .page { flex: 1; background-color: #F7F6F4; padding: 24rpx; align-items: center; }
+  .card { width: 700rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 40rpx; margin-top: 24rpx; }
+  .card-title { font-size: 28rpx; font-weight: bold; color: #1F2329; margin-bottom: 20rpx; }
+  .v-row { flex-direction: row; align-items: center; padding: 16rpx 0; border-bottom-width: 1px; border-bottom-color: #F2F1EF; }
+  .v-dot { width: 16rpx; height: 16rpx; border-radius: 8rpx; margin-right: 16rpx; }
+  .v-dot-done { background-color: #4CAF7D; }
+  .v-dot-due { background-color: #E5484D; }
+  .v-dot-upcoming { background-color: #D8DCE1; }
+  .v-body { flex: 1; }
+  .v-name { font-size: 28rpx; color: #1F2329; }
+  .v-sub { font-size: 22rpx; color: #A3AAB5; margin-top: 4rpx; }
+  .v-record { font-size: 22rpx; color: #4CAF7D; margin-top: 4rpx; }
+  .btn-record { width: 140rpx; height: 64rpx; line-height: 64rpx; background-color: #FFEFEA; color: #E85D4E; font-size: 24rpx; border-radius: 32rpx; }
+  .hint { font-size: 20rpx; color: #A3AAB5; margin-top: 24rpx; }
 </style>

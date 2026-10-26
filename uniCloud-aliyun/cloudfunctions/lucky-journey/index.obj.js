@@ -276,6 +276,28 @@ module.exports = {
     return auth.ok({ babyIds: ids, view: publicView(nj), birthCard: { stage: 'POSTPARTUM', deliveredAt: fmtDate(dd) } })
   },
 
+  /** 当前旅程的宝宝列表（多胎/多宝） */
+  async listBabies(params = {}) {
+    const uid = await requireUser.call(this)
+    if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
+    let j
+    if (params.journeyId) {
+      j = await ownedJourney.call(this, uid, params.journeyId)
+    } else {
+      const res = await this.uniCloud.database().collection(col).where({ user_id: uid }).orderBy('created_at', 'desc').limit(5).get()
+      j = res.data.find(x => x.stage_code !== 'ARCHIVED' && x.stage_code !== 'MOURNING') || res.data[0]
+    }
+    if (!j) return auth.ok({ babies: [] })
+    const res2 = await this.uniCloud.database().collection('lb-babies').where({ journey_id: j._id }).orderBy('birth_date', 'asc').get()
+    return auth.ok({
+      babies: res2.data.map(b => ({
+        _id: b._id, nickname: b.nickname, sex: b.sex,
+        birthDate: b.birth_date ? new Date(b.birth_date).toISOString().slice(0, 10) : '',
+        birthWeightG: b.birth_weight_g || 0, birthLengthCm: b.birth_length_cm || 0
+      }))
+    })
+  },
+
   async archiveJourney(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')

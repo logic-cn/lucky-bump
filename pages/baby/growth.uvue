@@ -1,20 +1,140 @@
 <template>
   <view class="page">
-    <text class="title">成长记录</text>
-    <text class="desc">身高/体重/头围 + WHO 百分位（docs/03 M5.4）。</text>
-    <text class="todo-note">页面完整交互按 docs/03 对应小节实现中（见 docs/DEV-PROGRESS.md）。</text>
+    <view class="card">
+      <text class="label">测量日期</text>
+      <picker mode="date" :value="measureDate" @change="onDateChange">
+        <view class="pick-box wide"><text class="pick-text">{{ measureDate }}</text></view>
+      </picker>
+      <text class="label">体重（kg）</text>
+      <input class="input" type="digit" v-model="weightKg" placeholder="如 6.8" placeholder-class="ph" />
+      <text class="label">身长（cm，选填）</text>
+      <input class="input" type="digit" v-model="heightCm" placeholder="如 62.5" placeholder-class="ph" />
+      <text class="label">头围（cm，选填）</text>
+      <input class="input" type="digit" v-model="headCm" placeholder="如 41.0" placeholder-class="ph" />
+    </view>
+    <button class="btn-save" :disabled="saving" @click="save">{{ saving ? '计算中…' : '保存并看百分位' }}</button>
+
+    <view class="card" v-if="result != null">
+      <text class="card-title">本次结果（{{ resultMonthAge }} 月龄，参照 WHO 标准）</text>
+      <view class="pct-row">
+        <view class="pct-col" v-if="pctWeight.length > 0"><text class="pct-num">{{ pctWeight }}</text><text class="pct-cap">体重百分位</text></view>
+        <view class="pct-col" v-if="pctHeight.length > 0"><text class="pct-num">{{ pctHeight }}</text><text class="pct-cap">身长百分位</text></view>
+        <view class="pct-col" v-if="pctHead.length > 0"><text class="pct-num">{{ pctHead }}</text><text class="pct-cap">头围百分位</text></view>
+      </view>
+      <view class="alert" v-if="alerts.length > 0">
+        <text class="alert-text" v-for="(a, i) in alerts" :key="i">{{ a }}</text>
+      </view>
+      <text class="hint">百分位为参考趋势，不构成诊断；早产宝宝请按矫正月龄与医生沟通</text>
+    </view>
+
+    <view class="card" v-if="samples.length > 0">
+      <text class="card-title">历史测量</text>
+      <view class="s-row" v-for="(s, i) in samples" :key="i">
+        <text class="s-date">{{ s.date }}</text>
+        <text class="s-val">{{ s.val }}</text>
+      </view>
+    </view>
   </view>
 </template>
 
 <script>
+  import { luckyBaby } from '../../utils/request.uts'
+  import { journeyState } from '../../store/journeyStore.uts'
+
   export default {
-    data() { return {} }
+    data() {
+      return {
+        babyId: '', saving: false, result: null,
+        measureDate: '', weightKg: '', heightCm: '', headCm: '',
+        resultMonthAge: 0, alerts: [] as string[], samples: [] as SRow[]
+      }
+    },
+    computed: {
+      pctWeight(): string { return this.pctStr('weightPct') },
+      pctHeight(): string { return this.pctStr('heightPct') },
+      pctHead(): string { return this.pctStr('headPct') }
+    },
+    onLoad() {
+      const stored = uni.getStorageSync('current_baby_id') as string
+      this.babyId = stored ?? ''
+      if (this.babyId.length == 0) {
+        uni.showToast({ title: '请先在宝宝页选择宝宝', icon: 'none' })
+        setTimeout(() => { uni.reLaunch({ url: '/pages/baby/baby-home' }) }, 800)
+        return
+      }
+      const now = new Date()
+      this.measureDate = `${now.getFullYear()}-${now.getMonth() + 1 < 10 ? '0' + (now.getMonth() + 1) : '' + (now.getMonth() + 1)}-${now.getDate() < 10 ? '0' + now.getDate() : '' + now.getDate()}`
+      this.load()
+    },
+    methods: {
+      pctStr(key: string): string {
+        const p = (this.result as UTSJSONObject | null)?.getJSON('percentiles') as UTSJSONObject | null
+        const v = p?.getNumber(key)
+        return v == null ? '' : `P${Math.round(v as number)}`
+      },
+      onDateChange(e: UniPickerChangeEvent) { this.measureDate = (e.detail.value as string) ?? this.measureDate },
+      async load() {
+        try {
+          const res = await luckyBaby('getGrowthSeries', { journeyId: journeyState.journeyId, babyId: this.babyId } as UTSJSONObject)
+          const arr = res.getArray('samples') ?? []
+          const rows: SRow[] = []
+          for (let i = arr.length - 1; i >= 0 && i >= arr.length - 8; i--) {
+            const s = arr[i] as UTSJSONObject
+            const w = s.getNumber('weight_kg') ?? 0
+            const h = s.getNumber('height_cm') ?? 0
+            rows.push({
+              date: new Date(s.getNumber('measure_date') ?? 0).toISOString().slice(0, 10),
+              val: `${w > 0 ? w + 'kg ' : ''}${h > 0 ? h + 'cm' : ''}`
+            })
+          }
+          this.samples = rows
+        } catch (e) { /* 忽略 */ }
+      },
+      async save() {
+        const w = parseFloat(this.weightKg)
+        const h = parseFloat(this.heightCm)
+        const head = parseFloat(this.headCm)
+        if (!(w > 0) && !(h > 0) && !(head > 0)) { uni.showToast({ title: '至少填写一项测量值', icon: 'none' }); return }
+        this.saving = true
+        try {
+          this.result = await luckyBaby('addGrowth', {
+            journeyId: journeyState.journeyId, babyId: this.babyId, measureDate: this.measureDate,
+            weightKg: w > 0 ? w : 0, heightCm: h > 0 ? h : 0, headCm: head > 0 ? head : 0
+          } as UTSJSONObject)
+          this.resultMonthAge = (this.result as UTSJSONObject).getNumber('monthAge')?.toInt() ?? 0
+          const rawAlerts = (this.result as UTSJSONObject).getArray('alerts') ?? []
+          this.alerts = rawAlerts.map(a => a as string)
+          uni.showToast({ title: '已记录 ✓', icon: 'success' })
+          this.load()
+        } catch (e) {
+          uni.showToast({ title: (e as Error).message, icon: 'none' })
+        } finally { this.saving = false }
+      }
+    }
   }
+
+  type SRow = { date: string, val: string }
 </script>
 
 <style>
-  .page { flex: 1; background-color: #F7F6F4; align-items: center; padding-top: 200rpx; }
-  .title { font-size: 40rpx; font-weight: bold; color: #1F2329; }
-  .desc { font-size: 26rpx; color: #6B7280; margin-top: 24rpx; width: 600rpx; text-align: center; }
-  .todo-note { font-size: 22rpx; color: #A3AAB5; margin-top: 48rpx; width: 600rpx; text-align: center; }
+  .page { flex: 1; background-color: #F7F6F4; padding: 24rpx; align-items: center; }
+  .card { width: 700rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 40rpx; margin-top: 24rpx; align-items: center; }
+  .label { font-size: 26rpx; color: #1F2329; margin: 16rpx 0 12rpx 0; }
+  .pick-box { height: 88rpx; background-color: #F7F6F4; border-radius: 16rpx; align-items: center; justify-content: center; }
+  .pick-box.wide { width: 620rpx; }
+  .pick-text { font-size: 28rpx; color: #1F2329; }
+  .input { width: 620rpx; height: 88rpx; background-color: #F7F6F4; border-radius: 16rpx; padding: 0 24rpx; font-size: 28rpx; color: #1F2329; }
+  .ph { color: #A3AAB5; }
+  .btn-save { width: 700rpx; height: 96rpx; line-height: 96rpx; background-color: #FF7A6B; color: #FFFFFF; font-size: 32rpx; border-radius: 44rpx; margin-top: 32rpx; }
+  .card-title { font-size: 28rpx; font-weight: bold; color: #1F2329; margin-bottom: 20rpx; }
+  .pct-row { flex-direction: row; }
+  .pct-col { align-items: center; margin: 0 24rpx; }
+  .pct-num { font-size: 44rpx; font-weight: bold; color: #FF7A6B; }
+  .pct-cap { font-size: 22rpx; color: #A3AAB5; margin-top: 8rpx; }
+  .alert { width: 620rpx; background-color: #FDF3E3; border-radius: 16rpx; padding: 20rpx; margin-top: 20rpx; }
+  .alert-text { font-size: 24rpx; color: #1F2329; }
+  .hint { font-size: 20rpx; color: #A3AAB5; margin-top: 20rpx; }
+  .s-row { flex-direction: row; padding: 10rpx 0; }
+  .s-date { width: 220rpx; font-size: 24rpx; color: #A3AAB5; }
+  .s-val { font-size: 26rpx; color: #1F2329; }
 </style>

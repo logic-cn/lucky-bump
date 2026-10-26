@@ -1,20 +1,117 @@
 <template>
   <view class="page">
-    <text class="title">分娩登记</text>
-    <text class="desc">出生日期/方式/宝宝信息 + 出生卡（docs/03 M4.1）。</text>
-    <text class="todo-note">页面完整交互按 docs/03 对应小节实现中（见 docs/DEV-PROGRESS.md）。</text>
+    <view class="card">
+      <text class="label">分娩日期</text>
+      <picker mode="date" :value="deliveryDate" @change="onDateChange">
+        <view class="date-box"><text class="date-text">{{ deliveryDate == '' ? '选择日期' : deliveryDate }}</text></view>
+      </picker>
+      <text class="label">分娩方式</text>
+      <view class="opts">
+        <view class="opt" v-for="(m, i) in modes" :key="i" :class="mode == m.value ? 'opt-active' : ''" @click="mode = m.value">
+          <text class="opt-text" :class="mode == m.value ? 'opt-text-active' : ''">{{ m.label }}</text>
+        </view>
+      </view>
+      <text class="label">医院（选填）</text>
+      <input class="input" v-model="hospital" placeholder="分娩医院" placeholder-class="ph" />
+      <text class="label">宝宝信息</text>
+      <view class="baby" v-for="(b, i) in babies" :key="i">
+        <text class="baby-tag">{{ babies.length > 1 ? `宝宝 ${i + 1}` : '宝宝' }}</text>
+        <view class="row2">
+          <input class="input half" v-model="b.nickname" placeholder="小名" placeholder-class="ph" />
+          <picker class="half" mode="selector" :range="sexLabels" @change="(e: UniPickerChangeEvent) => onSexChange(i, e)">
+            <view class="input center"><text class="date-text">{{ sexLabels[b.sex] }}</text></view>
+          </picker>
+        </view>
+        <view class="row2">
+          <input class="input half" type="number" v-model="b.weightG" placeholder="出生体重 g" placeholder-class="ph" />
+          <input class="input half" type="digit" v-model="b.lengthCm" placeholder="出生身长 cm" placeholder-class="ph" />
+        </view>
+      </view>
+      <view class="add-baby" v-if="babies.length < fetusCount" @click="addBaby"><text class="add-baby-text">＋ 添加{{ fetusCount > 1 ? '另一个宝宝' : '' }}</text></view>
+    </view>
+    <button class="btn-save" :disabled="saving" @click="save">{{ saving ? '登记中…' : '完成分娩登记' }}</button>
+    <text class="hint">登记后自动生成宝宝档案、产褥期时钟、出生卡与疫苗计划</text>
   </view>
 </template>
 
 <script>
+  import { luckyJourney } from '../../utils/request.uts'
+  import { journeyState } from '../../store/journeyStore.uts'
+
+  type BabyForm = { nickname: string, sex: number, weightG: string, lengthCm: string }
+
   export default {
-    data() { return {} }
+    data() {
+      return {
+        deliveryDate: '', mode: 'vaginal', hospital: '', saving: false,
+        fetusCount: 1,
+        babies: [{ nickname: '', sex: 2, weightG: '', lengthCm: '' } as BabyForm],
+        modes: [
+          { value: 'vaginal', label: '顺产' }, { value: 'assisted', label: '助产' }, { value: 'c_section', label: '剖宫产' }
+        ] as MOpt[],
+        sexLabels: ['男', '女', '还不告诉你们']
+      }
+    },
+    onLoad() {
+      this.fetusCount = journeyState.fetusCount > 0 ? journeyState.fetusCount : 1
+    },
+    methods: {
+      onDateChange(e: UniPickerChangeEvent) { this.deliveryDate = (e.detail.value as string) ?? '' },
+      onSexChange(i: number, e: UniPickerChangeEvent) {
+        this.babies[i].sex = (parseInt(e.detail.value as string) || 2)
+      },
+      addBaby() { this.babies.push({ nickname: '', sex: 2, weightG: '', lengthCm: '' } as BabyForm) },
+      async save() {
+        if (this.deliveryDate.length == 0) { uni.showToast({ title: '请选择分娩日期', icon: 'none' }); return }
+        const list = this.babies.map((b, i) => ({
+          nickname: b.nickname.trim().length > 0 ? b.nickname : `宝宝${i + 1}`,
+          sex: ['male', 'female', 'unknown'][b.sex],
+          weightG: parseInt(b.weightG) || 0,
+          lengthCm: parseFloat(b.lengthCm) || 0
+        }))
+        this.saving = true
+        try {
+          const res = await luckyJourney('registerDelivery', {
+            journeyId: journeyState.journeyId, deliveryDate: this.deliveryDate,
+            deliveryMode: this.mode, hospital: this.hospital, babies: list
+          } as UTSJSONObject)
+          const ids = res.getArray('babyIds') ?? []
+          if (ids.length > 0) {
+            journeyState.currentBabyId = (ids[0] as string)
+            uni.setStorageSync('current_baby_id', ids[0])
+          }
+          uni.showToast({ title: '欢迎小宝贝 🎉', icon: 'none' })
+          setTimeout(() => { uni.reLaunch({ url: '/pages/baby/baby-home' }) }, 800)
+        } catch (e) {
+          uni.showToast({ title: (e as Error).message, icon: 'none' })
+        } finally { this.saving = false }
+      }
+    }
   }
+
+  type MOpt = { value: string, label: string }
 </script>
 
 <style>
-  .page { flex: 1; background-color: #F7F6F4; align-items: center; padding-top: 200rpx; }
-  .title { font-size: 40rpx; font-weight: bold; color: #1F2329; }
-  .desc { font-size: 26rpx; color: #6B7280; margin-top: 24rpx; width: 600rpx; text-align: center; }
-  .todo-note { font-size: 22rpx; color: #A3AAB5; margin-top: 48rpx; width: 600rpx; text-align: center; }
+  .page { flex: 1; background-color: #F7F6F4; padding: 24rpx; align-items: center; }
+  .card { width: 700rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 40rpx; margin-top: 24rpx; }
+  .label { font-size: 26rpx; color: #1F2329; margin: 20rpx 0 12rpx 0; }
+  .date-box { width: 620rpx; height: 88rpx; background-color: #F7F6F4; border-radius: 16rpx; align-items: center; padding: 0 24rpx; }
+  .date-text { font-size: 28rpx; color: #1F2329; }
+  .opts { flex-direction: row; }
+  .opt { background-color: #F7F6F4; border-radius: 16rpx; padding: 16rpx 28rpx; margin-right: 12rpx; }
+  .opt-active { background-color: #FFEFEA; }
+  .opt-text { font-size: 26rpx; color: #6B7280; }
+  .opt-text-active { color: #FF7A6B; font-weight: bold; }
+  .input { width: 620rpx; height: 88rpx; background-color: #F7F6F4; border-radius: 16rpx; padding: 0 24rpx; font-size: 28rpx; color: #1F2329; }
+  .center { align-items: center; justify-content: center; }
+  .row2 { flex-direction: row; margin-bottom: 12rpx; }
+  .half { flex: 1; margin-right: 12rpx; }
+  .baby { background-color: #FAFAF8; border-radius: 16rpx; padding: 20rpx; margin-bottom: 12rpx; }
+  .baby-tag { font-size: 24rpx; color: #FF7A6B; font-weight: bold; margin-bottom: 8rpx; }
+  .add-baby { align-items: center; padding: 16rpx; }
+  .add-baby-text { font-size: 26rpx; color: #FF7A6B; }
+  .ph { color: #A3AAB5; }
+  .btn-save { width: 700rpx; height: 96rpx; line-height: 96rpx; background-color: #FF7A6B; color: #FFFFFF; font-size: 32rpx; border-radius: 44rpx; margin-top: 32rpx; }
+  .hint { font-size: 20rpx; color: #A3AAB5; margin-top: 24rpx; }
 </style>

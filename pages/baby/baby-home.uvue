@@ -1,20 +1,114 @@
 <template>
   <view class="page">
-    <text class="title">宝宝</text>
-    <text class="desc">月龄大卡 + 喂养/尿布/睡眠今日汇总（docs/03 M5）。</text>
-    <text class="todo-note">页面完整交互按 docs/03 对应小节实现中（见 docs/DEV-PROGRESS.md）。</text>
+    <view class="card" v-if="babies.length == 0">
+      <text class="empty">还没有宝宝档案</text>
+      <button class="btn-save" @click="goRegister">去登记分娩</button>
+    </view>
+
+    <view v-for="(b, i) in babies" :key="i">
+      <view class="hero" :class="currentBabyId == b.getString('_id') ? 'hero-current' : ''" @click="selectBaby(b)">
+        <text class="hero-name">{{ b.getString('nickname') ?? '' }}</text>
+        <text class="hero-sub">{{ monthText(b) }} · 出生 {{ b.getString('birthDate') ?? '' }}</text>
+        <text class="hero-cur" v-if="currentBabyId == b.getString('_id')">当前记录对象</text>
+      </view>
+
+      <view class="summary" v-if="currentBabyId == b.getString('_id') && summary != null">
+        <text class="card-title">今天</text>
+        <view class="sum-row">
+          <view class="sum-col"><text class="sum-num">{{ sumFeedCount }}</text><text class="sum-cap">喂养</text></view>
+          <view class="sum-col"><text class="sum-num">{{ sumMl }}ml</text><text class="sum-cap">奶量</text></view>
+          <view class="sum-col"><text class="sum-num">{{ sumDiaper }}</text><text class="sum-cap">尿布</text></view>
+          <view class="sum-col"><text class="sum-num">{{ sumSleepMin }}m</text><text class="sum-cap">睡眠</text></view>
+        </view>
+        <view class="quick-row">
+          <button class="btn-quick" @click="go('/pages/baby/feeding')">🍼 记喂养</button>
+          <button class="btn-quick" @click="go('/pages/baby/diaper')">🧷 记尿布</button>
+          <button class="btn-quick" @click="go('/pages/baby/sleep')">😴 记睡眠</button>
+        </view>
+      </view>
+    </view>
+
+    <view class="card">
+      <text class="card-title">成长与照护</text>
+      <view class="nav-row" @click="go('/pages/baby/growth')"><text class="nav-text">📏 成长记录与百分位</text><text class="nav-arrow">›</text></view>
+      <view class="nav-row" @click="go('/pages/baby/vaccines')"><text class="nav-text">💉 疫苗接种计划</text><text class="nav-arrow">›</text></view>
+      <view class="nav-row" @click="go('/pages/record/nursing-timer')"><text class="nav-text">⏱ 亲喂计时器</text><text class="nav-arrow">›</text></view>
+    </view>
   </view>
 </template>
 
 <script>
+  import { luckyJourney, luckyBaby } from '../../utils/request.uts'
+  import { journeyState } from '../../store/journeyStore.uts'
+
   export default {
-    data() { return {} }
+    data() {
+      return { babies: [] as UTSJSONObject[], summary: null, currentBabyId: '' }
+    },
+    computed: {
+      sumFeedCount(): number { return ((this.summary as UTSJSONObject | null)?.getJSON('feeding') as UTSJSONObject | null)?.getNumber('count')?.toInt() ?? 0 },
+      sumMl(): number { return ((this.summary as UTSJSONObject | null)?.getJSON('feeding') as UTSJSONObject | null)?.getNumber('totalMl')?.toInt() ?? 0 },
+      sumDiaper(): number { return ((this.summary as UTSJSONObject | null)?.getJSON('diaper') as UTSJSONObject | null)?.getNumber('count')?.toInt() ?? 0 },
+      sumSleepMin(): number { return ((this.summary as UTSJSONObject | null)?.getJSON('sleep') as UTSJSONObject | null)?.getNumber('totalMin')?.toInt() ?? 0 }
+    },
+    onLoad() { this.load() },
+    methods: {
+      go(url: string) { uni.navigateTo({ url }) },
+      goRegister() { uni.navigateTo({ url: '/pages/baby/birth-register' }) },
+      monthText(b: UTSJSONObject): string {
+        const birth = b.getString('birthDate') ?? ''
+        if (birth.length == 0) return ''
+        const days = Math.floor((Date.now() - Date.parse(birth + 'T12:00:00Z')) / 86400000)
+        const months = Math.floor(days / 30.4375)
+        return `${months} 个月 ${days % 30} 天`
+      },
+      selectBaby(b: UTSJSONObject) {
+        this.currentBabyId = b.getString('_id') ?? ''
+        journeyState.currentBabyId = this.currentBabyId
+        uni.setStorageSync('current_baby_id', this.currentBabyId)
+        this.loadSummary()
+      },
+      async load() {
+        try {
+          const stored = uni.getStorageSync('current_baby_id') as string
+          this.currentBabyId = stored ?? ''
+          const res = await luckyJourney('listBabies', { journeyId: journeyState.journeyId } as UTSJSONObject)
+          this.babies = res.getArray('babies') ?? []
+          if (this.currentBabyId.length == 0 && this.babies.length > 0) {
+            this.selectBaby(this.babies[0])
+          } else {
+            this.loadSummary()
+          }
+        } catch (e) { /* 忽略 */ }
+      },
+      async loadSummary() {
+        if (this.currentBabyId.length == 0) { this.summary = null; return }
+        try {
+          this.summary = await luckyBaby('dailySummary', { journeyId: journeyState.journeyId, babyId: this.currentBabyId } as UTSJSONObject)
+        } catch (e) { this.summary = null }
+      }
+    }
   }
 </script>
 
 <style>
-  .page { flex: 1; background-color: #F7F6F4; align-items: center; padding-top: 200rpx; }
-  .title { font-size: 40rpx; font-weight: bold; color: #1F2329; }
-  .desc { font-size: 26rpx; color: #6B7280; margin-top: 24rpx; width: 600rpx; text-align: center; }
-  .todo-note { font-size: 22rpx; color: #A3AAB5; margin-top: 48rpx; width: 600rpx; text-align: center; }
+  .page { flex: 1; background-color: #F7F6F4; padding: 24rpx; align-items: center; }
+  .card { width: 700rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 40rpx; margin-top: 24rpx; align-items: center; }
+  .empty { font-size: 30rpx; color: #6B7280; margin-bottom: 24rpx; }
+  .hero { width: 700rpx; background-color: #FF7A6B; border-radius: 24rpx; padding: 40rpx; margin-top: 24rpx; opacity: 0.75; }
+  .hero-current { opacity: 1; }
+  .hero-name { font-size: 40rpx; font-weight: bold; color: #FFFFFF; }
+  .hero-sub { font-size: 24rpx; color: #FFEFEA; margin-top: 8rpx; }
+  .hero-cur { font-size: 20rpx; color: #FFFFFF; background-color: rgba(255,255,255,0.25); border-radius: 10rpx; padding: 4rpx 12rpx; margin-top: 12rpx; align-self: flex-start; }
+  .summary { width: 700rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 32rpx; margin-top: 16rpx; }
+  .card-title { font-size: 28rpx; font-weight: bold; color: #1F2329; margin-bottom: 20rpx; }
+  .sum-row { flex-direction: row; justify-content: space-between; }
+  .sum-col { align-items: center; flex: 1; }
+  .sum-num { font-size: 36rpx; font-weight: bold; color: #FF7A6B; }
+  .sum-cap { font-size: 22rpx; color: #A3AAB5; margin-top: 8rpx; }
+  .quick-row { flex-direction: row; margin-top: 24rpx; }
+  .btn-quick { flex: 1; height: 80rpx; line-height: 80rpx; background-color: #FFEFEA; color: #E85D4E; font-size: 24rpx; border-radius: 20rpx; margin: 0 6rpx; }
+  .nav-row { flex-direction: row; align-items: center; padding: 24rpx 0; border-bottom-width: 1px; border-bottom-color: #F2F1EF; }
+  .nav-text { font-size: 28rpx; color: #1F2329; flex: 1; }
+  .nav-arrow { font-size: 36rpx; color: #C9CDD4; }
 </style>

@@ -16,6 +16,7 @@ export const journeyState = reactive({
   fetusCount: 1,
   highRisk: false,
   title: '',
+  currentBabyId: '',
   loaded: false
 })
 
