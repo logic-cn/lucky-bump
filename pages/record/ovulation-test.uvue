@@ -1,20 +1,63 @@
 <template>
   <view class="page">
-    <text class="title">排卵试纸</text>
-    <text class="desc">结果三档 + 拍照；强阳刷新易孕窗（docs/03 M1.2）。</text>
-    <text class="todo-note">页面完整交互按 docs/03 对应小节实现中（见 docs/DEV-PROGRESS.md）。</text>
+    <view class="card">
+      <text class="label">今天的排卵试纸结果</text>
+      <view class="opts">
+        <view class="opt" v-for="(o, i) in opts" :key="i" :class="result == o.value ? 'opt-active' : ''" @click="result = o.value">
+          <text class="opt-emoji">{{ o.emoji }}</text>
+          <text class="opt-text" :class="result == o.value ? 'opt-text-active' : ''">{{ o.label }}</text>
+        </view>
+      </view>
+      <text class="hint" v-if="result == 'strong_positive'">强阳通常预示未来 24-48 小时内排卵，易孕窗口已更新</text>
+      <text class="hint" v-else>建议每天同一时间测，接近强阳时缩短至 4-6 小时一次</text>
+      <button class="btn-save" :disabled="saving || result.length == 0" @click="save">{{ saving ? '保存中…' : '保存' }}</button>
+    </view>
   </view>
 </template>
 
 <script>
+  import { luckyRecord } from '../../utils/request.uts'
+  import { journeyState } from '../../store/journeyStore.uts'
+
   export default {
-    data() { return {} }
+    data() {
+      return {
+        result: '',
+        opts: [
+          { value: 'negative', label: '阴性', emoji: '⚪' },
+          { value: 'weak_positive', label: '弱阳', emoji: '🌥' },
+          { value: 'strong_positive', label: '强阳', emoji: '🔥' }
+        ] as Opt[],
+        saving: false
+      }
+    },
+    methods: {
+      async save() {
+        this.saving = true
+        try {
+          await luckyRecord('addCycleEvent', { journeyId: journeyState.journeyId, type: 'ovulation_test', value: { result: this.result } } as UTSJSONObject)
+          uni.showToast({ title: '已记录 ✓', icon: 'success' })
+          setTimeout(() => { uni.navigateBack() }, 600)
+        } catch (e) {
+          uni.showToast({ title: (e as Error).message, icon: 'none' })
+        } finally { this.saving = false }
+      }
+    }
   }
+
+  type Opt = { value: string, label: string, emoji: string }
 </script>
 
 <style>
-  .page { flex: 1; background-color: #F7F6F4; align-items: center; padding-top: 200rpx; }
-  .title { font-size: 40rpx; font-weight: bold; color: #1F2329; }
-  .desc { font-size: 26rpx; color: #6B7280; margin-top: 24rpx; width: 600rpx; text-align: center; }
-  .todo-note { font-size: 22rpx; color: #A3AAB5; margin-top: 48rpx; width: 600rpx; text-align: center; }
+  .page { flex: 1; background-color: #F7F6F4; padding: 24rpx; align-items: center; }
+  .card { width: 700rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 40rpx; margin-top: 40rpx; align-items: center; }
+  .label { font-size: 30rpx; color: #1F2329; margin-bottom: 32rpx; }
+  .opts { flex-direction: row; margin-bottom: 24rpx; }
+  .opt { width: 200rpx; align-items: center; background-color: #F7F6F4; border-radius: 20rpx; padding: 32rpx 0; margin: 0 10rpx; }
+  .opt-active { background-color: #FFEFEA; }
+  .opt-emoji { font-size: 44rpx; }
+  .opt-text { font-size: 26rpx; color: #6B7280; margin-top: 12rpx; }
+  .opt-text-active { color: #FF7A6B; font-weight: bold; }
+  .hint { font-size: 22rpx; color: #A3AAB5; margin: 16rpx 0 32rpx 0; }
+  .btn-save { width: 620rpx; height: 96rpx; line-height: 96rpx; background-color: #FF7A6B; color: #FFFFFF; font-size: 32rpx; border-radius: 44rpx; }
 </style>

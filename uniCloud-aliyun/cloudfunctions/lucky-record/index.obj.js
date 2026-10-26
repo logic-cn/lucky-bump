@@ -342,6 +342,33 @@ module.exports = {
     return auth.ok({ score: s.score, selfHarm: s.selfHarm, action, disclaimer: '本量表为自我参考工具，不构成诊断' })
   },
 
+  /** 孕期日记：文本 + 媒体占位（docs/03 M2.9） */
+  async addDiary(params = {}) {
+    const uid = await requireUser.call(this)
+    if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
+    const j = await accessibleJourney.call(this, uid, params.journeyId, 'write')
+    if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
+    const text = String(params.text || '').trim().slice(0, 2000)
+    if (!text) return auth.fail('PARAM_ERROR', '日记内容不能为空')
+    const ts = params.ts || Date.now()
+    const res = await db.call(this).collection('lb-diaries').add({
+      user_id: uid, journey_id: j._id, text,
+      mood: ['great', 'good', 'normal', 'low', 'bad'].includes(params.mood) ? params.mood : 'normal',
+      media_ids: Array.isArray(params.mediaIds) ? params.mediaIds.slice(0, 9) : [],
+      date: params.date || dateOf(ts), ts, sensitivity: 'normal', created_at: Date.now()
+    })
+    return auth.ok({ recordId: res.id })
+  },
+
+  async listDiaries(params = {}) {
+    const uid = await requireUser.call(this)
+    if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
+    const j = await accessibleJourney.call(this, uid, params.journeyId)
+    if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
+    const res = await db.call(this).collection('lb-diaries').where({ journey_id: j._id }).orderBy('ts', 'desc').limit(50).get()
+    return auth.ok({ diaries: res.data })
+  },
+
   async listEpds(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')

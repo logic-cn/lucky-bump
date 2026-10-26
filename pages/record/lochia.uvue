@@ -1,20 +1,105 @@
 <template>
   <view class="page">
-    <text class="title">恶露记录</text>
-    <text class="desc">颜色/量/血块/异味 + 红线（docs/03 M4.2）。</text>
-    <text class="todo-note">页面完整交互按 docs/03 对应小节实现中（见 docs/DEV-PROGRESS.md）。</text>
+    <view class="card">
+      <text class="label">恶露颜色</text>
+      <view class="opts">
+        <view class="opt" v-for="(o, i) in colors" :key="i" :class="color == o.value ? 'opt-active' : ''" @click="color = o.value">
+          <view class="color-dot" :style="{ backgroundColor: o.dot }" />
+          <text class="opt-text" :class="color == o.value ? 'opt-text-active' : ''">{{ o.label }}</text>
+        </view>
+      </view>
+      <text class="label">量（以卫生巾用量为参照）</text>
+      <view class="opts">
+        <view class="opt" v-for="(a, i) in amounts" :key="i" :class="amount == a.value ? 'opt-active' : ''" @click="amount = a.value">
+          <text class="opt-text" :class="amount == a.value ? 'opt-text-active' : ''">{{ a.label }}</text>
+        </view>
+      </view>
+      <view class="switch-row">
+        <text class="switch-label">有血块</text>
+        <switch :checked="clots" @change="onClotsChange" color="#FF7A6B" />
+      </view>
+      <view class="switch-row">
+        <text class="switch-label">有异味</text>
+        <switch :checked="odor" @change="onOdorChange" color="#FF7A6B" />
+      </view>
+      <text class="hint">参考进程：血性 3-4 天 → 浆液约 10 天 → 白色持续 2-3 周；个体差异大，异常以医生判断为准</text>
+    </view>
+    <button class="btn-save" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</button>
+
+    <view class="redline" v-if="redlineMsg.length > 0">
+      <text class="redline-title">⚠️ 需要关注</text>
+      <text class="redline-msg">{{ redlineMsg }}</text>
+      <text class="redline-action">{{ redlineAction }}</text>
+    </view>
   </view>
 </template>
 
 <script>
+  import { luckyRecord } from '../../utils/request.uts'
+  import { journeyState } from '../../store/journeyStore.uts'
+
   export default {
-    data() { return {} }
+    data() {
+      return {
+        color: 'dark_red', amount: 'medium', clots: false, odor: false,
+        saving: false, redlineMsg: '', redlineAction: '',
+        colors: [
+          { value: 'bright_red', label: '鲜红', dot: '#E5484D' },
+          { value: 'dark_red', label: '暗红', dot: '#A93A3E' },
+          { value: 'pink', label: '粉', dot: '#F0B9B4' },
+          { value: 'white_brown', label: '白/褐', dot: '#D8CFC4' }
+        ] as COpt[],
+        amounts: [
+          { value: 'light', label: '少' }, { value: 'medium', label: '中' }, { value: 'heavy', label: '多' }
+        ] as AOpt[]
+      }
+    },
+    methods: {
+      onClotsChange(e: UniSwitchChangeEvent) { this.clots = e.detail.value },
+      onOdorChange(e: UniSwitchChangeEvent) { this.odor = e.detail.value },
+      async save() {
+        this.saving = true
+        try {
+          const res = await luckyRecord('addMetric', {
+            journeyId: journeyState.journeyId, code: 'lochia',
+            value: { color: this.color, amount: this.amount, clots: this.clots, odor: this.odor } as UTSJSONObject
+          } as UTSJSONObject)
+          const rl = res.getJSON('redline')
+          if (rl != null) {
+            const r = rl as UTSJSONObject
+            this.redlineMsg = r.getString('message') ?? ''
+            this.redlineAction = r.getString('action') ?? ''
+          } else {
+            uni.showToast({ title: '已记录 ✓', icon: 'success' })
+            setTimeout(() => { uni.navigateBack() }, 600)
+          }
+        } catch (e) {
+          uni.showToast({ title: (e as Error).message, icon: 'none' })
+        } finally { this.saving = false }
+      }
+    }
   }
+
+  type COpt = { value: string, label: string, dot: string }
+  type AOpt = { value: string, label: string }
 </script>
 
 <style>
-  .page { flex: 1; background-color: #F7F6F4; align-items: center; padding-top: 200rpx; }
-  .title { font-size: 40rpx; font-weight: bold; color: #1F2329; }
-  .desc { font-size: 26rpx; color: #6B7280; margin-top: 24rpx; width: 600rpx; text-align: center; }
-  .todo-note { font-size: 22rpx; color: #A3AAB5; margin-top: 48rpx; width: 600rpx; text-align: center; }
+  .page { flex: 1; background-color: #F7F6F4; padding: 24rpx; align-items: center; }
+  .card { width: 700rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 40rpx; margin-top: 40rpx; align-items: center; }
+  .label { font-size: 28rpx; color: #1F2329; margin: 16rpx 0 20rpx 0; }
+  .opts { flex-direction: row; justify-content: center; flex-wrap: wrap; }
+  .opt { align-items: center; background-color: #F7F6F4; border-radius: 20rpx; padding: 24rpx 32rpx; margin: 8rpx; flex-direction: row; }
+  .opt-active { background-color: #FFEFEA; }
+  .color-dot { width: 28rpx; height: 28rpx; border-radius: 14rpx; margin-right: 12rpx; }
+  .opt-text { font-size: 26rpx; color: #6B7280; }
+  .opt-text-active { color: #FF7A6B; font-weight: bold; }
+  .switch-row { flex-direction: row; align-items: center; justify-content: space-between; width: 620rpx; padding: 12rpx 0; }
+  .switch-label { font-size: 28rpx; color: #1F2329; }
+  .hint { font-size: 20rpx; color: #A3AAB5; margin-top: 24rpx; }
+  .btn-save { width: 700rpx; height: 96rpx; line-height: 96rpx; background-color: #FF7A6B; color: #FFFFFF; font-size: 32rpx; border-radius: 44rpx; margin-top: 40rpx; }
+  .redline { width: 700rpx; background-color: #FDF3E3; border-radius: 24rpx; padding: 40rpx; margin-top: 32rpx; }
+  .redline-title { font-size: 34rpx; font-weight: bold; color: #E5484D; }
+  .redline-msg { font-size: 28rpx; color: #1F2329; margin-top: 16rpx; }
+  .redline-action { font-size: 30rpx; font-weight: bold; color: #E5484D; margin-top: 16rpx; }
 </style>

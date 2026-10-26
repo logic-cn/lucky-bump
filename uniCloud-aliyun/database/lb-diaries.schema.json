@@ -1,0 +1,55 @@
+{
+  "required": [
+    "user_id",
+    "journey_id",
+    "text",
+    "ts"
+  ],
+  "properties": {
+    "user_id": {
+      "bsonType": "string",
+      "title": "用户"
+    },
+    "journey_id": {
+      "bsonType": "string",
+      "title": "旅程"
+    },
+    "text": {
+      "bsonType": "string",
+      "title": "日记内容"
+    },
+    "mood": {
+      "bsonType": "string",
+      "title": "心情",
+      "enum": [
+        "great",
+        "good",
+        "normal",
+        "low",
+        "bad"
+      ]
+    },
+    "media_ids": {
+      "bsonType": "array",
+      "title": "媒体fileID"
+    },
+    "date": {
+      "bsonType": "string",
+      "title": "日期"
+    },
+    "ts": {
+      "bsonType": "long",
+      "title": "时间戳"
+    },
+    "sensitivity": {
+      "bsonType": "string",
+      "title": "敏感级"
+    }
+  },
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  }
+}

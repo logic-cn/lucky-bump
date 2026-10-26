@@ -1,20 +1,111 @@
 <template>
   <view class="page">
-    <text class="title">经期记录</text>
-    <text class="desc">经期开始/结束、BBT；日历视图与预测（docs/03 M1.1/M1.3）。</text>
-    <text class="todo-note">页面完整交互按 docs/03 对应小节实现中（见 docs/DEV-PROGRESS.md）。</text>
+    <view class="card">
+      <text class="label">月经来了？</text>
+      <view class="btn-row">
+        <button class="btn-half btn-primary-bg" @click="markPeriod('start')">经期开始</button>
+        <button class="btn-half btn-gray" @click="markPeriod('end')">经期结束</button>
+      </view>
+      <text class="label">基础体温（晨起未活动时，°C）</text>
+      <view class="input-row">
+        <input class="num-input" type="digit" v-model="bbt" placeholder="36.5" placeholder-class="ph" />
+        <button class="btn-small" :disabled="saving" @click="saveBbt">记录</button>
+      </view>
+    </view>
+
+    <view class="card" v-if="prediction != null">
+      <text class="card-title">周期预测</text>
+      <text class="pred-text" v-if="predRegular">平均周期 {{ predAvgLen }} 天 · 排卵日约 {{ predOvu }}</text>
+      <text class="pred-text" v-else>周期不太规律（波动 > 7 天），建议坚持记录排卵试纸和体温提高准确度</text>
+      <text class="pred-sub">易孕窗口：{{ predFrom }} 至 {{ predTo }}</text>
+      <text class="pred-sub">预测下次月经：{{ predNext }}</text>
+    </view>
+
+    <view class="card" v-if="events.length > 0">
+      <text class="card-title">最近记录</text>
+      <view class="ev-row" v-for="(e, i) in events" :key="i">
+        <text class="ev-date">{{ e.getString('date') ?? '' }}</text>
+        <text class="ev-type">{{ eventText(e.getString('type') ?? '', e.getJSON('value')) }}</text>
+      </view>
+    </view>
   </view>
 </template>
 
 <script>
+  import { luckyRecord } from '../../utils/request.uts'
+  import { journeyState } from '../../store/journeyStore.uts'
+
   export default {
-    data() { return {} }
+    data() {
+      return { bbt: '', saving: false, events: [] as UTSJSONObject[], prediction: null }
+    },
+    computed: {
+      predAvgLen(): string { return String((this.prediction as UTSJSONObject)?.getNumber('avgCycleLength') ?? 28) },
+      predRegular(): boolean { return (this.prediction as UTSJSONObject)?.getBoolean('regular') ?? false },
+      predOvu(): string { return (this.prediction as UTSJSONObject)?.getString('ovulationDate') ?? '-' },
+      predFrom(): string { return ((this.prediction as UTSJSONObject)?.getJSON('fertileWindow') as UTSJSONObject)?.getString('from') ?? '-' },
+      predTo(): string { return ((this.prediction as UTSJSONObject)?.getJSON('fertileWindow') as UTSJSONObject)?.getString('to') ?? '-' },
+      predNext(): string { return (this.prediction as UTSJSONObject)?.getString('nextPeriodDate') ?? '-' }
+    },
+    onLoad() { this.load() },
+    methods: {
+      eventText(type: string, value: any): string {
+        if (type == 'period_start') return '🌸 经期开始'
+        if (type == 'period_end') return '经期结束'
+        if (type == 'ovulation_test') {
+          const r = (value as UTSJSONObject)?.getString('result') ?? ''
+          return r == 'strong_positive' ? '🧪 排卵试纸强阳' : (r == 'weak_positive' ? '排卵试纸弱阳' : '排卵试纸阴性')
+        }
+        if (type == 'bbt') return `🌡 体温 ${(value as UTSJSONObject)?.getNumber('tempC') ?? ''}°C`
+        if (type == 'intercourse') return '💗 同房（仅自己可见）'
+        if (type == 'pregnancy_test') return '🤰 验孕记录'
+        return type
+      },
+      async load() {
+        try {
+          const res = await luckyRecord('listCycleEvents', { journeyId: journeyState.journeyId } as UTSJSONObject)
+          this.events = res.getArray('events') ?? []
+          this.prediction = res.getJSON('prediction')
+        } catch (e) { /* 忽略 */ }
+      },
+      async markPeriod(kind: string) {
+        try {
+          await luckyRecord('addCycleEvent', { journeyId: journeyState.journeyId, type: kind == 'start' ? 'period_start' : 'period_end' } as UTSJSONObject)
+          uni.showToast({ title: '已记录 ✓', icon: 'success' })
+          this.load()
+        } catch (e) { uni.showToast({ title: (e as Error).message, icon: 'none' }) }
+      },
+      async saveBbt() {
+        const t = parseFloat(this.bbt)
+        if (!(t >= 34 && t <= 42)) { uni.showToast({ title: '请输入有效体温', icon: 'none' }); return }
+        this.saving = true
+        try {
+          await luckyRecord('addCycleEvent', { journeyId: journeyState.journeyId, type: 'bbt', value: { tempC: t } } as UTSJSONObject)
+          this.bbt = ''
+          uni.showToast({ title: '已记录 ✓', icon: 'success' })
+          this.load()
+        } catch (e) { uni.showToast({ title: (e as Error).message, icon: 'none' }) } finally { this.saving = false }
+      }
+    }
   }
 </script>
 
 <style>
-  .page { flex: 1; background-color: #F7F6F4; align-items: center; padding-top: 200rpx; }
-  .title { font-size: 40rpx; font-weight: bold; color: #1F2329; }
-  .desc { font-size: 26rpx; color: #6B7280; margin-top: 24rpx; width: 600rpx; text-align: center; }
-  .todo-note { font-size: 22rpx; color: #A3AAB5; margin-top: 48rpx; width: 600rpx; text-align: center; }
+  .page { flex: 1; background-color: #F7F6F4; padding: 24rpx; align-items: center; }
+  .card { width: 700rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 40rpx; margin-top: 24rpx; }
+  .card-title { font-size: 30rpx; font-weight: bold; color: #1F2329; margin-bottom: 20rpx; }
+  .label { font-size: 28rpx; color: #1F2329; margin: 24rpx 0 16rpx 0; }
+  .btn-row { flex-direction: row; }
+  .btn-half { flex: 1; height: 88rpx; line-height: 88rpx; font-size: 28rpx; border-radius: 44rpx; margin: 0 8rpx; }
+  .btn-primary-bg { background-color: #FF7A6B; color: #FFFFFF; }
+  .btn-gray { background-color: #F7F6F4; color: #6B7280; }
+  .input-row { flex-direction: row; align-items: center; }
+  .num-input { flex: 1; height: 88rpx; background-color: #F7F6F4; border-radius: 16rpx; padding: 0 24rpx; font-size: 30rpx; color: #1F2329; margin-right: 16rpx; }
+  .ph { color: #A3AAB5; }
+  .btn-small { width: 140rpx; height: 88rpx; line-height: 88rpx; background-color: #FFEFEA; color: #FF7A6B; font-size: 26rpx; border-radius: 16rpx; }
+  .pred-text { font-size: 28rpx; color: #1F2329; }
+  .pred-sub { font-size: 24rpx; color: #6B7280; margin-top: 12rpx; }
+  .ev-row { flex-direction: row; padding: 16rpx 0; border-bottom-width: 1px; border-bottom-color: #F2F1EF; }
+  .ev-date { width: 200rpx; font-size: 24rpx; color: #A3AAB5; }
+  .ev-type { font-size: 26rpx; color: #1F2329; }
 </style>

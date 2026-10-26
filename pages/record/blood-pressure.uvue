@@ -1,20 +1,86 @@
 <template>
   <view class="page">
-    <text class="title">血压</text>
-    <text class="desc">收缩压/舒张压/心率录入；≥140/90 warn、≥160/110 critical 红线（docs/03 M2.3）。</text>
-    <text class="todo-note">页面完整交互按 docs/03 对应小节实现中（见 docs/DEV-PROGRESS.md）。</text>
+    <view class="card">
+      <text class="label">血压（mmHg）</text>
+      <view class="bp-row">
+        <view class="bp-col">
+          <input class="bp-input" type="number" v-model="sbp" placeholder="120" placeholder-class="ph" />
+          <text class="bp-cap">收缩压</text>
+        </view>
+        <text class="bp-slash">/</text>
+        <view class="bp-col">
+          <input class="bp-input" type="number" v-model="dbp" placeholder="80" placeholder-class="ph" />
+          <text class="bp-cap">舒张压</text>
+        </view>
+      </view>
+      <input class="hr-input" type="number" v-model="hr" placeholder="心率（选填），如 72" placeholder-class="ph" />
+    </view>
+    <button class="btn-save" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</button>
+
+    <view class="redline" v-if="redlineLevel.length > 0" :class="redlineLevel == 'critical' ? 'redline-critical' : 'redline-warn'">
+      <text class="redline-title">{{ redlineLevel == 'critical' ? '⚠️ 请立即就医' : '⚠️ 需要关注' }}</text>
+      <text class="redline-msg">{{ redlineMsg }}</text>
+      <text class="redline-action">{{ redlineAction }}</text>
+      <text class="redline-note">本提示仅描述测量现象，不构成诊断</text>
+    </view>
   </view>
 </template>
 
 <script>
+  import { luckyRecord } from '../../utils/request.uts'
+  import { journeyState } from '../../store/journeyStore.uts'
+
   export default {
-    data() { return {} }
+    data() {
+      return { sbp: '', dbp: '', hr: '', saving: false, redlineLevel: '', redlineMsg: '', redlineAction: '' }
+    },
+    methods: {
+      async save() {
+        const sbp = parseInt(this.sbp), dbp = parseInt(this.dbp)
+        if (!(sbp >= 60 && sbp <= 260) || !(dbp >= 30 && dbp <= 160)) {
+          uni.showToast({ title: '请输入有效血压值', icon: 'none' }); return
+        }
+        const value = { sbp: sbp, dbp: dbp } as UTSJSONObject
+        const hr = parseInt(this.hr)
+        if (hr >= 30 && hr <= 220) value['hr'] = hr
+        this.saving = true
+        try {
+          const res = await luckyRecord('addMetric', { journeyId: journeyState.journeyId, code: 'blood_pressure', value } as UTSJSONObject)
+          const rl = res.getJSON('redline')
+          if (rl != null) {
+            const r = rl as UTSJSONObject
+            this.redlineLevel = r.getString('level') ?? ''
+            this.redlineMsg = r.getString('message') ?? ''
+            this.redlineAction = r.getString('action') ?? ''
+          } else {
+            uni.showToast({ title: '已记录 ✓', icon: 'success' })
+            setTimeout(() => { uni.navigateBack() }, 600)
+          }
+        } catch (e) {
+          uni.showToast({ title: (e as Error).message, icon: 'none' })
+        } finally { this.saving = false }
+      }
+    }
   }
 </script>
 
 <style>
-  .page { flex: 1; background-color: #F7F6F4; align-items: center; padding-top: 200rpx; }
-  .title { font-size: 40rpx; font-weight: bold; color: #1F2329; }
-  .desc { font-size: 26rpx; color: #6B7280; margin-top: 24rpx; width: 600rpx; text-align: center; }
-  .todo-note { font-size: 22rpx; color: #A3AAB5; margin-top: 48rpx; width: 600rpx; text-align: center; }
+  .page { flex: 1; background-color: #F7F6F4; padding: 24rpx; align-items: center; }
+  .card { width: 700rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 48rpx 40rpx; align-items: center; margin-top: 40rpx; }
+  .label { font-size: 30rpx; color: #1F2329; margin-bottom: 40rpx; }
+  .bp-row { flex-direction: row; align-items: flex-end; }
+  .bp-col { align-items: center; }
+  .bp-input { width: 200rpx; height: 120rpx; font-size: 64rpx; font-weight: bold; color: #1F2329; text-align: center; border-bottom-width: 2px; border-bottom-color: #FF7A6B; }
+  .bp-cap { font-size: 22rpx; color: #A3AAB5; margin-top: 12rpx; }
+  .bp-slash { font-size: 56rpx; color: #C9CDD4; margin: 0 24rpx 40rpx 24rpx; }
+  .ph { color: #E3E5E8; }
+  .hr-input { width: 500rpx; height: 80rpx; font-size: 28rpx; color: #1F2329; text-align: center; background-color: #F7F6F4; border-radius: 16rpx; margin-top: 40rpx; }
+  .btn-save { width: 700rpx; height: 96rpx; line-height: 96rpx; background-color: #FF7A6B; color: #FFFFFF; font-size: 32rpx; border-radius: 44rpx; margin-top: 48rpx; }
+  .redline { width: 700rpx; border-radius: 24rpx; padding: 40rpx; margin-top: 32rpx; }
+  .redline-critical { background-color: #FDECEC; }
+  .redline-warn { background-color: #FDF3E3; }
+  .redline-title { font-size: 34rpx; font-weight: bold; color: #E5484D; }
+  .redline-msg { font-size: 28rpx; color: #1F2329; margin-top: 16rpx; }
+  .redline-action { font-size: 30rpx; font-weight: bold; color: #E5484D; margin-top: 16rpx; }
+  .redline-note { font-size: 20rpx; color: #A3AAB5; margin-top: 24rpx; }
 </style>

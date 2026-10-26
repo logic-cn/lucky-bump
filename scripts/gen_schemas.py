@@ -153,6 +153,15 @@ SCHEMAS = {
       "note": prop("string", "备注")
     }
   },
+  "lb-diaries": {
+    "required": ["user_id", "journey_id", "text", "ts"],
+    "properties": {
+      "user_id": prop("string", "用户"), "journey_id": prop("string", "旅程"),
+      "text": prop("string", "日记内容"), "mood": prop("string", "心情", enum=["great", "good", "normal", "low", "bad"]),
+      "media_ids": prop("array", "媒体fileID"), "date": prop("string", "日期"),
+      "ts": prop("long", "时间戳"), "sensitivity": prop("string", "敏感级")
+    }
+  },
   "lb-screenings": {
     "required": ["user_id", "journey_id", "type", "score"],
     "properties": {

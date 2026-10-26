@@ -1,20 +1,112 @@
 <template>
   <view class="page">
-    <text class="title">症状与情绪</text>
-    <text class="desc">症状多选 + 严重度 + 备注；红线词触发就医指引（docs/03 M2.5）。</text>
-    <text class="todo-note">页面完整交互按 docs/03 对应小节实现中（见 docs/DEV-PROGRESS.md）。</text>
+    <view class="card">
+      <text class="label">身体信号（可多选）</text>
+      <view class="chips">
+        <view class="chip" v-for="(s, i) in symptoms" :key="i"
+          :class="selected.indexOf(s.code) >= 0 ? (s.redline ? 'chip-danger-active' : 'chip-active') : ''"
+          @click="toggle(s.code)">
+          <text class="chip-text" :class="selected.indexOf(s.code) >= 0 ? 'chip-text-active' : ''">{{ s.label }}</text>
+        </view>
+      </view>
+      <text class="label">严重程度</text>
+      <view class="sev-row">
+        <view class="sev" v-for="(s, i) in ['轻', '中', '重']" :key="i" :class="severity == i + 1 ? 'sev-active' : ''" @click="severity = i + 1">
+          <text class="sev-text">{{ s }}</text>
+        </view>
+      </view>
+      <text class="label">备注（选填）</text>
+      <textarea class="note" v-model="note" placeholder="什么时候明显、有没有缓解的办法…" placeholder-class="ph" :maxlength="200" />
+    </view>
+    <button class="btn-save" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</button>
+
+    <view class="redline" v-if="redlineMsg.length > 0">
+      <text class="redline-title">⚠️ 请注意</text>
+      <text class="redline-msg">{{ redlineMsg }}</text>
+      <text class="redline-note">本提示仅描述现象与常规建议，不构成诊断</text>
+    </view>
   </view>
 </template>
 
 <script>
+  import { luckyRecord } from '../../utils/request.uts'
+  import { journeyState } from '../../store/journeyStore.uts'
+
+  type Sym = { code: string, label: string, redline: boolean }
+
   export default {
-    data() { return {} }
+    data() {
+      return {
+        symptoms: [
+          { code: 'nausea', label: '孕吐', redline: false },
+          { code: 'fatigue', label: '乏力', redline: false },
+          { code: 'edema', label: '水肿', redline: false },
+          { code: 'insomnia', label: '失眠', redline: false },
+          { code: 'backache', label: '腰痛', redline: false },
+          { code: 'cramp', label: '腿抽筋', redline: false },
+          { code: 'constipation', label: '便秘', redline: false },
+          { code: 'heartburn', label: '烧心', redline: false },
+          { code: 'dizzy', label: '头晕', redline: false },
+          { code: 'low_mood', label: '情绪低落', redline: false },
+          { code: 'bleeding', label: '出血', redline: true },
+          { code: 'severe_pain', label: '剧烈腹痛', redline: true },
+          { code: 'reduced_fm', label: '胎动明显减少', redline: true },
+          { code: 'water_broke', label: '破水', redline: true },
+          { code: 'severe_vomiting', label: '孕吐严重无法进食', redline: true }
+        ] as Sym[],
+        selected: [] as string[],
+        severity: 1,
+        note: '', saving: false, redlineMsg: ''
+      }
+    },
+    methods: {
+      toggle(code: string) {
+        const idx = this.selected.indexOf(code)
+        if (idx >= 0) this.selected.splice(idx, 1)
+        else this.selected.push(code)
+      },
+      async save() {
+        if (this.selected.length == 0) { uni.showToast({ title: '至少选择一项', icon: 'none' }); return }
+        this.saving = true
+        try {
+          const res = await luckyRecord('addMetric', {
+            journeyId: journeyState.journeyId, code: 'symptom',
+            value: { codes: this.selected, severity: this.severity, note: this.note } as UTSJSONObject
+          } as UTSJSONObject)
+          const rl = res.getJSON('redline')
+          if (rl != null) {
+            this.redlineMsg = (rl as UTSJSONObject).getString('message') ?? ''
+          } else {
+            uni.showToast({ title: '已记录 ✓', icon: 'success' })
+            setTimeout(() => { uni.navigateBack() }, 600)
+          }
+        } catch (e) {
+          uni.showToast({ title: (e as Error).message, icon: 'none' })
+        } finally { this.saving = false }
+      }
+    }
   }
 </script>
 
 <style>
-  .page { flex: 1; background-color: #F7F6F4; align-items: center; padding-top: 200rpx; }
-  .title { font-size: 40rpx; font-weight: bold; color: #1F2329; }
-  .desc { font-size: 26rpx; color: #6B7280; margin-top: 24rpx; width: 600rpx; text-align: center; }
-  .todo-note { font-size: 22rpx; color: #A3AAB5; margin-top: 48rpx; width: 600rpx; text-align: center; }
+  .page { flex: 1; background-color: #F7F6F4; padding: 24rpx; align-items: center; }
+  .card { width: 700rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 40rpx; margin-top: 40rpx; }
+  .label { font-size: 28rpx; color: #1F2329; margin: 24rpx 0 16rpx 0; }
+  .chips { flex-direction: row; flex-wrap: wrap; }
+  .chip { background-color: #F7F6F4; border-radius: 32rpx; padding: 14rpx 28rpx; margin: 8rpx; }
+  .chip-active { background-color: #FFEFEA; }
+  .chip-danger-active { background-color: #FDECEC; }
+  .chip-text { font-size: 26rpx; color: #6B7280; }
+  .chip-text-active { color: #E5484D; font-weight: bold; }
+  .sev-row { flex-direction: row; margin-bottom: 16rpx; }
+  .sev { width: 120rpx; height: 72rpx; background-color: #F7F6F4; border-radius: 16rpx; align-items: center; justify-content: center; margin-right: 16rpx; }
+  .sev-active { background-color: #FFEFEA; }
+  .sev-text { font-size: 26rpx; color: #6B7280; }
+  .note { width: 620rpx; height: 160rpx; background-color: #F7F6F4; border-radius: 16rpx; padding: 20rpx; font-size: 26rpx; color: #1F2329; }
+  .ph { color: #A3AAB5; }
+  .btn-save { width: 700rpx; height: 96rpx; line-height: 96rpx; background-color: #FF7A6B; color: #FFFFFF; font-size: 32rpx; border-radius: 44rpx; margin-top: 48rpx; }
+  .redline { width: 700rpx; background-color: #FDECEC; border-radius: 24rpx; padding: 40rpx; margin-top: 32rpx; }
+  .redline-title { font-size: 34rpx; font-weight: bold; color: #E5484D; }
+  .redline-msg { font-size: 28rpx; color: #1F2329; margin-top: 16rpx; }
+  .redline-note { font-size: 20rpx; color: #A3AAB5; margin-top: 24rpx; }
 </style>

@@ -1,20 +1,56 @@
 <template>
   <view class="page">
-    <text class="title">体重</text>
-    <text class="desc">记录体重，按孕前 BMI 展示推荐增重区间带（docs/03 M2.2）。</text>
-    <text class="todo-note">页面完整交互按 docs/03 对应小节实现中（见 docs/DEV-PROGRESS.md）。</text>
+    <view class="card">
+      <text class="label">今天的体重（kg）</text>
+      <view class="input-row">
+        <input class="num-input" type="digit" v-model="kg" placeholder="58.2" placeholder-class="ph" />
+        <text class="unit">kg</text>
+      </view>
+      <text class="hint" v-if="gainRange.length == 2">孕期推荐增重 {{ gainRange[0] }}-{{ gainRange[1] }}kg（按孕前 BMI 估算，参考 IOM 口径）</text>
+    </view>
+    <button class="btn-save" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</button>
+    <text class="ok-text" v-if="saved">已记录 ✓</text>
   </view>
 </template>
 
 <script>
+  import { luckyRecord } from '../../utils/request.uts'
+  import { journeyState } from '../../store/journeyStore.uts'
+
   export default {
-    data() { return {} }
+    data() {
+      return { kg: '', saving: false, saved: false, gainRange: [] as string[] }
+    },
+    onLoad() {
+      // 孕前 BMI 待接入用户档案，暂以正常 BMI 口径展示推荐区间（docs/03 M2.2）
+      this.gainRange = ['11.5', '16']
+    },
+    methods: {
+      async save() {
+        const kg = parseFloat(this.kg)
+        if (!(kg >= 30 && kg <= 300)) { uni.showToast({ title: '请输入有效体重（30-300kg）', icon: 'none' }); return }
+        this.saving = true
+        try {
+          await luckyRecord('addMetric', { journeyId: journeyState.journeyId, code: 'weight', value: { kg } } as UTSJSONObject)
+          this.saved = true
+          setTimeout(() => { uni.navigateBack() }, 600)
+        } catch (e) {
+          uni.showToast({ title: (e as Error).message, icon: 'none' })
+        } finally { this.saving = false }
+      }
+    }
   }
 </script>
 
 <style>
-  .page { flex: 1; background-color: #F7F6F4; align-items: center; padding-top: 200rpx; }
-  .title { font-size: 40rpx; font-weight: bold; color: #1F2329; }
-  .desc { font-size: 26rpx; color: #6B7280; margin-top: 24rpx; width: 600rpx; text-align: center; }
-  .todo-note { font-size: 22rpx; color: #A3AAB5; margin-top: 48rpx; width: 600rpx; text-align: center; }
+  .page { flex: 1; background-color: #F7F6F4; padding: 24rpx; align-items: center; }
+  .card { width: 700rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 48rpx 40rpx; align-items: center; margin-top: 40rpx; }
+  .label { font-size: 30rpx; color: #1F2329; margin-bottom: 32rpx; }
+  .input-row { flex-direction: row; align-items: center; }
+  .num-input { width: 320rpx; height: 120rpx; font-size: 64rpx; font-weight: bold; color: #1F2329; text-align: center; border-bottom-width: 2px; border-bottom-color: #FF7A6B; }
+  .unit { font-size: 30rpx; color: #A3AAB5; margin-left: 16rpx; }
+  .ph { color: #E3E5E8; }
+  .hint { font-size: 22rpx; color: #A3AAB5; margin-top: 32rpx; }
+  .btn-save { width: 700rpx; height: 96rpx; line-height: 96rpx; background-color: #FF7A6B; color: #FFFFFF; font-size: 32rpx; border-radius: 44rpx; margin-top: 48rpx; }
+  .ok-text { color: #4CAF7D; font-size: 28rpx; margin-top: 24rpx; }
 </style>
