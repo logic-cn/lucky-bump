@@ -23,6 +23,15 @@
       <input class="input" type="digit" v-model="cost" placeholder="0.00" placeholder-class="ph" />
       <text class="label">医生结论与叮嘱</text>
       <textarea class="ta" v-model="conclusion" placeholder="如：一切正常，继续补铁…" placeholder-class="ph" :maxlength="500" />
+      <text class="label">报告照片（按孕周自动归档）</text>
+      <view class="photo-row">
+        <view class="photo" v-for="(p, i) in reportPreviews" :key="i">
+          <image class="photo-img" :src="p" mode="aspectFill" />
+          <text class="photo-del" @click="removeReport(i)">✕</text>
+        </view>
+        <view class="photo-add" v-if="reportPreviews.length < 9 && !uploading" @click="chooseReport"><text class="photo-add-text">＋ 照片</text></view>
+      </view>
+      <text class="hint" v-if="uploading">上传中…</text>
       <text class="label">下次产检时间（医生口径优先）</text>
       <picker mode="date" :value="nextDate" @change="onNextChange">
         <view class="date-box"><text class="date-text">{{ nextDate == '' ? '选填' : nextDate }}</text></view>
@@ -49,6 +58,8 @@
 
   type Exam = { name: string, result: string, abnormal: boolean }
 
+  // 注：chooseImage/uploadFile 回调类型在 HBuilderX 首次编译时如与当前 uni-app-x 版本有出入，仅需微调本文件标注。
+
   export default {
     data() {
       return {
@@ -56,7 +67,8 @@
         visitDate: this.todayStr(), nextDate: '',
         hospital: '', doctor: '', cost: '', conclusion: '',
         exams: [{ name: '', result: '', abnormal: false } as Exam],
-        saving: false, visits: [] as UTSJSONObject[]
+        saving: false, visits: [] as UTSJSONObject[],
+        reportFileIds: [] as string[], reportPreviews: [] as string[], uploading: false
       }
     },
     onLoad(options: OnLoadOptions) {
@@ -74,6 +86,40 @@
       },
       onDateChange(e: UniPickerChangeEvent) { this.visitDate = (e.detail.value as string) ?? this.visitDate },
       onNextChange(e: UniPickerChangeEvent) { this.nextDate = (e.detail.value as string) ?? '' },
+      /** 报告照片：选择 → 上传 uniCloud 存储 → 记录 fileID（预览用本地临时路径） */
+      chooseReport() {
+        uni.chooseImage({
+          count: 9 - this.reportPreviews.length,
+          success: async (res) => {
+            const paths = res.tempFilePaths
+            this.uploading = true
+            try {
+              for (let i = 0; i < paths.length; i++) {
+                const cloudPath = `reports/${journeyState.journeyId}/${Date.now()}_${i}.jpg`
+                const up = await this.uploadOne(paths[i], cloudPath)
+                this.reportFileIds.push(up)
+                this.reportPreviews.push(paths[i])
+              }
+            } catch (e) {
+              uni.showToast({ title: (e as Error).message, icon: 'none' })
+            } finally { this.uploading = false }
+          }
+        })
+      },
+      uploadOne(filePath: string, cloudPath: string): Promise<string> {
+        return new Promise<string>((resolve, reject) => {
+          uniCloud.uploadFile({
+            filePath: filePath,
+            cloudPath: cloudPath,
+            success: (res) => { resolve(res.fileID) },
+            fail: (err) => { reject(new Error(err.errMsg ?? '上传失败')) }
+          } as UploadFileOptions)
+        })
+      },
+      removeReport(i: number) {
+        this.reportFileIds.splice(i, 1)
+        this.reportPreviews.splice(i, 1)
+      },
       async loadVisits() {
         try {
           const res = await luckyCare('listVisits', { journeyId: journeyState.journeyId } as UTSJSONObject)
@@ -90,7 +136,8 @@
             journeyId: journeyState.journeyId, visitDate: this.visitDate,
             hospital: this.hospital, doctor: this.doctor, week: w,
             items: items, costYuan: parseFloat(this.cost) || 0,
-            conclusion: this.conclusion, nextVisitDate: this.nextDate
+            conclusion: this.conclusion, nextVisitDate: this.nextDate,
+            reportFileIds: this.reportFileIds
           } as UTSJSONObject)
           if (this.scheduleId.length > 0) {
             await luckyCare('updateItem', { journeyId: journeyState.journeyId, itemId: this.scheduleId, status: 'done' } as UTSJSONObject)
@@ -121,6 +168,12 @@
   .exam-del { font-size: 32rpx; color: #A3AAB5; padding: 8rpx; }
   .add-exam { font-size: 26rpx; color: #FF7A6B; padding: 8rpx 0; }
   .ta { width: 620rpx; height: 140rpx; background-color: #F7F6F4; border-radius: 16rpx; padding: 20rpx; font-size: 26rpx; color: #1F2329; }
+  .photo-row { flex-direction: row; flex-wrap: wrap; margin-bottom: 8rpx; }
+  .photo { width: 140rpx; height: 140rpx; border-radius: 12rpx; margin: 8rpx; position: relative; }
+  .photo-img { width: 140rpx; height: 140rpx; border-radius: 12rpx; }
+  .photo-del { position: absolute; top: 4rpx; right: 8rpx; font-size: 28rpx; color: #FFFFFF; text-shadow: 0 0 4rpx rgba(0,0,0,0.6); }
+  .photo-add { width: 140rpx; height: 140rpx; border-radius: 12rpx; background-color: #F7F6F4; align-items: center; justify-content: center; margin: 8rpx; }
+  .photo-add-text { font-size: 24rpx; color: #A3AAB5; }
   .ph { color: #A3AAB5; }
   .btn-save { width: 700rpx; height: 96rpx; line-height: 96rpx; background-color: #FF7A6B; color: #FFFFFF; font-size: 32rpx; border-radius: 44rpx; margin-top: 32rpx; }
   .list { width: 700rpx; margin-top: 40rpx; }

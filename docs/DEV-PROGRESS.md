@@ -44,6 +44,9 @@
 - [x] README 更新（工程说明与运行指引）
 - [ ] **需用户介入**：HBuilderX 打开工程生成 appid、关联 uniCloud 空间、配置正式 tokenSecret、云打包真机回归（见 docs/08 §2/§4/§6）
 
+### 巡检轮次 3 补齐（2026-10-27）✅
+- [x] 产检报告照片上传归档（docs/03 M3.2 / 页面清单 P0 报告图集）：care/visit 接入 chooseImage + uniCloud.uploadFile，fileID 落库 reportFileIds（此为对照产品文档最后一处 P0 缺口）
+
 ### 巡检轮次 2 质量修复（2026-10-27）✅
 - [x] 家庭组移除成员闭环：getFamily 返回 member user_id，前端移除按钮接真调用（此前为占位 toast）
 - [x] 登录防爆破限速改为按「账号+IP」锁定（原按出口 IP 会误伤同 IP 多用户，且在全量测试中互扰），新增限速行为测试
