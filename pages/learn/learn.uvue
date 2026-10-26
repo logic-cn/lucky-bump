@@ -1,20 +1,43 @@
 <template>
   <view class="page">
-    <text class="title">知识</text>
-    <text class="desc">本周指南 + 症状百科 + 检查库（docs/03 M2/M3 知识侧）。</text>
-    <text class="todo-note">页面完整交互按 docs/03 对应小节实现中（见 docs/DEV-PROGRESS.md）。</text>
+    <view class="card">
+      <text class="card-title">本周指南</text>
+      <text class="guide" v-if="stage == 'PRECONCEPTION'">备孕小贴士：叶酸每天 0.4mg；规律作息；排卵期前后隔天同房效率更高。焦虑是正常的，记录下来会好一些。</text>
+      <text class="guide" v-else-if="stage == 'T1'">孕早期：继续补充叶酸；孕吐严重（无法进食进水超 12 小时）请就医；11-13+6 周做 NT。此阶段谨遵医嘱用药。</text>
+      <text class="guide" v-else-if="stage == 'T2'">孕中期：20-24 周大排畸；24-28 周糖耐（检查前空腹 8-12 小时）；开始注意补钙补铁；侧睡更舒服。</text>
+      <text class="guide" v-else-if="stage == 'T3'">孕晚期：每天数胎动；34 周起胎心监护；35-37 周 GBS 筛查；核对待产包，记住 5-1-1 就医法则。</text>
+      <text class="guide" v-else-if="stage == 'POSTPARTUM'">产褥期：可以洗头洗澡，房间要通风；恶露一般 2-3 周变淡；情绪起伏很常见，EPDS 自评随时可做；42 天记得复查（妈妈和宝宝都要）。</text>
+      <text class="guide" v-else>育儿期：6 月龄起加辅食（含铁米粉起步，新食物观察 3 天）；按程序接种疫苗；每个宝宝节奏不同，里程碑晚一点不必焦虑。</text>
+    </view>
+    <view class="card">
+      <text class="card-title">红线提醒（出现这些请立即就医）</text>
+      <text class="red">孕期：出血、剧烈腹痛、胎动明显减少、破水、血压 ≥160/110 或伴头痛视物模糊</text>
+      <text class="red">产后：突然大量出血、恶露异味伴发热、伤口红肿渗液</text>
+      <text class="red">宝宝：血便、陶土色大便、精神差拒奶、发热（3 月内）或持续高热、呼吸急促</text>
+    </view>
+    <view class="card">
+      <text class="card-title">本应用不能做什么</text>
+      <text class="gray">幸孕记是健康记录工具，不提供诊断与治疗建议；所有解读均为参考信息；用药请遵说明书与医嘱。</text>
+    </view>
   </view>
 </template>
 
 <script>
+  import { journeyState } from '../../store/journeyStore.uts'
+
   export default {
-    data() { return {} }
+    data() { return {} },
+    computed: {
+      stage(): string { return journeyState.stage }
+    }
   }
 </script>
 
 <style>
-  .page { flex: 1; background-color: #F7F6F4; align-items: center; padding-top: 200rpx; }
-  .title { font-size: 40rpx; font-weight: bold; color: #1F2329; }
-  .desc { font-size: 26rpx; color: #6B7280; margin-top: 24rpx; width: 600rpx; text-align: center; }
-  .todo-note { font-size: 22rpx; color: #A3AAB5; margin-top: 48rpx; width: 600rpx; text-align: center; }
+  .page { flex: 1; background-color: #F7F6F4; padding: 24rpx; align-items: center; }
+  .card { width: 700rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 40rpx; margin-top: 24rpx; }
+  .card-title { font-size: 28rpx; font-weight: bold; color: #1F2329; margin-bottom: 16rpx; }
+  .guide { font-size: 26rpx; color: #6B7280; line-height: 44rpx; }
+  .red { font-size: 24rpx; color: #E5484D; line-height: 44rpx; }
+  .gray { font-size: 24rpx; color: #A3AAB5; line-height: 44rpx; }
 </style>

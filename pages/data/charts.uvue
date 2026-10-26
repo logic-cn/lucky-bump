@@ -1,20 +1,113 @@
 <template>
   <view class="page">
-    <text class="title">指标曲线</text>
-    <text class="desc">lbc-chart-line 曲线（docs/03 M6.1）。</text>
-    <text class="todo-note">页面完整交互按 docs/03 对应小节实现中（见 docs/DEV-PROGRESS.md）。</text>
+    <view class="metrics">
+      <view class="metric" v-for="(m, i) in metricList" :key="i" :class="code == m.value ? 'metric-active' : ''" @click="select(m.value)">
+        <text class="metric-text" :class="code == m.value ? 'metric-text-active' : ''">{{ m.label }}</text>
+      </view>
+    </view>
+
+    <view class="card" v-if="points.length == 0">
+      <text class="empty">还没有 {{ metricLabel }} 记录</text>
+      <text class="hint">去"记录"页添加第一条吧</text>
+    </view>
+
+    <!-- 简易条形趋势图（UTS 自绘，V1.1 换 lbc-chart-line 折线） -->
+    <view class="card" v-if="points.length > 0">
+      <text class="card-title">{{ metricLabel }} · 最近 {{ points.length }} 条</text>
+      <view class="chart">
+        <view class="bar-col" v-for="(p, i) in points" :key="i">
+          <view class="bar" :style="{ height: barHeight(p.y) + 'rpx' }" />
+          <text class="bar-date">{{ p.date.slice(5) }}</text>
+          <text class="bar-val">{{ p.y }}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="card" v-if="points.length > 0">
+      <text class="card-title">记录明细</text>
+      <view class="d-row" v-for="(p, i) in points" :key="i">
+        <text class="d-date">{{ p.date }}</text>
+        <text class="d-val">{{ p.display }}</text>
+      </view>
+    </view>
   </view>
 </template>
 
 <script>
+  import { luckyData } from '../../utils/request.uts'
+  import { journeyState } from '../../store/journeyStore.uts'
+
+  type MOpt = { value: string, label: string }
+  type Pt = { date: string, y: number, display: string }
+
   export default {
-    data() { return {} }
+    data() {
+      return {
+        code: 'weight',
+        metricList: [
+          { value: 'weight', label: '体重' },
+          { value: 'blood_pressure', label: '血压' },
+          { value: 'blood_glucose', label: '血糖' },
+          { value: 'fetal_movement', label: '胎动' },
+          { value: 'mood', label: '情绪' }
+        ] as MOpt[],
+        points: [] as Pt[]
+      }
+    },
+    computed: {
+      metricLabel(): string {
+        for (let i = 0; i < this.metricList.length; i++) { if (this.metricList[i].value == this.code) return this.metricList[i].label }
+        return ''
+      },
+      maxVal(): number {
+        let mx = 1
+        for (let i = 0; i < this.points.length; i++) { if (this.points[i].y > mx) mx = this.points[i].y }
+        return mx
+      }
+    },
+    onLoad() { this.load() },
+    methods: {
+      select(c: string) { this.code = c; this.load() },
+      barHeight(y: number): number { return Math.max(12, Math.round(y / this.maxVal * 160)) },
+      async load() {
+        try {
+          const res = await luckyData('series', { journeyId: journeyState.journeyId, code: this.code } as UTSJSONObject)
+          const arr = res.getArray('points') ?? []
+          const pts: Pt[] = []
+          for (let i = Math.max(0, arr.length - 14); i < arr.length; i++) {
+            const p = (arr[i] as UTSJSONObject).getJSON('primary')
+            const raw = (arr[i] as UTSJSONObject).getJSON('raw') as UTSJSONObject | null
+            if (p == null) continue
+            const y = (p as UTSJSONObject).getNumber('y') ?? 0
+            let display = `${y}`
+            if (this.code == 'blood_pressure') display = `${y}/${(p as UTSJSONObject).getNumber('y2') ?? ''}`
+            else if (this.code == 'fetal_movement') display = `${(raw as UTSJSONObject | null)?.getNumber('count')?.toInt() ?? y} 次`
+            pts.push({ date: (arr[i] as UTSJSONObject).getString('date') ?? '', y, display })
+          }
+          this.points = pts
+        } catch (e) { /* 忽略 */ }
+      }
+    }
   }
 </script>
 
 <style>
-  .page { flex: 1; background-color: #F7F6F4; align-items: center; padding-top: 200rpx; }
-  .title { font-size: 40rpx; font-weight: bold; color: #1F2329; }
-  .desc { font-size: 26rpx; color: #6B7280; margin-top: 24rpx; width: 600rpx; text-align: center; }
-  .todo-note { font-size: 22rpx; color: #A3AAB5; margin-top: 48rpx; width: 600rpx; text-align: center; }
+  .page { flex: 1; background-color: #F7F6F4; padding: 24rpx; align-items: center; }
+  .metrics { flex-direction: row; flex-wrap: wrap; margin-bottom: 8rpx; }
+  .metric { background-color: #FFFFFF; border-radius: 32rpx; padding: 14rpx 28rpx; margin: 8rpx; }
+  .metric-active { background-color: #FF7A6B; }
+  .metric-text { font-size: 26rpx; color: #6B7280; }
+  .metric-text-active { color: #FFFFFF; font-weight: bold; }
+  .card { width: 700rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 32rpx; margin-top: 16rpx; align-items: center; }
+  .card-title { font-size: 28rpx; font-weight: bold; color: #1F2329; margin-bottom: 20rpx; align-self: flex-start; }
+  .empty { font-size: 28rpx; color: #6B7280; margin-top: 16rpx; }
+  .hint { font-size: 22rpx; color: #A3AAB5; margin-top: 12rpx; }
+  .chart { flex-direction: row; align-items: flex-end; justify-content: space-between; width: 636rpx; height: 240rpx; }
+  .bar-col { align-items: center; width: 80rpx; }
+  .bar { width: 32rpx; background-color: #FF9C90; border-radius: 8rpx 8rpx 0 0; }
+  .bar-date { font-size: 18rpx; color: #A3AAB5; margin-top: 8rpx; }
+  .bar-val { font-size: 18rpx; color: #E85D4E; font-weight: bold; }
+  .d-row { flex-direction: row; width: 636rpx; padding: 12rpx 0; border-bottom-width: 1px; border-bottom-color: #F2F1EF; }
+  .d-date { flex: 1; font-size: 26rpx; color: #A3AAB5; }
+  .d-val { font-size: 26rpx; color: #1F2329; }
 </style>

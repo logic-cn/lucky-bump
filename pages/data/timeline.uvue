@@ -1,20 +1,84 @@
 <template>
   <view class="page">
-    <text class="title">时间线</text>
-    <text class="desc">生命周期时间线（docs/03 M6.2）。</text>
-    <text class="todo-note">页面完整交互按 docs/03 对应小节实现中（见 docs/DEV-PROGRESS.md）。</text>
+    <view class="row" v-for="(e, i) in events" :key="i">
+      <view class="time-col">
+        <text class="time">{{ timeText(e) }}</text>
+        <text class="date">{{ dateText(e) }}</text>
+      </view>
+      <view class="dot-line">
+        <view class="dot" :class="'dot-' + (e.getString('type') ?? 'metric')" />
+        <view class="line" v-if="i < events.length - 1" />
+      </view>
+      <text class="content">{{ contentText(e) }}</text>
+    </view>
+    <view class="card" v-if="events.length == 0">
+      <text class="empty">时间线还是空的</text>
+      <text class="hint">每一条记录，都会长成回忆</text>
+    </view>
   </view>
 </template>
 
 <script>
+  import { luckyData } from '../../utils/request.uts'
+  import { journeyState } from '../../store/journeyStore.uts'
+
+  const CODE_TEXT: Map<string, string> = new Map([
+    ['weight', '记录了体重'], ['blood_pressure', '记录了血压'], ['blood_glucose', '记录了血糖'],
+    ['symptom', '记录了症状'], ['mood', '记录了心情'], ['fetal_movement', '数了胎动'],
+    ['lochia', '记录了恶露'], ['kegel', '盆底肌训练'],
+    ['period_start', '🌸 经期开始'], ['period_end', '经期结束'],
+    ['ovulation_test', '🧪 排卵试纸'], ['bbt', '🌡 基础体温'], ['intercourse', '💗 同房'], ['pregnancy_test', '🤰 验孕'],
+    ['visit', '🏥 产检'], ['prenatal_visit', '🏥 产检'], ['head_up', '👶 学会了抬头'], ['roll_over', '👶 学会了翻身']
+  ])
+
   export default {
-    data() { return {} }
+    data() {
+      return { events: [] as UTSJSONObject[] }
+    },
+    onLoad() { this.load() },
+    methods: {
+      async load() {
+        try {
+          const res = await luckyData('timeline', { journeyId: journeyState.journeyId, limit: 80 } as UTSJSONObject)
+          // strict 敏感记录（同房/量表）在非 owner 视角由服务端过滤；owner 视角本地脱敏显示
+          this.events = res.getArray('events') ?? []
+        } catch (e) { /* 忽略 */ }
+      },
+      timeText(e: UTSJSONObject): string {
+        const ts = e.getNumber('ts') ?? 0
+        const d = new Date(ts)
+        const hh = d.getHours() < 10 ? '0' + d.getHours() : '' + d.getHours()
+        const mm = d.getMinutes() < 10 ? '0' + d.getMinutes() : '' + d.getMinutes()
+        return `${hh}:${mm}`
+      },
+      dateText(e: UTSJSONObject): string {
+        const ts = e.getNumber('ts') ?? 0
+        return new Date(ts).toISOString().slice(5, 10)
+      },
+      contentText(e: UTSJSONObject): string {
+        const code = e.getString('code') ?? ''
+        const base = CODE_TEXT.get(code) ?? code
+        if (base.indexOf('🌸') >= 0 || base.indexOf('🤰') >= 0 || base.indexOf('👶') >= 0 || base.indexOf('🏥') >= 0) return base
+        return base
+      }
+    }
   }
 </script>
 
 <style>
-  .page { flex: 1; background-color: #F7F6F4; align-items: center; padding-top: 200rpx; }
-  .title { font-size: 40rpx; font-weight: bold; color: #1F2329; }
-  .desc { font-size: 26rpx; color: #6B7280; margin-top: 24rpx; width: 600rpx; text-align: center; }
-  .todo-note { font-size: 22rpx; color: #A3AAB5; margin-top: 48rpx; width: 600rpx; text-align: center; }
+  .page { flex: 1; background-color: #F7F6F4; padding: 24rpx; align-items: center; }
+  .row { width: 700rpx; flex-direction: row; }
+  .time-col { width: 110rpx; align-items: flex-start; padding-top: 8rpx; }
+  .time { font-size: 24rpx; color: #1F2329; font-weight: bold; }
+  .date { font-size: 20rpx; color: #A3AAB5; margin-top: 4rpx; }
+  .dot-line { align-items: center; margin: 0 16rpx; }
+  .dot { width: 16rpx; height: 16rpx; border-radius: 8rpx; background-color: #FF7A6B; }
+  .dot-cycle { background-color: #F5A623; }
+  .dot-visit { background-color: #6BA3FF; }
+  .dot-milestone { background-color: #4CAF7D; }
+  .line { width: 2px; height: 64rpx; background-color: #EDEBE8; }
+  .content { flex: 1; font-size: 26rpx; color: #1F2329; padding-bottom: 32rpx; }
+  .card { width: 700rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 40rpx; margin-top: 40rpx; align-items: center; }
+  .empty { font-size: 28rpx; color: #6B7280; }
+  .hint { font-size: 22rpx; color: #A3AAB5; margin-top: 12rpx; }
 </style>

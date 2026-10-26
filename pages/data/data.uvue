@@ -1,20 +1,56 @@
 <template>
   <view class="page">
     <text class="title">数据</text>
-    <text class="desc">Tab：指标入口 + 时间线入口（docs/03 M6）。</text>
-    <text class="todo-note">页面完整交互按 docs/03 对应小节实现中（见 docs/DEV-PROGRESS.md）。</text>
+    <view class="nav-card">
+      <view class="nav-row" @click="go('/pages/data/charts')">
+        <text class="nav-icon">📈</text>
+        <view class="nav-body"><text class="nav-text">指标曲线</text><text class="nav-sub">体重 / 血压 / 血糖 / 胎动趋势</text></view>
+        <text class="nav-arrow">›</text>
+      </view>
+      <view class="nav-row" @click="go('/pages/data/timeline')">
+        <text class="nav-icon">🕰</text>
+        <view class="nav-body"><text class="nav-text">生命时间线</text><text class="nav-sub">从备孕到育儿的所有记录</text></view>
+        <text class="nav-arrow">›</text>
+      </view>
+      <view class="nav-row" @click="goExport">
+        <text class="nav-icon">📦</text>
+        <view class="nav-body"><text class="nav-text">导出我的数据</text><text class="nav-sub">数据属于你，随时带走</text></view>
+        <text class="nav-arrow">›</text>
+      </view>
+    </view>
+    <text class="foot">记录的意义，是看见时间里的变化</text>
   </view>
 </template>
 
 <script>
+  import { luckyData } from '../../utils/request.uts'
+  import { journeyState } from '../../store/journeyStore.uts'
+
   export default {
-    data() { return {} }
+    data() { return {} },
+    methods: {
+      go(url: string) { uni.navigateTo({ url }) },
+      async goExport() {
+        try {
+          await luckyData('exportAll', { journeyId: journeyState.journeyId } as UTSJSONObject)
+          uni.showModal({ title: '导出成功', content: '数据包已生成。V1.1 将支持打包下载到本机与网盘（当前可在云函数控制台获取）。', showCancel: false })
+        } catch (e) {
+          uni.showToast({ title: (e as Error).message, icon: 'none' })
+        }
+      }
+    }
   }
 </script>
 
 <style>
-  .page { flex: 1; background-color: #F7F6F4; align-items: center; padding-top: 200rpx; }
-  .title { font-size: 40rpx; font-weight: bold; color: #1F2329; }
-  .desc { font-size: 26rpx; color: #6B7280; margin-top: 24rpx; width: 600rpx; text-align: center; }
-  .todo-note { font-size: 22rpx; color: #A3AAB5; margin-top: 48rpx; width: 600rpx; text-align: center; }
+  .page { flex: 1; background-color: #F7F6F4; padding: 24rpx; align-items: center; }
+  .title { font-size: 40rpx; font-weight: bold; color: #1F2329; align-self: flex-start; margin: 16rpx 0 24rpx 16rpx; }
+  .nav-card { width: 700rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 8rpx 32rpx; }
+  .nav-row { flex-direction: row; align-items: center; padding: 28rpx 0; border-bottom-width: 1px; border-bottom-color: #F2F1EF; }
+  .nav-icon { font-size: 40rpx; margin-right: 20rpx; }
+  .nav-body { flex: 1; }
+  .nav-text { font-size: 30rpx; color: #1F2329; }
+  .nav-sub { font-size: 22rpx; color: #A3AAB5; margin-top: 4rpx; }
+  .nav-arrow { font-size: 36rpx; color: #C9CDD4; }
+  .foot { font-size: 22rpx; color: #A3AAB5; margin-top: 64rpx; }
 </style>
