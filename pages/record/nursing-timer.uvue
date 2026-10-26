@@ -1,0 +1,118 @@
+<template>
+  <view class="page">
+    <view class="hero">
+      <text class="timer-text">{{ running ? display : '亲喂' }}</text>
+      <text class="hint" v-if="running">当前：{{ side == 'left' ? '左侧' : '右侧' }} · 记得换边哦</text>
+      <text class="hint" v-else>选择侧别开始计时，睡意朦胧也能 3 秒完成</text>
+    </view>
+    <view class="side-row" v-if="!running">
+      <view class="side-btn" @click="start('left')"><text class="side-text">左侧开始</text></view>
+      <view class="side-btn" @click="start('right')"><text class="side-text">右侧开始</text></view>
+    </view>
+    <view class="big-btn" v-if="running" @click="stop"><text class="big-btn-text">结束本次</text></view>
+
+    <view class="card" v-if="hint.length > 0">
+      <text class="hint-strong">💡 {{ hint }}</text>
+    </view>
+
+    <view class="card" v-if="recent.length > 0">
+      <text class="card-title">最近亲喂</text>
+      <view class="row" v-for="(r, i) in recent" :key="i">
+        <text class="row-time">{{ r.time }}</text>
+        <text class="row-dur">{{ r.sideText }} · {{ r.dur }}</text>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script>
+  import { luckyRecord } from '../../utils/request.uts'
+  import { journeyState } from '../../store/journeyStore.uts'
+
+  type Row = { time: string, dur: string, sideText: string }
+
+  export default {
+    data() {
+      return {
+        running: false, side: '', sessionId: '', startedAt: 0, now: 0,
+        hint: '', recent: [] as Row[]
+      }
+    },
+    computed: {
+      display(): string {
+        const s = Math.floor((this.now - this.startedAt) / 1000)
+        const m = Math.floor(s / 60), sec = s % 60
+        return `${m < 10 ? '0' + m : m}:${sec < 10 ? '0' + sec : sec}`
+      }
+    },
+    onUnload() { if (this.running) clearInterval(this._timer) },
+    onLoad() { this.load() },
+    methods: {
+      async load() {
+        try {
+          const res = await luckyRecord('listTrackers', { journeyId: journeyState.journeyId, type: 'nursing' } as UTSJSONObject)
+          const arr = res.getArray('sessions') ?? []
+          const rows: Row[] = []
+          for (let i = 0; i < arr.length && i < 8; i++) {
+            const s = arr[i] as UTSJSONObject
+            const startedAt = (s.getNumber('started_at') ?? 0)
+            const endedAt = (s.getNumber('ended_at') ?? 0)
+            if (endedAt <= 0) continue
+            const side = s.getString('side') ?? ''
+            const sec = Math.floor((endedAt - startedAt) / 1000)
+            rows.push({
+              time: this.timeStr(startedAt),
+              dur: `${Math.floor(sec / 60)} 分 ${sec % 60} 秒`,
+              sideText: side == 'left' ? '左侧' : (side == 'right' ? '右侧' : '')
+            })
+          }
+          this.recent = rows
+        } catch (e) { /* 首次无数据 */ }
+      },
+      timeStr(ts: number): string {
+        const d = new Date(ts)
+        const hh = d.getHours() < 10 ? '0' + d.getHours() : '' + d.getHours()
+        const mm = d.getMinutes() < 10 ? '0' + d.getMinutes() : '' + d.getMinutes()
+        return `${hh}:${mm}`
+      },
+      async start(side: string) {
+        try {
+          const res = await luckyRecord('startTracker', { journeyId: journeyState.journeyId, type: 'nursing', side } as UTSJSONObject)
+          this.sessionId = res.getString('sessionId') ?? ''
+          this.startedAt = (res.getNumber('startedAt') ?? Date.now())
+          this.side = side
+          this.running = true
+          this._timer = setInterval(() => { this.now = Date.now() }, 500)
+        } catch (e) { uni.showToast({ title: (e as Error).message, icon: 'none' }) }
+      },
+      async stop() {
+        clearInterval(this._timer)
+        this.running = false
+        try {
+          const res = await luckyRecord('stopTracker', { journeyId: journeyState.journeyId, sessionId: this.sessionId } as UTSJSONObject)
+          this.hint = res.getString('hint') ?? ''
+          uni.showToast({ title: '已记录 ✓', icon: 'success' })
+          this.load()
+        } catch (e) { uni.showToast({ title: (e as Error).message, icon: 'none' }) }
+      }
+    }
+  }
+</script>
+
+<style>
+  .page { flex: 1; background-color: #F7F6F4; padding: 24rpx; align-items: center; }
+  .hero { align-items: center; margin-top: 40rpx; }
+  .timer-text { font-size: 96rpx; font-weight: bold; color: #1F2329; }
+  .hint { font-size: 24rpx; color: #A3AAB5; margin-top: 16rpx; }
+  .side-row { flex-direction: row; margin: 40rpx 0; }
+  .side-btn { width: 280rpx; height: 280rpx; border-radius: 140rpx; background-color: #FF7A6B; align-items: center; justify-content: center; margin: 0 20rpx; }
+  .side-text { font-size: 36rpx; font-weight: bold; color: #FFFFFF; }
+  .big-btn { width: 320rpx; height: 320rpx; border-radius: 160rpx; background-color: #E5484D; align-items: center; justify-content: center; margin: 40rpx 0; }
+  .big-btn-text { font-size: 40rpx; font-weight: bold; color: #FFFFFF; }
+  .card { width: 700rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 32rpx; margin-top: 16rpx; }
+  .card-title { font-size: 28rpx; font-weight: bold; color: #1F2329; margin-bottom: 16rpx; }
+  .row { flex-direction: row; padding: 12rpx 0; }
+  .row-time { width: 140rpx; font-size: 26rpx; color: #A3AAB5; }
+  .row-dur { font-size: 26rpx; color: #1F2329; }
+  .hint-strong { font-size: 26rpx; color: #E5A023; }
+</style>
