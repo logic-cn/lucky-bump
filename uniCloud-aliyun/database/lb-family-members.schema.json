@@ -1,0 +1,40 @@
+{
+  "required": [
+    "family_id",
+    "user_id",
+    "role"
+  ],
+  "properties": {
+    "family_id": {
+      "bsonType": "string",
+      "title": "家庭"
+    },
+    "user_id": {
+      "bsonType": "string",
+      "title": "成员"
+    },
+    "role": {
+      "bsonType": "string",
+      "title": "角色",
+      "enum": [
+        "admin",
+        "recorder",
+        "viewer"
+      ]
+    },
+    "nickname": {
+      "bsonType": "string",
+      "title": "昵称"
+    },
+    "joined_at": {
+      "bsonType": "long",
+      "title": "加入时间"
+    }
+  },
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  }
+}

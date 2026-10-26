@@ -1,0 +1,59 @@
+{
+  "required": [
+    "user_id",
+    "journey_id",
+    "baby_id",
+    "mode",
+    "ts"
+  ],
+  "properties": {
+    "user_id": {
+      "bsonType": "string",
+      "title": "用户"
+    },
+    "journey_id": {
+      "bsonType": "string",
+      "title": "旅程"
+    },
+    "baby_id": {
+      "bsonType": "string",
+      "title": "宝宝"
+    },
+    "mode": {
+      "bsonType": "string",
+      "title": "方式",
+      "enum": [
+        "nursing",
+        "breastmilk_bottle",
+        "formula",
+        "mixed"
+      ]
+    },
+    "side": {
+      "bsonType": "string",
+      "title": "侧别"
+    },
+    "ml": {
+      "bsonType": "int",
+      "title": "奶量"
+    },
+    "duration_sec": {
+      "bsonType": "int",
+      "title": "时长秒"
+    },
+    "date": {
+      "bsonType": "string",
+      "title": "日期"
+    },
+    "ts": {
+      "bsonType": "long",
+      "title": "时间"
+    }
+  },
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  }
+}

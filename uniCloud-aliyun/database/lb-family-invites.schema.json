@@ -1,0 +1,38 @@
+{
+  "required": [
+    "code",
+    "family_id"
+  ],
+  "properties": {
+    "code": {
+      "bsonType": "string",
+      "title": "邀请码"
+    },
+    "family_id": {
+      "bsonType": "string",
+      "title": "家庭"
+    },
+    "journey_id": {
+      "bsonType": "string",
+      "title": "旅程"
+    },
+    "role": {
+      "bsonType": "string",
+      "title": "受邀角色"
+    },
+    "used": {
+      "bsonType": "bool",
+      "title": "已使用"
+    },
+    "expires_at": {
+      "bsonType": "long",
+      "title": "过期时间"
+    }
+  },
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  }
+}

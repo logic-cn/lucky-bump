@@ -1,0 +1,55 @@
+{
+  "required": [
+    "user_id",
+    "journey_id",
+    "baby_id",
+    "dim",
+    "code"
+  ],
+  "properties": {
+    "user_id": {
+      "bsonType": "string",
+      "title": "用户"
+    },
+    "journey_id": {
+      "bsonType": "string",
+      "title": "旅程"
+    },
+    "baby_id": {
+      "bsonType": "string",
+      "title": "宝宝"
+    },
+    "dim": {
+      "bsonType": "string",
+      "title": "维度",
+      "enum": [
+        "gross",
+        "fine",
+        "language",
+        "social"
+      ]
+    },
+    "code": {
+      "bsonType": "string",
+      "title": "里程碑码"
+    },
+    "achieved_date": {
+      "bsonType": "long",
+      "title": "达成日"
+    },
+    "note": {
+      "bsonType": "string",
+      "title": "备注"
+    },
+    "media_ids": {
+      "bsonType": "array",
+      "title": "媒体"
+    }
+  },
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  }
+}

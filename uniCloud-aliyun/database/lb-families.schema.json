@@ -1,0 +1,34 @@
+{
+  "required": [
+    "journey_id",
+    "owner_id"
+  ],
+  "properties": {
+    "journey_id": {
+      "bsonType": "string",
+      "title": "旅程"
+    },
+    "owner_id": {
+      "bsonType": "string",
+      "title": "管理员(妈妈)"
+    },
+    "name": {
+      "bsonType": "string",
+      "title": "家庭名"
+    },
+    "matrix": {
+      "bsonType": "object",
+      "title": "数据组授权矩阵"
+    },
+    "created_at": {
+      "bsonType": "long",
+      "title": "创建时间"
+    }
+  },
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  }
+}

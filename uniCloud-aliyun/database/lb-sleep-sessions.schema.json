@@ -1,0 +1,57 @@
+{
+  "required": [
+    "user_id",
+    "journey_id",
+    "baby_id",
+    "start_ts",
+    "end_ts"
+  ],
+  "properties": {
+    "user_id": {
+      "bsonType": "string",
+      "title": "用户"
+    },
+    "journey_id": {
+      "bsonType": "string",
+      "title": "旅程"
+    },
+    "baby_id": {
+      "bsonType": "string",
+      "title": "宝宝"
+    },
+    "kind": {
+      "bsonType": "string",
+      "title": "类型",
+      "enum": [
+        "night",
+        "nap"
+      ]
+    },
+    "start_ts": {
+      "bsonType": "long",
+      "title": "入睡"
+    },
+    "end_ts": {
+      "bsonType": "long",
+      "title": "醒来"
+    },
+    "duration_min": {
+      "bsonType": "int",
+      "title": "时长分"
+    },
+    "night_wakings": {
+      "bsonType": "int",
+      "title": "夜醒次数"
+    },
+    "date": {
+      "bsonType": "string",
+      "title": "归属日期"
+    }
+  },
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  }
+}

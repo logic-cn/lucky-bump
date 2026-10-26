@@ -1,0 +1,60 @@
+{
+  "required": [
+    "journey_id",
+    "user_id",
+    "birth_date"
+  ],
+  "properties": {
+    "journey_id": {
+      "bsonType": "string",
+      "title": "旅程"
+    },
+    "user_id": {
+      "bsonType": "string",
+      "title": "用户"
+    },
+    "nickname": {
+      "bsonType": "string",
+      "title": "小名"
+    },
+    "sex": {
+      "bsonType": "string",
+      "title": "性别",
+      "enum": [
+        "male",
+        "female",
+        "unknown"
+      ]
+    },
+    "birth_date": {
+      "bsonType": "long",
+      "title": "出生日期"
+    },
+    "birth_weight_g": {
+      "bsonType": "int",
+      "title": "出生体重g"
+    },
+    "birth_length_cm": {
+      "bsonType": "double",
+      "title": "出生身长cm"
+    },
+    "delivery_mode": {
+      "bsonType": "string",
+      "title": "分娩方式"
+    },
+    "hospital": {
+      "bsonType": "string",
+      "title": "出生医院"
+    },
+    "created_at": {
+      "bsonType": "long",
+      "title": "创建时间"
+    }
+  },
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  }
+}

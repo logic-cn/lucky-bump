@@ -1,0 +1,67 @@
+{
+  "required": [
+    "user_id",
+    "journey_id",
+    "kind",
+    "plan_date"
+  ],
+  "properties": {
+    "user_id": {
+      "bsonType": "string",
+      "title": "用户"
+    },
+    "journey_id": {
+      "bsonType": "string",
+      "title": "旅程"
+    },
+    "kind": {
+      "bsonType": "string",
+      "title": "类型",
+      "enum": [
+        "prenatal",
+        "prenatal_custom",
+        "checkup",
+        "vaccine"
+      ]
+    },
+    "week": {
+      "bsonType": "int",
+      "title": "建议孕周"
+    },
+    "plan_date": {
+      "bsonType": "long",
+      "title": "计划日期"
+    },
+    "title": {
+      "bsonType": "string",
+      "title": "标题"
+    },
+    "items": {
+      "bsonType": "array",
+      "title": "项目清单"
+    },
+    "prep": {
+      "bsonType": "string",
+      "title": "准备提醒"
+    },
+    "status": {
+      "bsonType": "string",
+      "title": "状态",
+      "enum": [
+        "upcoming",
+        "done",
+        "skipped"
+      ]
+    },
+    "note": {
+      "bsonType": "string",
+      "title": "备注"
+    }
+  },
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  }
+}

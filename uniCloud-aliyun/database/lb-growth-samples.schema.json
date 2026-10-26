@@ -1,0 +1,61 @@
+{
+  "required": [
+    "user_id",
+    "journey_id",
+    "baby_id",
+    "measure_date"
+  ],
+  "properties": {
+    "user_id": {
+      "bsonType": "string",
+      "title": "用户"
+    },
+    "journey_id": {
+      "bsonType": "string",
+      "title": "旅程"
+    },
+    "baby_id": {
+      "bsonType": "string",
+      "title": "宝宝"
+    },
+    "measure_date": {
+      "bsonType": "long",
+      "title": "测量日"
+    },
+    "month_age": {
+      "bsonType": "int",
+      "title": "月龄"
+    },
+    "corrected": {
+      "bsonType": "bool",
+      "title": "矫正月龄"
+    },
+    "weight_kg": {
+      "bsonType": "double",
+      "title": "体重"
+    },
+    "height_cm": {
+      "bsonType": "double",
+      "title": "身高"
+    },
+    "head_cm": {
+      "bsonType": "double",
+      "title": "头围"
+    },
+    "source": {
+      "bsonType": "string",
+      "title": "来源",
+      "enum": [
+        "manual",
+        "checkup",
+        "ai_scan"
+      ]
+    }
+  },
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  }
+}

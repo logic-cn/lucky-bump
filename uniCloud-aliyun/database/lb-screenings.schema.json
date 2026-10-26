@@ -1,0 +1,51 @@
+{
+  "required": [
+    "user_id",
+    "journey_id",
+    "type",
+    "score"
+  ],
+  "properties": {
+    "user_id": {
+      "bsonType": "string",
+      "title": "用户(仅本人)"
+    },
+    "journey_id": {
+      "bsonType": "string",
+      "title": "旅程"
+    },
+    "type": {
+      "bsonType": "string",
+      "title": "量表",
+      "enum": [
+        "epds"
+      ]
+    },
+    "answers": {
+      "bsonType": "array",
+      "title": "答案"
+    },
+    "score": {
+      "bsonType": "int",
+      "title": "总分"
+    },
+    "self_harm": {
+      "bsonType": "bool",
+      "title": "第10题>0"
+    },
+    "ts": {
+      "bsonType": "long",
+      "title": "时间"
+    },
+    "sensitivity": {
+      "bsonType": "string",
+      "title": "敏感级(strict)"
+    }
+  },
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  }
+}

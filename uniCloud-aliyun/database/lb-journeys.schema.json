@@ -1,0 +1,110 @@
+{
+  "required": [
+    "user_id",
+    "stage_code"
+  ],
+  "properties": {
+    "user_id": {
+      "bsonType": "string",
+      "title": "所属用户"
+    },
+    "title": {
+      "bsonType": "string",
+      "title": "旅程名"
+    },
+    "stage_code": {
+      "bsonType": "string",
+      "title": "阶段",
+      "enum": [
+        "PRECONCEPTION",
+        "PREGNANT",
+        "POSTPARTUM",
+        "MOURNING",
+        "ARCHIVED"
+      ]
+    },
+    "lmp_date": {
+      "bsonType": "long",
+      "title": "末次月经锚点(UTC正午)"
+    },
+    "edd": {
+      "bsonType": "long",
+      "title": "预产期锚点"
+    },
+    "edd_source": {
+      "bsonType": "string",
+      "title": "预产期来源",
+      "enum": [
+        "LMP",
+        "OVULATION",
+        "IVF_D3",
+        "IVF_D5",
+        "USER",
+        "ULTRASOUND"
+      ]
+    },
+    "ultrasound_locked": {
+      "bsonType": "bool",
+      "title": "已做孕早期B超校正"
+    },
+    "fetus_count": {
+      "bsonType": "int",
+      "title": "胎数"
+    },
+    "high_risk": {
+      "bsonType": "bool",
+      "title": "高危妊娠"
+    },
+    "delivery_date": {
+      "bsonType": "long",
+      "title": "分娩日期"
+    },
+    "delivery_mode": {
+      "bsonType": "string",
+      "title": "分娩方式",
+      "enum": [
+        "vaginal",
+        "c_section",
+        "assisted"
+      ]
+    },
+    "delivery_hospital": {
+      "bsonType": "string",
+      "title": "分娩医院"
+    },
+    "baby_ids": {
+      "bsonType": "array",
+      "title": "宝宝ID列表"
+    },
+    "mourning_since": {
+      "bsonType": "long",
+      "title": "哀伤模式开始时间"
+    },
+    "mourning_reason": {
+      "bsonType": "string",
+      "title": "哀伤原因(仅本人)"
+    },
+    "from_journey_id": {
+      "bsonType": "string",
+      "title": "来源旅程(再备孕关联)"
+    },
+    "confirmed_at": {
+      "bsonType": "long",
+      "title": "好孕确认时间"
+    },
+    "created_at": {
+      "bsonType": "long",
+      "title": "创建时间"
+    },
+    "updated_at": {
+      "bsonType": "long",
+      "title": "更新时间"
+    }
+  },
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  }
+}

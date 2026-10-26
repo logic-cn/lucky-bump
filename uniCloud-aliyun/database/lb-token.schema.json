@@ -1,0 +1,30 @@
+{
+  "required": [
+    "jti",
+    "uid"
+  ],
+  "properties": {
+    "jti": {
+      "bsonType": "string",
+      "title": "token唯一ID"
+    },
+    "uid": {
+      "bsonType": "string",
+      "title": "用户ID"
+    },
+    "tokenExpired": {
+      "bsonType": "long",
+      "title": "过期时间"
+    },
+    "revoked": {
+      "bsonType": "bool",
+      "title": "已吊销"
+    }
+  },
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  }
+}

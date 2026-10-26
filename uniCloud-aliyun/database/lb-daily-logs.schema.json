@@ -1,0 +1,48 @@
+{
+  "required": [
+    "user_id",
+    "journey_id",
+    "code",
+    "ts"
+  ],
+  "properties": {
+    "user_id": {
+      "bsonType": "string",
+      "title": "用户"
+    },
+    "journey_id": {
+      "bsonType": "string",
+      "title": "旅程"
+    },
+    "code": {
+      "bsonType": "string",
+      "title": "指标码"
+    },
+    "value": {
+      "bsonType": "object",
+      "title": "指标值(白名单结构)"
+    },
+    "date": {
+      "bsonType": "string",
+      "title": "日期"
+    },
+    "ts": {
+      "bsonType": "long",
+      "title": "时间戳"
+    },
+    "stage_snapshot": {
+      "bsonType": "string",
+      "title": "孕周快照"
+    },
+    "sensitivity": {
+      "bsonType": "string",
+      "title": "敏感级"
+    }
+  },
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  }
+}

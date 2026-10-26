@@ -1,0 +1,70 @@
+{
+  "required": [
+    "user_id",
+    "journey_id",
+    "type",
+    "title"
+  ],
+  "properties": {
+    "user_id": {
+      "bsonType": "string",
+      "title": "用户"
+    },
+    "journey_id": {
+      "bsonType": "string",
+      "title": "旅程"
+    },
+    "type": {
+      "bsonType": "string",
+      "title": "规则类型",
+      "enum": [
+        "absolute",
+        "by_week",
+        "by_month",
+        "recurring"
+      ]
+    },
+    "title": {
+      "bsonType": "string",
+      "title": "标题"
+    },
+    "anchor_date": {
+      "bsonType": "string",
+      "title": "锚点日期"
+    },
+    "week": {
+      "bsonType": "int",
+      "title": "孕周"
+    },
+    "month": {
+      "bsonType": "int",
+      "title": "月龄"
+    },
+    "interval_days": {
+      "bsonType": "int",
+      "title": "重复间隔天"
+    },
+    "lead_days": {
+      "bsonType": "int",
+      "title": "提前天数"
+    },
+    "urgent": {
+      "bsonType": "bool",
+      "title": "可突破免打扰"
+    },
+    "enabled": {
+      "bsonType": "bool",
+      "title": "启用"
+    },
+    "last_fired": {
+      "bsonType": "long",
+      "title": "上次触发"
+    }
+  },
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  }
+}

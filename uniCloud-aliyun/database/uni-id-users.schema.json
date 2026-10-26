@@ -1,0 +1,61 @@
+{
+  "required": [
+    "username"
+  ],
+  "properties": {
+    "username": {
+      "bsonType": "string",
+      "title": "用户名"
+    },
+    "password": {
+      "bsonType": "string",
+      "title": "密码哈希(s2$)"
+    },
+    "nickname": {
+      "bsonType": "string",
+      "title": "昵称"
+    },
+    "avatar": {
+      "bsonType": "string",
+      "title": "头像"
+    },
+    "heightCm": {
+      "bsonType": "double",
+      "title": "身高cm"
+    },
+    "prePregnancyWeightKg": {
+      "bsonType": "double",
+      "title": "孕前体重kg"
+    },
+    "birthYear": {
+      "bsonType": "int",
+      "title": "出生年份"
+    },
+    "role": {
+      "bsonType": "array",
+      "title": "角色"
+    },
+    "status": {
+      "bsonType": "string",
+      "title": "状态",
+      "enum": [
+        "active",
+        "disabled"
+      ]
+    },
+    "register_date": {
+      "bsonType": "long",
+      "title": "注册时间"
+    },
+    "last_login_date": {
+      "bsonType": "long",
+      "title": "最后登录"
+    }
+  },
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  }
+}

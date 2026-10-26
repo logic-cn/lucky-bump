@@ -1,0 +1,31 @@
+{
+  "required": [
+    "user_id",
+    "journey_id",
+    "start_date"
+  ],
+  "properties": {
+    "user_id": {
+      "bsonType": "string",
+      "title": "用户"
+    },
+    "journey_id": {
+      "bsonType": "string",
+      "title": "旅程"
+    },
+    "start_date": {
+      "bsonType": "long",
+      "title": "周期开始"
+    },
+    "end_date": {
+      "bsonType": "long",
+      "title": "周期结束(0=进行中)"
+    }
+  },
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  }
+}

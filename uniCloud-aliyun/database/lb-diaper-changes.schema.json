@@ -1,0 +1,54 @@
+{
+  "required": [
+    "user_id",
+    "journey_id",
+    "baby_id",
+    "kind",
+    "ts"
+  ],
+  "properties": {
+    "user_id": {
+      "bsonType": "string",
+      "title": "用户"
+    },
+    "journey_id": {
+      "bsonType": "string",
+      "title": "旅程"
+    },
+    "baby_id": {
+      "bsonType": "string",
+      "title": "宝宝"
+    },
+    "kind": {
+      "bsonType": "string",
+      "title": "类型",
+      "enum": [
+        "pee",
+        "poop",
+        "both"
+      ]
+    },
+    "texture": {
+      "bsonType": "string",
+      "title": "性状"
+    },
+    "color": {
+      "bsonType": "string",
+      "title": "颜色"
+    },
+    "date": {
+      "bsonType": "string",
+      "title": "日期"
+    },
+    "ts": {
+      "bsonType": "long",
+      "title": "时间"
+    }
+  },
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "required": [
+    "user_id",
+    "journey_id",
+    "type",
+    "started_at"
+  ],
+  "properties": {
+    "user_id": {
+      "bsonType": "string",
+      "title": "用户"
+    },
+    "journey_id": {
+      "bsonType": "string",
+      "title": "旅程"
+    },
+    "type": {
+      "bsonType": "string",
+      "title": "计时类型",
+      "enum": [
+        "contraction",
+        "nursing",
+        "pumping"
+      ]
+    },
+    "side": {
+      "bsonType": "string",
+      "title": "侧别",
+      "enum": [
+        "left",
+        "right",
+        ""
+      ]
+    },
+    "started_at": {
+      "bsonType": "long",
+      "title": "开始"
+    },
+    "ended_at": {
+      "bsonType": "long",
+      "title": "结束(0=进行中)"
+    },
+    "amount_ml": {
+      "bsonType": "int",
+      "title": "计量ml"
+    }
+  },
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  }
+}

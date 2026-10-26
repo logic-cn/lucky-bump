@@ -1,0 +1,48 @@
+{
+  "required": [
+    "user_id",
+    "journey_id",
+    "name",
+    "ts"
+  ],
+  "properties": {
+    "user_id": {
+      "bsonType": "string",
+      "title": "用户"
+    },
+    "journey_id": {
+      "bsonType": "string",
+      "title": "旅程"
+    },
+    "baby_id": {
+      "bsonType": "string",
+      "title": "宝宝(可空=妈妈)"
+    },
+    "name": {
+      "bsonType": "string",
+      "title": "药名"
+    },
+    "dose": {
+      "bsonType": "string",
+      "title": "剂量(按说明书/医嘱)"
+    },
+    "ts": {
+      "bsonType": "long",
+      "title": "时间"
+    },
+    "date": {
+      "bsonType": "string",
+      "title": "日期"
+    },
+    "note": {
+      "bsonType": "string",
+      "title": "备注"
+    }
+  },
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "required": [
+    "user_id",
+    "journey_id",
+    "visit_ts"
+  ],
+  "properties": {
+    "user_id": {
+      "bsonType": "string",
+      "title": "用户"
+    },
+    "journey_id": {
+      "bsonType": "string",
+      "title": "旅程"
+    },
+    "visit_ts": {
+      "bsonType": "long",
+      "title": "产检日期"
+    },
+    "hospital": {
+      "bsonType": "string",
+      "title": "医院"
+    },
+    "doctor": {
+      "bsonType": "string",
+      "title": "医生"
+    },
+    "week": {
+      "bsonType": "int",
+      "title": "孕周"
+    },
+    "items": {
+      "bsonType": "array",
+      "title": "检查项目与结果"
+    },
+    "cost_yuan": {
+      "bsonType": "double",
+      "title": "费用"
+    },
+    "conclusion": {
+      "bsonType": "string",
+      "title": "结论备注"
+    },
+    "report_file_ids": {
+      "bsonType": "array",
+      "title": "报告fileID"
+    },
+    "sensitivity": {
+      "bsonType": "string",
+      "title": "敏感级(reports)"
+    }
+  },
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  }
+}

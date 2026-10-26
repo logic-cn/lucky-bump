@@ -1,0 +1,61 @@
+{
+  "required": [
+    "user_id",
+    "journey_id",
+    "baby_id",
+    "code",
+    "date"
+  ],
+  "properties": {
+    "user_id": {
+      "bsonType": "string",
+      "title": "用户"
+    },
+    "journey_id": {
+      "bsonType": "string",
+      "title": "旅程"
+    },
+    "baby_id": {
+      "bsonType": "string",
+      "title": "宝宝"
+    },
+    "code": {
+      "bsonType": "string",
+      "title": "疫苗码"
+    },
+    "name": {
+      "bsonType": "string",
+      "title": "疫苗名"
+    },
+    "dose": {
+      "bsonType": "int",
+      "title": "剂次"
+    },
+    "free": {
+      "bsonType": "bool",
+      "title": "免疫规划"
+    },
+    "date": {
+      "bsonType": "long",
+      "title": "接种日"
+    },
+    "lot_no": {
+      "bsonType": "string",
+      "title": "批号"
+    },
+    "site": {
+      "bsonType": "string",
+      "title": "接种点"
+    },
+    "reaction_note": {
+      "bsonType": "string",
+      "title": "反应备注"
+    }
+  },
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  }
+}

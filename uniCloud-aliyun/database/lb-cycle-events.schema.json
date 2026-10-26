@@ -1,0 +1,56 @@
+{
+  "required": [
+    "user_id",
+    "journey_id",
+    "type",
+    "ts"
+  ],
+  "properties": {
+    "user_id": {
+      "bsonType": "string",
+      "title": "用户"
+    },
+    "journey_id": {
+      "bsonType": "string",
+      "title": "旅程"
+    },
+    "type": {
+      "bsonType": "string",
+      "title": "事件类型",
+      "enum": [
+        "period_start",
+        "period_end",
+        "ovulation_test",
+        "bbt",
+        "intercourse",
+        "pregnancy_test"
+      ]
+    },
+    "value": {
+      "bsonType": "object",
+      "title": "事件数据"
+    },
+    "date": {
+      "bsonType": "string",
+      "title": "日期"
+    },
+    "ts": {
+      "bsonType": "long",
+      "title": "时间戳"
+    },
+    "sensitivity": {
+      "bsonType": "string",
+      "title": "敏感级",
+      "enum": [
+        "normal",
+        "strict"
+      ]
+    }
+  },
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  }
+}
