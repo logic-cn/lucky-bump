@@ -59,7 +59,7 @@ module.exports = {
       fam = Object.assign({ _id: r.id })
     }
     const members = await db.call(this).collection('lb-family-members').where({ family_id: fam._id }).get()
-    return auth.ok({ family: fam, members: members.data.map(m => ({ _id: m._id, role: m.role, nickname: m.nickname, joinedAt: m.joined_at, isMe: m.user_id === uid })) })
+    return auth.ok({ family: fam, members: members.data.map(m => ({ _id: m._id, user_id: m.user_id, role: m.role, nickname: m.nickname, joinedAt: m.joined_at, isMe: m.user_id === uid })) })
   },
 
   /** 生成邀请码（默认邀请为记录者/爸爸） */

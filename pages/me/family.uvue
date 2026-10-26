@@ -113,8 +113,13 @@
           title: '移除成员', content: `确定移除「${m.getString('nickname') ?? ''}」吗？`,
           success: async (r) => {
             if (r.confirm) {
-              // 成员移除按 user_id；此处简化以成员 _id 为 key 的后端约定（memberUserId 传 user_id，占位实现）
-              uni.showToast({ title: '请在服务端按用户 ID 移除', icon: 'none' })
+              try {
+                await luckyFamily('removeMember', { journeyId: journeyState.journeyId, memberUserId: m.getString('user_id') ?? '' } as UTSJSONObject)
+                uni.showToast({ title: '已移除', icon: 'success' })
+                this.load()
+              } catch (err) {
+                uni.showToast({ title: (err as Error).message, icon: 'none' })
+              }
             }
           }
         })

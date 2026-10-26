@@ -55,7 +55,9 @@ module.exports = {
   async login(params = {}) {
     const username = String(params.username || '').trim()
     const password = String(params.password || '')
-    if (!auth.rateLimit('login:' + this.getClientInfo().clientIP || 'na', 10, 10 * 60 * 1000)) {
+    // 防爆破：按「账号+IP」限速（锁定的是账号而非整个出口 IP）
+    const rateKey = `login:${username}:${this.getClientInfo().clientIP || 'na'}`
+    if (!auth.rateLimit(rateKey, 10, 10 * 60 * 1000)) {
       return auth.fail('TOO_MANY_REQUESTS', '尝试过于频繁，请稍后再试')
     }
     const res = await db.call(this).collection(usersCol).where({ username }).get()

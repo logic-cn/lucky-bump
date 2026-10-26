@@ -173,3 +173,49 @@ test('周期预测：按周期均值预测排卵与易孕窗口', async () => {
   assert.equal(list2.prediction.basedOn, 'ovulation_test')
   assert.equal(list2.prediction.ovulationDate, '2026-11-07')
 })
+
+test('家庭移除成员：owner 按 user_id 移除后成员消失', async () => {
+  const rt = createRuntime()
+  const momToken = await freshUser(rt, 'mom_rm')
+  const dadToken = await freshUser(rt, 'dad_rm')
+  const mk = await withFixedClock(NOW, () => rt.callObject('lucky-journey', 'createJourney', { mode: 'ttc' }, { token: momToken }))
+  await withFixedClock(NOW, () => rt.callObject('lucky-family', 'getFamily', { journeyId: mk.journeyId }, { token: momToken }))
+  const inv = await withFixedClock(NOW, () => rt.callObject('lucky-family', 'invite', { journeyId: mk.journeyId, role: 'recorder' }, { token: momToken }))
+  await withFixedClock(NOW, () => rt.callObject('lucky-family', 'join', { code: inv.code, nickname: '爸爸' }, { token: dadToken }))
+  const fam = await withFixedClock(NOW, () => rt.callObject('lucky-family', 'getFamily', { journeyId: mk.journeyId }, { token: momToken }))
+  const dad = fam.members.find(m => m.role == 'recorder')
+  assert.ok(dad != null && (dad.user_id ?? '').length > 0, '成员应携带 user_id')
+  const rm = await withFixedClock(NOW, () => rt.callObject('lucky-family', 'removeMember', { journeyId: mk.journeyId, memberUserId: dad.user_id }, { token: momToken }))
+  assert.equal(rm.errCode, 0)
+  const fam2 = await withFixedClock(NOW, () => rt.callObject('lucky-family', 'getFamily', { journeyId: mk.journeyId }, { token: momToken }))
+  assert.equal(fam2.members.length, 1, '移除后仅剩管理员')
+  // 被移除后爸爸丧失写权限
+  const blocked = await withFixedClock(NOW, () => rt.callObject('lucky-record', 'addMetric', { journeyId: mk.journeyId, code: 'weight', value: { kg: 60 } }, { token: dadToken }))
+  assert.equal(blocked.errCode, 'NOT_FOUND', '移除后应失去旅程写权限')
+})
+
+test('部署自检：lucky-seed.verifySeed 模板完整性与密钥告警', async () => {
+  const rt = createRuntime()
+  const seed = await withFixedClock(NOW, () => rt.callObject('lucky-seed', 'verifySeed', {}))
+  assert.equal(seed.errCode, 0)
+  assert.equal(seed.prenatalTemplates, 7)
+  assert.equal(seed.vaccineProgram, 22)
+  assert.equal(seed.epdsItems, 10)
+  assert.equal(seed.milestones, 14)
+  // 开发环境：应存在 tokenSecret 告警（生产配置正式密钥后告警消失，见 docs/08 §4）
+  assert.ok(seed.problems.some(x => String(x).includes('tokenSecret')), '开发默认密钥应触发上线告警')
+})
+
+test('登录限速：同账号连续失败 10 次后锁定', async () => {
+  const rt = createRuntime()
+  const reg = await withFixedClock(NOW, () => rt.callObject('lucky-id', 'register', { username: 'lockme99', password: 'password123' }))
+  assert.equal(reg.errCode, 0)
+  let last = null
+  for (let i = 0; i < 11; i++) {
+    last = await withFixedClock(NOW, () => rt.callObject('lucky-id', 'login', { username: 'lockme99', password: 'wrong-pass-' + i }))
+  }
+  assert.equal(last.errCode, 'TOO_MANY_REQUESTS', '第 11 次应被限速: ' + JSON.stringify(last))
+  // 正确密码也被拒绝（锁定期间）
+  const ok = await withFixedClock(NOW, () => rt.callObject('lucky-id', 'login', { username: 'lockme99', password: 'password123' }))
+  assert.equal(ok.errCode, 'TOO_MANY_REQUESTS')
+})
