@@ -16,12 +16,19 @@ async function requireUser() {
   const v = auth.verifyToken(token)
   return v.ok ? v.uid : null
 }
-async function ownedJourney(uid, journeyId) {
-  const r = await db.call(this).collection('lb-journeys').where({ _id: journeyId, user_id: uid }).get()
-  return r.data[0] || null
+async function accessibleJourney(uid, journeyId, need = 'read') {
+  const { role, journey } = await auth.resolveJourneyAccess(db.call(this), uid, journeyId)
+  if (!role || !journey) return null
+  if (need === 'write' && role === 'viewer') return null
+  return journey
+}
+async function accessRole(uid, journeyId) {
+  const { role } = await auth.resolveJourneyAccess(db.call(this), uid, journeyId)
+  return role
 }
 async function ownedBaby(uid, journeyId, babyId) {
-  const r = await db.call(this).collection('lb-babies').where({ _id: babyId, journey_id: journeyId, user_id: uid }).get()
+  // 旅程访问权已由 accessibleJourney 验证；宝宝按旅程归属校验（家庭成员可读写）
+  const r = await db.call(this).collection('lb-babies').where({ _id: babyId, journey_id: journeyId }).get()
   return r.data[0] || null
 }
 function dateOf(ts) { return new Date(ts).toISOString().slice(0, 10) }
@@ -88,7 +95,7 @@ module.exports = {
   async addFeeding(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await ownedJourney.call(this, uid, params.journeyId)
+    const j = await accessibleJourney.call(this, uid, params.journeyId, 'write')
     if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
     const b = await ownedBaby.call(this, uid, params.journeyId, params.babyId)
     if (!b) return auth.fail('NOT_FOUND', '宝宝不存在')
@@ -109,7 +116,7 @@ module.exports = {
   async addDiaper(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await ownedJourney.call(this, uid, params.journeyId)
+    const j = await accessibleJourney.call(this, uid, params.journeyId, 'write')
     if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
     const b = await ownedBaby.call(this, uid, params.journeyId, params.babyId)
     if (!b) return auth.fail('NOT_FOUND', '宝宝不存在')
@@ -133,7 +140,7 @@ module.exports = {
   async addSleep(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await ownedJourney.call(this, uid, params.journeyId)
+    const j = await accessibleJourney.call(this, uid, params.journeyId, 'write')
     if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
     const b = await ownedBaby.call(this, uid, params.journeyId, params.babyId)
     if (!b) return auth.fail('NOT_FOUND', '宝宝不存在')
@@ -153,14 +160,14 @@ module.exports = {
   async dailySummary(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await ownedJourney.call(this, uid, params.journeyId)
+    const j = await accessibleJourney.call(this, uid, params.journeyId)
     if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
     const b = await ownedBaby.call(this, uid, params.journeyId, params.babyId)
     if (!b) return auth.fail('NOT_FOUND', '宝宝不存在')
     const date = params.date || dateOf(Date.now())
-    const f = await db.call(this).collection('lb-feedings').where({ user_id: uid, baby_id: b._id, date }).get()
-    const d = await db.call(this).collection('lb-diaper-changes').where({ user_id: uid, baby_id: b._id, date }).get()
-    const s = await db.call(this).collection('lb-sleep-sessions').where({ user_id: uid, baby_id: b._id, date }).get()
+    const f = await db.call(this).collection('lb-feedings').where({ baby_id: b._id, date }).get()
+    const d = await db.call(this).collection('lb-diaper-changes').where({ baby_id: b._id, date }).get()
+    const s = await db.call(this).collection('lb-sleep-sessions').where({ baby_id: b._id, date }).get()
     const feedings = f.data
     const totalMl = feedings.reduce((a, x) => a + (x.ml || 0), 0)
     const nursingSec = feedings.filter(x => x.mode === 'nursing').reduce((a, x) => a + (x.duration_sec || 0), 0)
@@ -178,7 +185,7 @@ module.exports = {
   async addGrowth(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await ownedJourney.call(this, uid, params.journeyId)
+    const j = await accessibleJourney.call(this, uid, params.journeyId, 'write')
     if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
     const b = await ownedBaby.call(this, uid, params.journeyId, params.babyId)
     if (!b) return auth.fail('NOT_FOUND', '宝宝不存在')
@@ -213,11 +220,11 @@ module.exports = {
   async getGrowthSeries(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await ownedJourney.call(this, uid, params.journeyId)
+    const j = await accessibleJourney.call(this, uid, params.journeyId)
     if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
     const b = await ownedBaby.call(this, uid, params.journeyId, params.babyId)
     if (!b) return auth.fail('NOT_FOUND', '宝宝不存在')
-    const res = await db.call(this).collection('lb-growth-samples').where({ user_id: uid, baby_id: b._id }).orderBy('measure_date', 'asc').get()
+    const res = await db.call(this).collection('lb-growth-samples').where({ baby_id: b._id }).orderBy('measure_date', 'asc').get()
     return auth.ok({ samples: res.data, sex: b.sex, birthDate: dateOf(b.birth_date) })
   },
 
@@ -225,11 +232,11 @@ module.exports = {
   async getVaccinePlan(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await ownedJourney.call(this, uid, params.journeyId)
+    const j = await accessibleJourney.call(this, uid, params.journeyId)
     if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
     const b = await ownedBaby.call(this, uid, params.journeyId, params.babyId)
     if (!b) return auth.fail('NOT_FOUND', '宝宝不存在')
-    const records = await db.call(this).collection('lb-vaccinations').where({ user_id: uid, baby_id: b._id }).get()
+    const records = await db.call(this).collection('lb-vaccinations').where({ baby_id: b._id }).get()
     const doneMap = new Map(records.data.map(r => [`${r.code}#${r.dose}`, r]))
     const now = Date.now()
     const plan = T.VACCINE_PROGRAM.map(v => {
@@ -244,7 +251,7 @@ module.exports = {
   async recordVaccine(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await ownedJourney.call(this, uid, params.journeyId)
+    const j = await accessibleJourney.call(this, uid, params.journeyId, 'write')
     if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
     const b = await ownedBaby.call(this, uid, params.journeyId, params.babyId)
     if (!b) return auth.fail('NOT_FOUND', '宝宝不存在')
@@ -264,7 +271,7 @@ module.exports = {
   async addMilestone(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await ownedJourney.call(this, uid, params.journeyId)
+    const j = await accessibleJourney.call(this, uid, params.journeyId, 'write')
     if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
     const b = await ownedBaby.call(this, uid, params.journeyId, params.babyId)
     if (!b) return auth.fail('NOT_FOUND', '宝宝不存在')
@@ -282,11 +289,11 @@ module.exports = {
   async listMilestones(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await ownedJourney.call(this, uid, params.journeyId)
+    const j = await accessibleJourney.call(this, uid, params.journeyId)
     if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
     const b = await ownedBaby.call(this, uid, params.journeyId, params.babyId)
     if (!b) return auth.fail('NOT_FOUND', '宝宝不存在')
-    const res = await db.call(this).collection('lb-milestones').where({ user_id: uid, baby_id: b._id }).orderBy('achieved_date', 'asc').get()
+    const res = await db.call(this).collection('lb-milestones').where({ baby_id: b._id }).orderBy('achieved_date', 'asc').get()
     const age = monthAge(b.birth_date, Date.now())
     const catalog = T.MILESTONES.map(m => {
       const done = res.data.find(x => x.code === m.code)
@@ -304,14 +311,14 @@ module.exports = {
   async addFood(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await ownedJourney.call(this, uid, params.journeyId)
+    const j = await accessibleJourney.call(this, uid, params.journeyId, 'write')
     if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
     const b = await ownedBaby.call(this, uid, params.journeyId, params.babyId)
     if (!b) return auth.fail('NOT_FOUND', '宝宝不存在')
     const name = String(params.name || '').trim().slice(0, 20)
     if (!name) return auth.fail('PARAM_ERROR', '食物名称不能为空')
     const ts = params.ts || Date.now()
-    const existing = await db.call(this).collection('lb-food-logs').where({ user_id: uid, baby_id: b._id, name }).orderBy('ts', 'desc').limit(1).get()
+    const existing = await db.call(this).collection('lb-food-logs').where({ baby_id: b._id, name }).orderBy('ts', 'desc').limit(1).get()
     const isFirst = existing.data.length === 0 || (existing.data[0].confirmed_allergy || Date.now() - existing.data[0].ts > 60 * DAY)
     const res = await db.call(this).collection('lb-food-logs').add({
       user_id: uid, journey_id: j._id, baby_id: b._id, name, ts, date: dateOf(ts),
@@ -325,7 +332,9 @@ module.exports = {
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
     const r = await db.call(this).collection('lb-food-logs').doc(String(params.foodLogId)).get()
     const rec = r.data[0]
-    if (!rec || rec.user_id !== uid) return auth.fail('NOT_FOUND', '记录不存在')
+    if (!rec) return auth.fail('NOT_FOUND', '记录不存在')
+    const j = await accessibleJourney.call(this, uid, rec.journey_id, 'write')
+    if (!j) return auth.fail('PERMISSION_DENIED', '无权修改该记录')
     const reaction = ['none', 'rash', 'vomiting', 'diarrhea', 'other'].includes(params.reaction) ? params.reaction : 'none'
     const bad = reaction !== 'none'
     await db.call(this).collection('lb-food-logs').doc(String(params.foodLogId)).update({ reaction, confirmed_allergy: bad, ts: Date.now() })
@@ -335,11 +344,11 @@ module.exports = {
   async foodDashboard(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await ownedJourney.call(this, uid, params.journeyId)
+    const j = await accessibleJourney.call(this, uid, params.journeyId)
     if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
     const b = await ownedBaby.call(this, uid, params.journeyId, params.babyId)
     if (!b) return auth.fail('NOT_FOUND', '宝宝不存在')
-    const res = await db.call(this).collection('lb-food-logs').where({ user_id: uid, baby_id: b._id }).orderBy('ts', 'desc').limit(200).get()
+    const res = await db.call(this).collection('lb-food-logs').where({ baby_id: b._id }).orderBy('ts', 'desc').limit(200).get()
     const allergens = res.data.filter(x => x.confirmed_allergy).map(x => x.name)
     const tried = [...new Set(res.data.map(x => x.name))]
     return auth.ok({ allergens: [...new Set(allergens)], triedFoods: tried, logs: res.data.slice(0, 50) })
@@ -348,7 +357,7 @@ module.exports = {
   async addMedication(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await ownedJourney.call(this, uid, params.journeyId)
+    const j = await accessibleJourney.call(this, uid, params.journeyId, 'write')
     if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
     const b = params.babyId ? await ownedBaby.call(this, uid, params.journeyId, params.babyId) : null
     const name = String(params.name || '').trim().slice(0, 40)

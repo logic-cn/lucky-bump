@@ -91,4 +91,22 @@ function rateLimit(key, max, windowMs, now = Date.now()) {
   return true
 }
 
-module.exports = { createToken, verifyToken, hashPassword, verifyPassword, ok, fail, rateLimit, loadSecret }
+/**
+ * 解析用户对旅程的访问角色：owner(旅程主人/admin) / recorder(可读写) / viewer(只读) / null(无权限)
+ * 家庭组模型见 docs/03 M7.1。journey 记录必须存在。
+ */
+async function resolveJourneyAccess(db, uid, journeyId) {
+  if (!uid || !journeyId) return { role: null }
+  const j = await db.collection('lb-journeys').doc(String(journeyId)).get()
+  const journey = j.data[0]
+  if (!journey) return { role: null }
+  if (journey.user_id === uid) return { role: 'owner', journey }
+  const f = await db.collection('lb-families').where({ journey_id: String(journeyId) }).limit(1).get()
+  if (f.data.length === 0) return { role: null }
+  const m = await db.collection('lb-family-members').where({ family_id: f.data[0]._id, user_id: uid }).limit(1).get()
+  if (m.data.length === 0) return { role: null }
+  const role = m.data[0].role === 'admin' ? 'owner' : m.data[0].role
+  return { role, journey }
+}
+
+module.exports = { createToken, verifyToken, hashPassword, verifyPassword, ok, fail, rateLimit, loadSecret, resolveJourneyAccess }

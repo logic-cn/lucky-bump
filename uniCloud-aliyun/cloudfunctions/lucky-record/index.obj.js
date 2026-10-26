@@ -22,9 +22,15 @@ async function requireUser() {
   const v = auth.verifyToken(token)
   return v.ok ? v.uid : null
 }
-async function ownedJourney(uid, journeyId) {
-  const r = await db.call(this).collection('lb-journeys').where({ _id: journeyId, user_id: uid }).get()
-  return r.data[0] || null
+async function accessibleJourney(uid, journeyId, need = 'read') {
+  const { role, journey } = await auth.resolveJourneyAccess(db.call(this), uid, journeyId)
+  if (!role || !journey) return null
+  if (need === 'write' && role === 'viewer') return null
+  return journey
+}
+async function accessRole(uid, journeyId) {
+  const { role } = await auth.resolveJourneyAccess(db.call(this), uid, journeyId)
+  return role
 }
 function dateOf(ts) { return new Date(ts).toISOString().slice(0, 10) }
 function parseDate(s) {
@@ -37,6 +43,7 @@ function parseDate(s) {
 // redline: 返回 {level:'warn'|'critical', message, action}
 const METRICS = {
   weight: { label: '体重', num: { kg: [30, 300] }, unit: 'kg', sensitivity: 'normal' },
+  fetal_movement: { label: '胎动', num: { count: [0, 500], durationMin: [0, 240] }, optional: ['durationMin'], unit: '次' },
   blood_pressure: {
     label: '血压', num: { sbp: [60, 260], dbp: [30, 160], hr: [30, 220] }, unit: 'mmHg',
     redline(v) {
@@ -77,7 +84,11 @@ function validateMetric(code, value) {
   if (!def) return { error: `未知指标 ${code}` }
   if (def.num) {
     for (const [k, [lo, hi]] of Object.entries(def.num)) {
-      if (value[k] === undefined) { if (k === 'hr' && code === 'blood_pressure') continue; return { error: `缺少字段 ${k}` } }
+      if (value[k] === undefined) {
+        if (def.optional && def.optional.includes(k)) continue
+        if (k === 'hr' && code === 'blood_pressure') continue
+        return { error: `缺少字段 ${k}` }
+      }
       const n = +value[k]
       if (!Number.isFinite(n) || n < lo || n > hi) return { error: `字段 ${k} 超出范围 [${lo}, ${hi}]` }
       value[k] = Math.round(n * 100) / 100
@@ -168,7 +179,7 @@ module.exports = {
   async addMetric(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await ownedJourney.call(this, uid, params.journeyId)
+    const j = await accessibleJourney.call(this, uid, params.journeyId, 'write')
     if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
     const code = params.code
     const v = validateMetric(code, params.value || {})
@@ -195,11 +206,13 @@ module.exports = {
   async listMetrics(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const q = { user_id: uid, journey_id: params.journeyId }
+    const q = { journey_id: params.journeyId }
     if (params.code) q.code = params.code
     let chain = db.call(this).collection(LOGS).where(q).orderBy('ts', 'desc').limit(Math.min(500, +params.limit || 100))
     const res = await chain.get()
     let data = res.data
+    const role = await accessRole.call(this, uid, params.journeyId)
+    if (role !== 'owner') data = data.filter(d => d.sensitivity !== 'strict')
     if (params.from || params.to) {
       const from = params.from ? parseDate(params.from) : 0
       const to = params.to ? parseDate(params.to) + DAY : Infinity
@@ -213,7 +226,7 @@ module.exports = {
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
     const out = {}
     for (const code of params.codes || []) {
-      const r = await db.call(this).collection(LOGS).where({ user_id: uid, journey_id: params.journeyId, code }).orderBy('ts', 'desc').limit(1).get()
+      const r = await db.call(this).collection(LOGS).where({ journey_id: params.journeyId, code }).orderBy('ts', 'desc').limit(1).get()
       out[code] = r.data[0] || null
     }
     return auth.ok({ latest: out })
@@ -223,7 +236,7 @@ module.exports = {
   async addCycleEvent(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await ownedJourney.call(this, uid, params.journeyId)
+    const j = await accessibleJourney.call(this, uid, params.journeyId, 'write')
     if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
     const type = params.type
     if (!['period_start', 'period_end', 'ovulation_test', 'bbt', 'intercourse', 'pregnancy_test'].includes(type)) {
@@ -241,7 +254,7 @@ module.exports = {
       await db.call(this).collection(CYCLES).add({ user_id: uid, journey_id: j._id, start_date: parseDate(doc.date), end_date: 0, created_at: Date.now() })
     }
     if (type === 'period_end') {
-      const openCycles = await db.call(this).collection(CYCLES).where({ user_id: uid, journey_id: j._id, end_date: 0 }).orderBy('start_date', 'desc').limit(1).get()
+      const openCycles = await db.call(this).collection(CYCLES).where({ journey_id: j._id, end_date: 0 }).orderBy('start_date', 'desc').limit(1).get()
       if (openCycles.data[0]) await db.call(this).collection(CYCLES).doc(openCycles.data[0]._id).update({ end_date: parseDate(doc.date) })
     }
     return auth.ok({ recordId: res.id, pregnancyPositive: type === 'pregnancy_test' && value.result !== 'negative' })
@@ -250,16 +263,19 @@ module.exports = {
   async listCycleEvents(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const res = await db.call(this).collection(EVENTS).where({ user_id: uid, journey_id: params.journeyId }).orderBy('ts', 'desc').limit(200).get()
+    const res = await db.call(this).collection(EVENTS).where({ journey_id: params.journeyId }).orderBy('ts', 'desc').limit(200).get()
     const cycles = await db.call(this).collection(CYCLES).where({ user_id: uid, journey_id: params.journeyId }).orderBy('start_date', 'asc').get()
-    return auth.ok({ events: res.data, cycles: cycles.data, prediction: predictCycle(cycles.data, res.data) })
+    const role = await accessRole.call(this, uid, params.journeyId)
+    const events = role === 'owner' ? res.data : res.data.filter(e => e.sensitivity !== 'strict')
+    const ownCycles = role === 'owner' ? cycles.data : cycles.data
+    return auth.ok({ events, cycles: ownCycles, prediction: predictCycle(cycles.data, events) })
   },
 
   /** 计时器开始（宫缩/亲喂/吸奶） */
   async startTracker(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await ownedJourney.call(this, uid, params.journeyId)
+    const j = await accessibleJourney.call(this, uid, params.journeyId, 'write')
     if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
     if (!['contraction', 'nursing', 'pumping'].includes(params.type)) return auth.fail('PARAM_ERROR', 'type 无效')
     const started = params.startedAt || Date.now()
@@ -293,7 +309,7 @@ module.exports = {
   async listTrackers(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const q = { user_id: uid, journey_id: params.journeyId }
+    const q = { journey_id: params.journeyId }
     if (params.type) q.type = params.type
     const res = await db.call(this).collection(TRACKERS).where(q).orderBy('started_at', 'desc').limit(200).get()
     return auth.ok({ sessions: res.data })
@@ -303,7 +319,7 @@ module.exports = {
   async contractionAdvice(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const res = await db.call(this).collection(TRACKERS).where({ user_id: uid, journey_id: params.journeyId, type: 'contraction' }).orderBy('started_at', 'desc').limit(100).get()
+    const res = await db.call(this).collection(TRACKERS).where({ journey_id: params.journeyId, type: 'contraction' }).orderBy('started_at', 'desc').limit(100).get()
     return auth.ok(evaluate511(res.data))
   },
 
@@ -311,7 +327,8 @@ module.exports = {
   async submitEpds(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await ownedJourney.call(this, uid, params.journeyId)
+    const j = await accessibleJourney.call(this, uid, params.journeyId, 'write')
+    if (!j || j.user_id !== uid) return auth.fail('PERMISSION_DENIED', '情绪自评仅本人可用')
     if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
     const s = scoreEpds(params.answers)
     if (!s) return auth.fail('PARAM_ERROR', '答案需为 10 项 0-3 分值')
@@ -328,7 +345,7 @@ module.exports = {
   async listEpds(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const res = await db.call(this).collection('lb-screenings').where({ user_id: uid, journey_id: params.journeyId, type: 'epds' }).orderBy('ts', 'desc').limit(50).get()
+    const res = await db.call(this).collection('lb-screenings').where({ journey_id: params.journeyId, type: 'epds', user_id: uid }).orderBy('ts', 'desc').limit(50).get()
     return auth.ok({ screenings: res.data })
   }
 }

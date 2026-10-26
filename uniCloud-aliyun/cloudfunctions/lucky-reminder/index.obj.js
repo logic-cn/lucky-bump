@@ -14,9 +14,15 @@ async function requireUser() {
   const v = auth.verifyToken(token)
   return v.ok ? v.uid : null
 }
-async function ownedJourney(uid, journeyId) {
-  const r = await db.call(this).collection('lb-journeys').where({ _id: journeyId, user_id: uid }).get()
-  return r.data[0] || null
+async function accessibleJourney(uid, journeyId, need = 'read') {
+  const { role, journey } = await auth.resolveJourneyAccess(db.call(this), uid, journeyId)
+  if (!role || !journey) return null
+  if (need === 'write' && role === 'viewer') return null
+  return journey
+}
+async function accessRole(uid, journeyId) {
+  const { role } = await auth.resolveJourneyAccess(db.call(this), uid, journeyId)
+  return role
 }
 function dateOf(ts) { return new Date(ts).toISOString().slice(0, 10) }
 
@@ -24,7 +30,7 @@ module.exports = {
   async addRule(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await ownedJourney.call(this, uid, params.journeyId)
+    const j = await accessibleJourney.call(this, uid, params.journeyId, 'write')
     if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
     const type = params.type
     if (!['absolute', 'by_week', 'by_month', 'recurring'].includes(type)) return auth.fail('PARAM_ERROR', 'type 无效')
@@ -44,7 +50,7 @@ module.exports = {
   async listRules(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const res = await db.call(this).collection('lb-reminder-rules').where({ user_id: uid, journey_id: params.journeyId }).orderBy('created_at', 'desc').get()
+    const res = await db.call(this).collection('lb-reminder-rules').where({ journey_id: params.journeyId }).orderBy('created_at', 'desc').get()
     return auth.ok({ rules: res.data })
   },
 
@@ -69,12 +75,12 @@ module.exports = {
   async listDue(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await ownedJourney.call(this, uid, params.journeyId)
+    const j = await accessibleJourney.call(this, uid, params.journeyId)
     if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
     const now = Date.now()
     const horizon = now + Math.min(60, Math.max(1, +params.days || 14)) * DAY
     const todos = []
-    const rules = await db.call(this).collection('lb-reminder-rules').where({ user_id: uid, journey_id: j._id, enabled: true }).get()
+    const rules = await db.call(this).collection('lb-reminder-rules').where({ journey_id: j._id, enabled: true }).get()
     const anchor = j.lmp_date || (j.edd ? j.edd - 280 * DAY : 0)
     for (const r of rules.data) {
       let due = 0
@@ -90,7 +96,7 @@ module.exports = {
         todos.push({ source: 'rule', ruleId: r._id, title: r.title, dueTs: due - r.lead_days * DAY, dueDate: dateOf(due), urgent: r.urgent, kind: 'reminder' })
       }
     }
-    const plans = await db.call(this).collection('lb-schedule-items').where({ user_id: uid, journey_id: j._id, status: 'upcoming' }).orderBy('plan_date', 'asc').limit(30).get()
+    const plans = await db.call(this).collection('lb-schedule-items').where({ journey_id: j._id, status: 'upcoming' }).orderBy('plan_date', 'asc').limit(30).get()
     for (const p of plans.data) {
       if (p.plan_date <= horizon) todos.push({ source: 'schedule', scheduleId: p._id, title: p.title, dueTs: p.plan_date, dueDate: dateOf(p.plan_date), prep: p.prep || '', kind: p.kind })
     }

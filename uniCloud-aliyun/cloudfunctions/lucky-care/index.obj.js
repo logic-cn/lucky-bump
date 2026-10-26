@@ -14,9 +14,15 @@ async function requireUser() {
   const v = auth.verifyToken(token)
   return v.ok ? v.uid : null
 }
-async function ownedJourney(uid, journeyId) {
-  const r = await db.call(this).collection('lb-journeys').where({ _id: journeyId, user_id: uid }).get()
-  return r.data[0] || null
+async function accessibleJourney(uid, journeyId, need = 'read') {
+  const { role, journey } = await auth.resolveJourneyAccess(db.call(this), uid, journeyId)
+  if (!role || !journey) return null
+  if (need === 'write' && role === 'viewer') return null
+  return journey
+}
+async function accessRole(uid, journeyId) {
+  const { role } = await auth.resolveJourneyAccess(db.call(this), uid, journeyId)
+  return role
 }
 function dateOf(ts) { return new Date(ts).toISOString().slice(0, 10) }
 
@@ -45,11 +51,11 @@ module.exports = {
   async generatePlan(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await ownedJourney.call(this, uid, params.journeyId)
+    const j = await accessibleJourney.call(this, uid, params.journeyId, 'write')
     if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
     if (!j.edd || j.delivery_date) return auth.fail('STATE_ERROR', '仅孕期旅程可生成产检排程')
     const col = db.call(this).collection('lb-schedule-items')
-    const old = await col.where({ user_id: uid, journey_id: j._id, kind: 'prenatal' }).get()
+    const old = await col.where({ journey_id: j._id, kind: 'prenatal' }).get()
     for (const it of old.data) { if (it.status !== 'done') await col.doc(it._id).remove() }
     const now = Date.now()
     const items = buildPlan(j, now)
@@ -64,10 +70,10 @@ module.exports = {
   async listPlan(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await ownedJourney.call(this, uid, params.journeyId)
+    const j = await accessibleJourney.call(this, uid, params.journeyId)
     if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
     const res = await db.call(this).collection('lb-schedule-items')
-      .where({ user_id: uid, journey_id: j._id, kind: 'prenatal' }).orderBy('plan_date', 'asc').limit(60).get()
+      .where({ journey_id: j._id, kind: 'prenatal' }).orderBy('plan_date', 'asc').limit(60).get()
     const now = Date.now()
     const list = res.data.map(x => Object.assign({}, x, {
       planDate: dateOf(x.plan_date),
@@ -81,7 +87,7 @@ module.exports = {
   async updateItem(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await ownedJourney.call(this, uid, params.journeyId)
+    const j = await accessibleJourney.call(this, uid, params.journeyId, 'write')
     if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
     const col = db.call(this).collection('lb-schedule-items')
     const r = await col.doc(String(params.itemId)).get()
@@ -104,7 +110,7 @@ module.exports = {
   async addVisit(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await ownedJourney.call(this, uid, params.journeyId)
+    const j = await accessibleJourney.call(this, uid, params.journeyId, 'write')
     if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
     const d = /^(\d{4})-(\d{2})-(\d{2})$/.exec(params.visitDate || '')
     if (!d) return auth.fail('PARAM_ERROR', '产检日期无效')
@@ -141,9 +147,9 @@ module.exports = {
   async listVisits(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await ownedJourney.call(this, uid, params.journeyId)
+    const j = await accessibleJourney.call(this, uid, params.journeyId)
     if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
-    const res = await db.call(this).collection('lb-prenatal-visits').where({ user_id: uid, journey_id: j._id }).orderBy('visit_ts', 'desc').limit(50).get()
+    const res = await db.call(this).collection('lb-prenatal-visits').where({ journey_id: j._id }).orderBy('visit_ts', 'desc').limit(50).get()
     return auth.ok({ visits: res.data.map(v => Object.assign({}, v, { visitDate: dateOf(v.visit_ts) })), totalCost: res.data.reduce((a, x) => a + (x.cost_yuan || 0), 0) })
   }
 }

@@ -82,12 +82,15 @@ const WEIGHT_GAIN = [
   { bmiFrom: 28.0, bmiTo: 999, label: '肥胖', total: [5.0, 9.0], weekly: 0.2 }
 ]
 
-/** 常见症状码库（快捷打卡） */
+/** 常见症状码库（快捷打卡）。redline=true 的为红线症状（出现即触发就医指引） */
 const SYMPTOMS = [
   { code: 'nausea', label: '孕吐' }, { code: 'fatigue', label: '乏力' }, { code: 'edema', label: '水肿' },
   { code: 'insomnia', label: '失眠' }, { code: 'backache', label: '腰痛' }, { code: 'cramp', label: '腿抽筋' },
   { code: 'constipation', label: '便秘' }, { code: 'heartburn', label: '烧心' }, { code: 'dizzy', label: '头晕' },
-  { code: 'low_mood', label: '情绪低落' }
+  { code: 'low_mood', label: '情绪低落' },
+  { code: 'bleeding', label: '出血', redline: true }, { code: 'severe_pain', label: '剧烈腹痛', redline: true },
+  { code: 'reduced_fm', label: '胎动明显减少', redline: true }, { code: 'water_broke', label: '破水', redline: true },
+  { code: 'severe_vomiting', label: '严重孕吐(无法进食)', redline: true }
 ]
 /** 症状红线触发词（出现即返回对应指引） */
 const SYMPTOM_REDLINES = [

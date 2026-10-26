@@ -11,9 +11,15 @@ async function requireUser() {
   const v = auth.verifyToken(token)
   return v.ok ? v.uid : null
 }
-async function ownedJourney(uid, journeyId) {
-  const r = await db.call(this).collection('lb-journeys').where({ _id: journeyId, user_id: uid }).get()
-  return r.data[0] || null
+async function accessibleJourney(uid, journeyId, need = 'read') {
+  const { role, journey } = await auth.resolveJourneyAccess(db.call(this), uid, journeyId)
+  if (!role || !journey) return null
+  if (need === 'write' && role === 'viewer') return null
+  return journey
+}
+async function accessRole(uid, journeyId) {
+  const { role } = await auth.resolveJourneyAccess(db.call(this), uid, journeyId)
+  return role
 }
 function dateOf(ts) { return new Date(ts).toISOString().slice(0, 10) }
 
@@ -54,12 +60,12 @@ module.exports = {
   async today(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await ownedJourney.call(this, uid, params.journeyId)
+    const j = await accessibleJourney.call(this, uid, params.journeyId)
     if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
     const now = Date.now()
     const horizon = now + 14 * DAY
     const todos = []
-    const rules = await db.call(this).collection('lb-reminder-rules').where({ user_id: uid, journey_id: j._id, enabled: true }).get()
+    const rules = await db.call(this).collection('lb-reminder-rules').where({ journey_id: j._id, enabled: true }).get()
     const anchor = j.lmp_date || (j.edd ? j.edd - 280 * DAY : 0)
     for (const r of rules.data) {
       let due = 0
@@ -69,19 +75,19 @@ module.exports = {
       else if (r.type === 'recurring') due = (r.last_fired || now) + r.interval_days * DAY
       if (due && due - r.lead_days * DAY <= horizon) todos.push({ source: 'rule', ruleId: r._id, title: r.title, dueTs: due, dueDate: dateOf(due), urgent: r.urgent, kind: 'reminder' })
     }
-    const plans = await db.call(this).collection('lb-schedule-items').where({ user_id: uid, journey_id: j._id, status: 'upcoming' }).orderBy('plan_date', 'asc').limit(10).get()
+    const plans = await db.call(this).collection('lb-schedule-items').where({ journey_id: j._id, status: 'upcoming' }).orderBy('plan_date', 'asc').limit(10).get()
     for (const p of plans.data) {
       if (p.plan_date <= horizon) todos.push({ source: 'schedule', scheduleId: p._id, title: p.title, dueTs: p.plan_date, dueDate: dateOf(p.plan_date), prep: p.prep || '', kind: p.kind })
     }
     todos.sort((a, b) => a.dueTs - b.dueTs)
     const latest = {}
     for (const code of ['weight', 'blood_pressure', 'blood_glucose']) {
-      const r = await db.call(this).collection('lb-daily-logs').where({ user_id: uid, journey_id: j._id, code }).orderBy('ts', 'desc').limit(1).get()
+      const r = await db.call(this).collection('lb-daily-logs').where({ journey_id: j._id, code }).orderBy('ts', 'desc').limit(1).get()
       latest[code] = r.data[0] || null
     }
     // 本周体重差（对比上一条）
     let weightDelta = null
-    const w = await db.call(this).collection('lb-daily-logs').where({ user_id: uid, journey_id: j._id, code: 'weight' }).orderBy('ts', 'desc').limit(2).get()
+    const w = await db.call(this).collection('lb-daily-logs').where({ journey_id: j._id, code: 'weight' }).orderBy('ts', 'desc').limit(2).get()
     if (w.data.length === 2) weightDelta = Math.round((w.data[0].value.kg - w.data[1].value.kg) * 10) / 10
     return auth.ok({
       journey: {
@@ -96,7 +102,7 @@ module.exports = {
   async series(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await ownedJourney.call(this, uid, params.journeyId)
+    const j = await accessibleJourney.call(this, uid, params.journeyId)
     if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
     const res = await db.call(this).collection('lb-daily-logs')
       .where({ user_id: uid, journey_id: j._id, code: params.code }).orderBy('ts', 'asc').limit(1000).get()
@@ -114,17 +120,17 @@ module.exports = {
   async timeline(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await ownedJourney.call(this, uid, params.journeyId)
+    const j = await accessibleJourney.call(this, uid, params.journeyId)
     if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
     const limit = Math.min(200, +params.limit || 60)
     const events = []
-    const metrics = await db.call(this).collection('lb-daily-logs').where({ user_id: uid, journey_id: j._id }).orderBy('ts', 'desc').limit(limit).get()
+    const metrics = await db.call(this).collection('lb-daily-logs').where({ journey_id: j._id }).orderBy('ts', 'desc').limit(limit).get()
     for (const m of metrics.data) events.push({ ts: m.ts, type: 'metric', code: m.code, value: m.value, sensitivity: m.sensitivity })
-    const cycle = await db.call(this).collection('lb-cycle-events').where({ user_id: uid, journey_id: j._id }).orderBy('ts', 'desc').limit(limit).get()
+    const cycle = await db.call(this).collection('lb-cycle-events').where({ journey_id: j._id }).orderBy('ts', 'desc').limit(limit).get()
     for (const c of cycle.data) events.push({ ts: c.ts, type: 'cycle', code: c.type, value: c.value, sensitivity: c.sensitivity })
-    const visits = await db.call(this).collection('lb-prenatal-visits').where({ user_id: uid, journey_id: j._id }).orderBy('visit_ts', 'desc').limit(limit).get()
+    const visits = await db.call(this).collection('lb-prenatal-visits').where({ journey_id: j._id }).orderBy('visit_ts', 'desc').limit(limit).get()
     for (const v of visits.data) events.push({ ts: v.visit_ts, type: 'visit', code: 'prenatal_visit', value: { hospital: v.hospital, week: v.week, conclusion: v.conclusion }, sensitivity: v.sensitivity })
-    const milestones = await db.call(this).collection('lb-milestones').where({ user_id: uid, journey_id: j._id }).orderBy('achieved_date', 'desc').limit(limit).get()
+    const milestones = await db.call(this).collection('lb-milestones').where({ journey_id: j._id }).orderBy('achieved_date', 'desc').limit(limit).get()
     for (const m of milestones.data) events.push({ ts: m.achieved_date, type: 'milestone', code: m.code, value: { dim: m.dim }, sensitivity: 'normal' })
     events.sort((a, b) => b.ts - a.ts)
     return auth.ok({ events: events.slice(0, limit) })
@@ -134,12 +140,14 @@ module.exports = {
   async exportAll(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await ownedJourney.call(this, uid, params.journeyId)
-    if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
+    const { role, journey } = await auth.resolveJourneyAccess(db.call(this), uid, params.journeyId)
+    if (!journey) return auth.fail('NOT_FOUND', '旅程不存在')
+    if (role !== 'owner') return auth.fail('NOT_FOUND', '仅旅程主人可导出全量数据')
+    const j = journey
     const collections = ['lb-journeys', 'lb-babies', 'lb-cycles', 'lb-cycle-events', 'lb-daily-logs', 'lb-tracker-sessions', 'lb-prenatal-visits', 'lb-schedule-items', 'lb-screenings', 'lb-feedings', 'lb-diaper-changes', 'lb-sleep-sessions', 'lb-growth-samples', 'lb-vaccinations', 'lb-milestones', 'lb-food-logs', 'lb-medication-logs', 'lb-reminder-rules']
     const out = {}
     for (const c of collections) {
-      const r = await db.call(this).collection(c).where({ user_id: uid, journey_id: j._id }).limit(5000).get()
+      const r = await db.call(this).collection(c).where({ journey_id: j._id }).limit(5000).get()
       out[c] = r.data
     }
     return auth.ok({ exportedAt: Date.now(), journeyId: j._id, data: out })
