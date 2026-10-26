@@ -1,0 +1,5 @@
+{
+  "_comment": "uniCloud 阿里云服务空间绑定占位文件。使用 HBuilderX 打开工程后：右键 uniCloud-aliyun 目录 → 关联云服务空间（或新建），HBuilderX 会自动覆写本文件。",
+  "id": "PLACEHOLDER-CREATE-SPACE-IN-HBUILDERX",
+  "provider": "aliyun"
+}

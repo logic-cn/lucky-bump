@@ -1,0 +1,43 @@
+/* 幸孕记 Lucky Bump 设计令牌 —— 详见 docs/07-UI设计系统.md */
+
+/* 色彩 */
+$lb-primary: #FF7A6B;
+$lb-primary-deep: #E85D4E;
+$lb-primary-soft: #FFEFEA;
+$lb-secondary: #6BA3FF;
+$lb-secondary-soft: #EAF2FF;
+$lb-success: #4CAF7D;
+$lb-success-soft: #E8F5EE;
+$lb-warning: #F5A623;
+$lb-warning-soft: #FDF3E3;
+$lb-danger: #E5484D;
+$lb-danger-soft: #FDECEC;
+$lb-bg: #F7F6F4;
+$lb-card: #FFFFFF;
+$lb-text-1: #1F2329;
+$lb-text-2: #6B7280;
+$lb-text-3: #A3AAB5;
+$lb-line: #EDEBE8;
+
+/* 字号（rpx） */
+$lb-fs-title: 32rpx;
+$lb-fs-body: 28rpx;
+$lb-fs-sub: 24rpx;
+$lb-fs-tag: 22rpx;
+$lb-fs-caption: 20rpx;
+$lb-fs-hero: 64rpx;
+
+/* 间距 */
+$lb-space-xs: 8rpx;
+$lb-space-sm: 16rpx;
+$lb-space-md: 24rpx;
+$lb-space-lg: 32rpx;
+$lb-space-xl: 48rpx;
+
+/* 圆角 */
+$lb-radius-card: 24rpx;
+$lb-radius-btn: 44rpx;
+$lb-radius-tag: 12rpx;
+
+/* 阴影 */
+$lb-shadow: 0 4rpx 16rpx rgba(31, 35, 41, 0.06);

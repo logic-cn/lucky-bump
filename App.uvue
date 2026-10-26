@@ -1,0 +1,19 @@
+<script>
+  import { appState } from './store/appStore.uts'
+
+  export default {
+    onLaunch: function () {
+      appState.init()
+      console.log('幸孕记 App Launch')
+    },
+    onShow: function () {},
+    onHide: function () {}
+  }
+</script>
+
+<style>
+  /* uni-app-x：app 端样式不继承，页面内显式声明。此处仅放极少全局 reset。 */
+  page {
+    background-color: #F7F6F4;
+  }
+</style>

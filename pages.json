@@ -1,0 +1,59 @@
+{
+  "pages": [
+    { "path": "pages/index/index", "style": { "navigationBarTitleText": "幸孕记" } },
+    { "path": "pages/record/record", "style": { "navigationBarTitleText": "记录" } },
+    { "path": "pages/data/data", "style": { "navigationBarTitleText": "数据" } },
+    { "path": "pages/learn/learn", "style": { "navigationBarTitleText": "知识" } },
+    { "path": "pages/me/me", "style": { "navigationBarTitleText": "我的" } },
+    { "path": "pages/onboarding/onboarding", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/account/login", "style": { "navigationBarTitleText": "登录" } },
+    { "path": "pages/account/register", "style": { "navigationBarTitleText": "注册" } },
+    { "path": "pages/record/weight", "style": { "navigationBarTitleText": "体重" } },
+    { "path": "pages/record/blood-pressure", "style": { "navigationBarTitleText": "血压" } },
+    { "path": "pages/record/blood-glucose", "style": { "navigationBarTitleText": "血糖" } },
+    { "path": "pages/record/symptom", "style": { "navigationBarTitleText": "症状与情绪" } },
+    { "path": "pages/record/diary", "style": { "navigationBarTitleText": "孕期日记" } },
+    { "path": "pages/record/cycle", "style": { "navigationBarTitleText": "经期记录" } },
+    { "path": "pages/record/ovulation-test", "style": { "navigationBarTitleText": "排卵试纸" } },
+    { "path": "pages/record/pregnancy-test", "style": { "navigationBarTitleText": "验孕记录" } },
+    { "path": "pages/record/fetal-movement", "style": { "navigationBarTitleText": "胎动计数" } },
+    { "path": "pages/record/contraction-timer", "style": { "navigationBarTitleText": "宫缩计时" } },
+    { "path": "pages/record/nursing-timer", "style": { "navigationBarTitleText": "亲喂计时" } },
+    { "path": "pages/record/lochia", "style": { "navigationBarTitleText": "恶露记录" } },
+    { "path": "pages/record/epds", "style": { "navigationBarTitleText": "产后情绪自评" } },
+    { "path": "pages/care/schedule", "style": { "navigationBarTitleText": "产检中心" } },
+    { "path": "pages/care/visit", "style": { "navigationBarTitleText": "产检记录" } },
+    { "path": "pages/baby/birth-register", "style": { "navigationBarTitleText": "分娩登记" } },
+    { "path": "pages/baby/baby-home", "style": { "navigationBarTitleText": "宝宝" } },
+    { "path": "pages/baby/feeding", "style": { "navigationBarTitleText": "喂养" } },
+    { "path": "pages/baby/diaper", "style": { "navigationBarTitleText": "换尿布" } },
+    { "path": "pages/baby/sleep", "style": { "navigationBarTitleText": "睡眠" } },
+    { "path": "pages/baby/growth", "style": { "navigationBarTitleText": "成长记录" } },
+    { "path": "pages/baby/vaccines", "style": { "navigationBarTitleText": "疫苗接种" } },
+    { "path": "pages/data/charts", "style": { "navigationBarTitleText": "指标曲线" } },
+    { "path": "pages/data/timeline", "style": { "navigationBarTitleText": "时间线" } },
+    { "path": "pages/me/family", "style": { "navigationBarTitleText": "家庭组" } },
+    { "path": "pages/me/privacy", "style": { "navigationBarTitleText": "隐私与安全" } },
+    { "path": "pages/me/settings", "style": { "navigationBarTitleText": "设置" } },
+    { "path": "pages/me/about", "style": { "navigationBarTitleText": "关于与免责声明" } }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "幸孕记",
+    "navigationBarBackgroundColor": "#F7F6F4",
+    "backgroundColor": "#F7F6F4"
+  },
+  "tabBar": {
+    "color": "#A3AAB5",
+    "selectedColor": "#FF7A6B",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "black",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "今天", "iconPath": "static/tab/today.png", "selectedIconPath": "static/tab/today-active.png" },
+      { "pagePath": "pages/record/record", "text": "记录", "iconPath": "static/tab/record.png", "selectedIconPath": "static/tab/record-active.png" },
+      { "pagePath": "pages/data/data", "text": "数据", "iconPath": "static/tab/data.png", "selectedIconPath": "static/tab/data-active.png" },
+      { "pagePath": "pages/learn/learn", "text": "知识", "iconPath": "static/tab/learn.png", "selectedIconPath": "static/tab/learn-active.png" },
+      { "pagePath": "pages/me/me", "text": "我的", "iconPath": "static/tab/me.png", "selectedIconPath": "static/tab/me-active.png" }
+    ]
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "lucky-bump",
+  "version": "1.0.0",
+  "private": true,
+  "description": "幸孕记 Lucky Bump - 从备孕到育儿，一条不断档的生命记录（uni-app-x + uniCloud）",
+  "scripts": {
+    "test": "node --test test/unit/ test/e2e/",
+    "test:unit": "node --test test/unit/",
+    "test:e2e": "node --test test/e2e/",
+    "icons": "python3 scripts/gen_icons.py",
+    "dev:web": "echo 'uni-app-x web 构建需 HBuilderX 或官方 CLI 模板（npx degit dcloudio/uni-preset-vue#vite-uts）配置，见 docs/06-技术架构设计.md §5'"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
