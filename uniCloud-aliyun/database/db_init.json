@@ -1,0 +1,3 @@
+{
+  "_comment": "数据库初始化占位：本工程的基础模板数据（产检排程/疫苗程序表等）内置于云代码 lucky-templates，无需 DB 预置。HBuilderX 右键 database → 初始化云数据库 将上传全部 schema（clientDB 权限已锁死）。"
+}
