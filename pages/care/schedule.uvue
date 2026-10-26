@@ -1,0 +1,99 @@
+<template>
+  <view class="page">
+    <view class="card" v-if="items.length == 0">
+      <text class="empty">还没有产检排程</text>
+      <text class="hint">按国内常规产检指南自动生成（28 周前每 4 周、28-35 周每 2 周、36 周起每周）</text>
+      <button class="btn-save" :disabled="generating" @click="generate">{{ generating ? '生成中…' : '一键生成产检排程' }}</button>
+      <text class="hint" v-if="highRiskNote.length > 0">{{ highRiskNote }}</text>
+    </view>
+
+    <view class="item" v-for="(it, i) in items" :key="i" @click="openVisit(it)">
+      <view class="dot-col">
+        <view class="dot" :class="dotClass(it)" />
+        <view class="dot-line" v-if="i < items.length - 1" />
+      </view>
+      <view class="item-body">
+        <view class="row1">
+          <text class="item-title">{{ it.getString('title') ?? '' }}</text>
+          <text class="status" :class="'status-' + it.getString('displayStatus')">{{ statusText(it.getString('displayStatus') ?? '') }}</text>
+        </view>
+        <text class="item-sub">孕 {{ it.getNumber('week')?.toInt() }} 周 · {{ it.getString('planDate') ?? '' }}</text>
+        <text class="item-prep" v-if="(it.getString('prep') ?? '').length > 0">📋 {{ it.getString('prep') }}</text>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script>
+  import { luckyCare } from '../../utils/request.uts'
+  import { journeyState } from '../../store/journeyStore.uts'
+
+  export default {
+    data() {
+      return { items: [] as UTSJSONObject[], generating: false, highRiskNote: '' }
+    },
+    onLoad() { this.load() },
+    onShow() { if (this.items.length > 0) this.load() },
+    methods: {
+      statusText(s: string): string {
+        if (s == 'done') return '已完成'
+        if (s == 'skipped') return '已跳过'
+        if (s == 'due') return '该去产检了'
+        return '未到'
+      },
+      dotClass(it: UTSJSONObject): string {
+        const s = it.getString('displayStatus') ?? ''
+        if (s == 'done') return 'dot-done'
+        if (s == 'due') return 'dot-due'
+        return 'dot-upcoming'
+      },
+      async load() {
+        try {
+          const res = await luckyCare('listPlan', { journeyId: journeyState.journeyId } as UTSJSONObject)
+          this.items = res.getArray('items') ?? []
+          this.highRiskNote = res.getString('highRiskNote') ?? ''
+        } catch (e) { /* 忽略 */ }
+      },
+      async generate() {
+        this.generating = true
+        try {
+          const res = await luckyCare('generatePlan', { journeyId: journeyState.journeyId } as UTSJSONObject)
+          uni.showToast({ title: `已生成 ${res.getNumber('count')?.toInt() ?? 0} 次产检计划 ✓`, icon: 'none' })
+          this.load()
+        } catch (e) {
+          uni.showToast({ title: (e as Error).message, icon: 'none' })
+        } finally { this.generating = false }
+      },
+      openVisit(it: UTSJSONObject) {
+        const status = it.getString('displayStatus') ?? ''
+        if (status == 'done' || status == 'skipped') return
+        uni.navigateTo({ url: `/pages/care/visit?scheduleId=${it.getString('_id') ?? ''}&week=${it.getNumber('week')?.toInt() ?? 0}` })
+      }
+    }
+  }
+</script>
+
+<style>
+  .page { flex: 1; background-color: #F7F6F4; padding: 24rpx; align-items: center; }
+  .card { width: 700rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 40rpx; margin-top: 40rpx; align-items: center; }
+  .empty { font-size: 32rpx; font-weight: bold; color: #1F2329; }
+  .hint { font-size: 22rpx; color: #A3AAB5; margin: 16rpx 0; text-align: center; }
+  .btn-save { width: 620rpx; height: 96rpx; line-height: 96rpx; background-color: #FF7A6B; color: #FFFFFF; font-size: 32rpx; border-radius: 44rpx; margin-top: 24rpx; }
+  .item { width: 700rpx; flex-direction: row; background-color: #FFFFFF; border-radius: 24rpx; padding: 28rpx; margin-bottom: 16rpx; }
+  .dot-col { align-items: center; margin-right: 20rpx; }
+  .dot { width: 20rpx; height: 20rpx; border-radius: 10rpx; margin-top: 10rpx; }
+  .dot-done { background-color: #4CAF7D; }
+  .dot-due { background-color: #E5484D; }
+  .dot-upcoming { background-color: #D8DCE1; }
+  .dot-line { width: 2px; flex: 1; background-color: #EDEBE8; margin: 8rpx 0; }
+  .item-body { flex: 1; }
+  .row1 { flex-direction: row; align-items: center; }
+  .item-title { font-size: 30rpx; font-weight: bold; color: #1F2329; flex: 1; }
+  .status { font-size: 20rpx; border-radius: 10rpx; padding: 4rpx 12rpx; }
+  .status-done { color: #4CAF7D; background-color: #E8F5EE; }
+  .status-due { color: #E5484D; background-color: #FDECEC; }
+  .status-upcoming { color: #A3AAB5; background-color: #F2F1EF; }
+  .status-skipped { color: #A3AAB5; background-color: #F2F1EF; }
+  .item-sub { font-size: 24rpx; color: #A3AAB5; margin-top: 8rpx; }
+  .item-prep { font-size: 22rpx; color: #6B7280; margin-top: 8rpx; }
+</style>

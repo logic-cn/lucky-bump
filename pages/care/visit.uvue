@@ -1,0 +1,133 @@
+<template>
+  <view class="page">
+    <view class="card">
+      <text class="label">产检日期</text>
+      <picker mode="date" :value="visitDate" @change="onDateChange">
+        <view class="date-box"><text class="date-text">{{ visitDate }}</text></view>
+      </picker>
+      <text class="label">孕周（周）</text>
+      <input class="input" type="number" v-model="week" placeholder="如 24" placeholder-class="ph" />
+      <text class="label">医院 / 医生</text>
+      <view class="row2">
+        <input class="input half" v-model="hospital" placeholder="医院" placeholder-class="ph" />
+        <input class="input half" v-model="doctor" placeholder="医生（选填）" placeholder-class="ph" />
+      </view>
+      <text class="label">本次项目与结果</text>
+      <view class="exam" v-for="(e, i) in exams" :key="i">
+        <input class="input exam-name" v-model="e.name" placeholder="项目，如 NT 超声" placeholder-class="ph" />
+        <input class="input exam-result" v-model="e.result" placeholder="结果" placeholder-class="ph" />
+        <text class="exam-del" @click="exams.splice(i, 1)">✕</text>
+      </view>
+      <text class="add-exam" @click="exams.push({ name: '', result: '', abnormal: false } as Exam)">＋ 添加项目</text>
+      <text class="label">费用（元，选填）</text>
+      <input class="input" type="digit" v-model="cost" placeholder="0.00" placeholder-class="ph" />
+      <text class="label">医生结论与叮嘱</text>
+      <textarea class="ta" v-model="conclusion" placeholder="如：一切正常，继续补铁…" placeholder-class="ph" :maxlength="500" />
+      <text class="label">下次产检时间（医生口径优先）</text>
+      <picker mode="date" :value="nextDate" @change="onNextChange">
+        <view class="date-box"><text class="date-text">{{ nextDate == '' ? '选填' : nextDate }}</text></view>
+      </picker>
+    </view>
+    <button class="btn-save" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存本次产检' }}</button>
+
+    <view class="list" v-if="visits.length > 0">
+      <text class="list-title">历史产检</text>
+      <view class="v-item" v-for="(v, i) in visits" :key="i">
+        <view class="v-row1">
+          <text class="v-date">{{ v.getString('visitDate') ?? '' }}</text>
+          <text class="v-week">孕 {{ v.getNumber('week')?.toInt() ?? 0 }} 周</text>
+        </view>
+        <text class="v-conclusion" v-if="(v.getString('conclusion') ?? '').length > 0">{{ v.getString('conclusion') }}</text>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script>
+  import { luckyCare } from '../../utils/request.uts'
+  import { journeyState } from '../../store/journeyStore.uts'
+
+  type Exam = { name: string, result: string, abnormal: boolean }
+
+  export default {
+    data() {
+      return {
+        scheduleId: '', week: '',
+        visitDate: this.todayStr(), nextDate: '',
+        hospital: '', doctor: '', cost: '', conclusion: '',
+        exams: [{ name: '', result: '', abnormal: false } as Exam],
+        saving: false, visits: [] as UTSJSONObject[]
+      }
+    },
+    onLoad(options: OnLoadOptions) {
+      this.scheduleId = options['scheduleId'] ?? ''
+      const w = options['week'] ?? ''
+      if (w.length > 0) this.week = w
+      this.loadVisits()
+    },
+    methods: {
+      todayStr(): string {
+        const d = new Date()
+        const m = d.getMonth() + 1 < 10 ? '0' + (d.getMonth() + 1) : '' + (d.getMonth() + 1)
+        const dd = d.getDate() < 10 ? '0' + d.getDate() : '' + d.getDate()
+        return `${d.getFullYear()}-${m}-${dd}`
+      },
+      onDateChange(e: UniPickerChangeEvent) { this.visitDate = (e.detail.value as string) ?? this.visitDate },
+      onNextChange(e: UniPickerChangeEvent) { this.nextDate = (e.detail.value as string) ?? '' },
+      async loadVisits() {
+        try {
+          const res = await luckyCare('listVisits', { journeyId: journeyState.journeyId } as UTSJSONObject)
+          this.visits = res.getArray('visits') ?? []
+        } catch (e) { /* 忽略 */ }
+      },
+      async save() {
+        const w = parseInt(this.week)
+        if (!(w >= 0 && w <= 45)) { uni.showToast({ title: '请填写孕周', icon: 'none' }); return }
+        const items = this.exams.filter(e => e.name.trim().length > 0)
+        this.saving = true
+        try {
+          const res = await luckyCare('addVisit', {
+            journeyId: journeyState.journeyId, visitDate: this.visitDate,
+            hospital: this.hospital, doctor: this.doctor, week: w,
+            items: items, costYuan: parseFloat(this.cost) || 0,
+            conclusion: this.conclusion, nextVisitDate: this.nextDate
+          } as UTSJSONObject)
+          if (this.scheduleId.length > 0) {
+            await luckyCare('updateItem', { journeyId: journeyState.journeyId, itemId: this.scheduleId, status: 'done' } as UTSJSONObject)
+          }
+          uni.showToast({ title: '已保存 ✓', icon: 'success' })
+          this.loadVisits()
+          setTimeout(() => { uni.navigateBack() }, 700)
+        } catch (e) {
+          uni.showToast({ title: (e as Error).message, icon: 'none' })
+        } finally { this.saving = false }
+      }
+    }
+  }
+</script>
+
+<style>
+  .page { flex: 1; background-color: #F7F6F4; padding: 24rpx; align-items: center; }
+  .card { width: 700rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 40rpx; margin-top: 24rpx; }
+  .label { font-size: 26rpx; color: #1F2329; margin: 20rpx 0 12rpx 0; }
+  .date-box { width: 620rpx; height: 88rpx; background-color: #F7F6F4; border-radius: 16rpx; align-items: center; padding: 0 24rpx; }
+  .date-text { font-size: 28rpx; color: #1F2329; }
+  .input { width: 620rpx; height: 88rpx; background-color: #F7F6F4; border-radius: 16rpx; padding: 0 24rpx; font-size: 28rpx; color: #1F2329; }
+  .row2 { flex-direction: row; }
+  .half { flex: 1; margin-right: 16rpx; }
+  .exam { flex-direction: row; align-items: center; margin-bottom: 12rpx; }
+  .exam-name { flex: 1.2; margin-right: 12rpx; }
+  .exam-result { flex: 1; margin-right: 12rpx; }
+  .exam-del { font-size: 32rpx; color: #A3AAB5; padding: 8rpx; }
+  .add-exam { font-size: 26rpx; color: #FF7A6B; padding: 8rpx 0; }
+  .ta { width: 620rpx; height: 140rpx; background-color: #F7F6F4; border-radius: 16rpx; padding: 20rpx; font-size: 26rpx; color: #1F2329; }
+  .ph { color: #A3AAB5; }
+  .btn-save { width: 700rpx; height: 96rpx; line-height: 96rpx; background-color: #FF7A6B; color: #FFFFFF; font-size: 32rpx; border-radius: 44rpx; margin-top: 32rpx; }
+  .list { width: 700rpx; margin-top: 40rpx; }
+  .list-title { font-size: 28rpx; font-weight: bold; color: #1F2329; margin-bottom: 16rpx; }
+  .v-item { background-color: #FFFFFF; border-radius: 24rpx; padding: 28rpx; margin-bottom: 16rpx; }
+  .v-row1 { flex-direction: row; }
+  .v-date { font-size: 26rpx; font-weight: bold; color: #1F2329; flex: 1; }
+  .v-week { font-size: 22rpx; color: #A3AAB5; }
+  .v-conclusion { font-size: 24rpx; color: #6B7280; margin-top: 10rpx; }
+</style>
