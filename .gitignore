@@ -1,0 +1,18 @@
+# 依赖
+node_modules/
+**/node_modules/
+
+# 编译产物
+unpackage/
+dist/
+.hbuilderx/
+
+# 本地测试产物
+coverage/
+*.log
+.DS_Store
+
+# 密钥与本地配置（占位符文件模板已入库，真实密钥不入库）
+.env
+.env.local
+config/local.*
