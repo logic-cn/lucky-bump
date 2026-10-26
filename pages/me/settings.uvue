@@ -1,20 +1,126 @@
 <template>
   <view class="page">
-    <text class="title">设置</text>
-    <text class="desc">提醒/免打扰/单位/账号（docs/03 M9）。</text>
-    <text class="todo-note">页面完整交互按 docs/03 对应小节实现中（见 docs/DEV-PROGRESS.md）。</text>
+    <view class="card">
+      <text class="card-title">提醒</text>
+      <view class="r-row" v-for="(r, i) in rules" :key="i">
+        <view class="r-body">
+          <text class="r-title">{{ r.getString('title') ?? '' }}</text>
+          <text class="r-sub">{{ ruleTypeText(r.getString('type') ?? '') }}</text>
+        </view>
+        <switch :checked="r.getBoolean('enabled') ?? true" @change="(e: UniSwitchChangeEvent) => toggleRule(r, e)" color="#FF7A6B" />
+      </view>
+      <text class="hint" v-if="rules.length == 0">产检、疫苗等提醒会在相应功能启用时自动创建</text>
+    </view>
+
+    <view class="card">
+      <text class="card-title">新建提醒</text>
+      <input class="input" v-model="title" placeholder="提醒名称，如：叶酸打卡" placeholder-class="ph" />
+      <view class="opts">
+        <view class="opt" v-for="(t, i) in types" :key="i" :class="type == t.value ? 'opt-active' : ''" @click="type = t.value">
+          <text class="opt-text" :class="type == t.value ? 'opt-text-active' : ''">{{ t.label }}</text>
+        </view>
+      </view>
+      <picker v-if="type == 'absolute'" mode="date" :value="anchorDate" @change="onAnchorChange">
+        <view class="pick-box"><text class="pick-text">{{ anchorDate == '' ? '选择日期' : anchorDate }}</text></view>
+      </picker>
+      <input v-if="type == 'by_week'" class="input" type="number" v-model="week" placeholder="孕周，如 28" placeholder-class="ph" />
+      <input v-if="type == 'by_month'" class="input" type="number" v-model="month" placeholder="月龄，如 6" placeholder-class="ph" />
+      <input v-if="type == 'recurring'" class="input" type="number" v-model="intervalDays" placeholder="间隔天数，如 1" placeholder-class="ph" />
+      <button class="btn-save" :disabled="saving" @click="add">{{ saving ? '保存中…' : '添加提醒' }}</button>
+      <text class="hint">默认免打扰 22:00-7:00（产后 3 月内自动延长）；仅紧急提醒可突破</text>
+    </view>
+
+    <view class="card">
+      <text class="card-title">通用</text>
+      <view class="p-row"><text class="p-label">暗色模式跟随系统</text><switch :checked="darkMode" @change="onDark" color="#FF7A6B" /></view>
+      <view class="p-row"><text class="p-label">体重单位</text><text class="p-value">kg</text></view>
+      <view class="p-row"><text class="p-label">当前版本</text><text class="p-value">1.0.0</text></view>
+    </view>
   </view>
 </template>
 
 <script>
+  import { luckyReminder } from '../../utils/request.uts'
+  import { journeyState } from '../../store/journeyStore.uts'
+
+  type TOpt = { value: string, label: string }
+
   export default {
-    data() { return {} }
+    data() {
+      return {
+        rules: [] as UTSJSONObject[], saving: false,
+        title: '', type: 'absolute', anchorDate: '', week: '', month: '', intervalDays: '',
+        darkMode: true,
+        types: [
+          { value: 'absolute', label: '指定日期' },
+          { value: 'by_week', label: '按孕周' },
+          { value: 'by_month', label: '按月龄' },
+          { value: 'recurring', label: '周期重复' }
+        ] as TOpt[]
+      }
+    },
+    onLoad() { this.load() },
+    methods: {
+      ruleTypeText(t: string): string {
+        for (let i = 0; i < this.types.length; i++) { if (this.types[i].value == t) return this.types[i].label }
+        return t
+      },
+      onAnchorChange(e: UniPickerChangeEvent) { this.anchorDate = (e.detail.value as string) ?? '' },
+      onDark(e: UniSwitchChangeEvent) { this.darkMode = e.detail.value },
+      async load() {
+        try {
+          const res = await luckyReminder('listRules', { journeyId: journeyState.journeyId } as UTSJSONObject)
+          this.rules = res.getArray('rules') ?? []
+        } catch (e) { /* 忽略 */ }
+      },
+      async toggleRule(r: UTSJSONObject, e: UniSwitchChangeEvent) {
+        try {
+          await luckyReminder('updateRule', { journeyId: journeyState.journeyId, ruleId: r.getString('_id') ?? '', enabled: e.detail.value } as UTSJSONObject)
+        } catch (err) { uni.showToast({ title: (err as Error).message, icon: 'none' }) }
+      },
+      async add() {
+        if (this.title.trim().length == 0) { uni.showToast({ title: '请填写提醒名称', icon: 'none' }); return }
+        const params = { journeyId: journeyState.journeyId, type: this.type, title: this.title } as UTSJSONObject
+        if (this.type == 'absolute') {
+          if (this.anchorDate.length == 0) { uni.showToast({ title: '请选择日期', icon: 'none' }); return }
+          params['anchorDate'] = this.anchorDate
+        } else if (this.type == 'by_week') params['week'] = parseInt(this.week) || 0
+        else if (this.type == 'by_month') params['month'] = parseInt(this.month) || 0
+        else params['intervalDays'] = parseInt(this.intervalDays) || 1
+        this.saving = true
+        try {
+          await luckyReminder('addRule', params)
+          this.title = ''
+          uni.showToast({ title: '已添加 ✓', icon: 'success' })
+          this.load()
+        } catch (e) {
+          uni.showToast({ title: (e as Error).message, icon: 'none' })
+        } finally { this.saving = false }
+      }
+    }
   }
 </script>
 
 <style>
-  .page { flex: 1; background-color: #F7F6F4; align-items: center; padding-top: 200rpx; }
-  .title { font-size: 40rpx; font-weight: bold; color: #1F2329; }
-  .desc { font-size: 26rpx; color: #6B7280; margin-top: 24rpx; width: 600rpx; text-align: center; }
-  .todo-note { font-size: 22rpx; color: #A3AAB5; margin-top: 48rpx; width: 600rpx; text-align: center; }
+  .page { flex: 1; background-color: #F7F6F4; padding: 24rpx; align-items: center; }
+  .card { width: 700rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 32rpx; margin-top: 24rpx; }
+  .card-title { font-size: 28rpx; font-weight: bold; color: #1F2329; margin-bottom: 16rpx; }
+  .r-row { flex-direction: row; align-items: center; padding: 14rpx 0; border-bottom-width: 1px; border-bottom-color: #F2F1EF; }
+  .r-body { flex: 1; }
+  .r-title { font-size: 28rpx; color: #1F2329; }
+  .r-sub { font-size: 22rpx; color: #A3AAB5; margin-top: 4rpx; }
+  .input { width: 636rpx; height: 88rpx; background-color: #F7F6F4; border-radius: 16rpx; padding: 0 24rpx; font-size: 28rpx; color: #1F2329; margin-bottom: 16rpx; }
+  .ph { color: #A3AAB5; }
+  .opts { flex-direction: row; flex-wrap: wrap; margin-bottom: 16rpx; }
+  .opt { background-color: #F7F6F4; border-radius: 16rpx; padding: 12rpx 24rpx; margin: 6rpx; }
+  .opt-active { background-color: #FFEFEA; }
+  .opt-text { font-size: 24rpx; color: #6B7280; }
+  .opt-text-active { color: #FF7A6B; font-weight: bold; }
+  .pick-box { width: 636rpx; height: 88rpx; background-color: #F7F6F4; border-radius: 16rpx; align-items: center; justify-content: center; margin-bottom: 16rpx; }
+  .pick-text { font-size: 28rpx; color: #1F2329; }
+  .btn-save { width: 636rpx; height: 88rpx; line-height: 88rpx; background-color: #FF7A6B; color: #FFFFFF; font-size: 28rpx; border-radius: 20rpx; margin-top: 8rpx; }
+  .hint { font-size: 20rpx; color: #A3AAB5; margin-top: 16rpx; }
+  .p-row { flex-direction: row; align-items: center; justify-content: space-between; padding: 12rpx 0; }
+  .p-label { font-size: 26rpx; color: #1F2329; }
+  .p-value { font-size: 26rpx; color: #A3AAB5; }
 </style>

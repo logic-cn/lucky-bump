@@ -1,0 +1,29 @@
+<template>
+  <view class="lbc-redline" :class="level == 'critical' ? 'lbc-redline-critical' : 'lbc-redline-warn'">
+    <text class="lbc-redline-title">{{ level == 'critical' ? '⚠️ 请立即就医' : '⚠️ 需要关注' }}</text>
+    <text class="lbc-redline-msg" v-if="message.length > 0">{{ message }}</text>
+    <text class="lbc-redline-action" v-if="action.length > 0">{{ action }}</text>
+    <text class="lbc-redline-note">本提示仅描述现象与常规建议，不构成诊断</text>
+  </view>
+</template>
+
+<script>
+  /** 红线提示组件（docs/07 §3）：只描述现象 + 建议动作，危险色不挪作它用 */
+  export default {
+    props: {
+      level: { type: String, default: 'warn' },   // warn | critical
+      message: { type: String, default: '' },
+      action: { type: String, default: '' }
+    }
+  }
+</script>
+
+<style>
+  .lbc-redline { width: 700rpx; border-radius: 24rpx; padding: 40rpx; }
+  .lbc-redline-critical { background-color: #FDECEC; }
+  .lbc-redline-warn { background-color: #FDF3E3; }
+  .lbc-redline-title { font-size: 34rpx; font-weight: bold; color: #E5484D; }
+  .lbc-redline-msg { font-size: 28rpx; color: #1F2329; margin-top: 16rpx; }
+  .lbc-redline-action { font-size: 30rpx; font-weight: bold; color: #E5484D; margin-top: 16rpx; }
+  .lbc-redline-note { font-size: 20rpx; color: #A3AAB5; margin-top: 24rpx; }
+</style>

@@ -1,20 +1,135 @@
 <template>
   <view class="page">
-    <text class="title">胎动计数</text>
-    <text class="desc">定时/计数两模式 + 每日趋势 + 异常提示（docs/03 M2.7）。</text>
-    <text class="todo-note">页面完整交互按 docs/03 对应小节实现中（见 docs/DEV-PROGRESS.md）。</text>
+    <view class="card" v-if="!counting">
+      <text class="label">选择计数方式</text>
+      <view class="opts">
+        <view class="opt" :class="mode == 'count' ? 'opt-active' : ''" @click="mode = 'count'">
+          <text class="opt-text" :class="mode == 'count' ? 'opt-text-active' : ''">🦶 数到 10 次</text>
+        </view>
+        <view class="opt" :class="mode == 'timed' ? 'opt-active' : ''" @click="mode = 'timed'">
+          <text class="opt-text" :class="mode == 'timed' ? 'opt-text-active' : ''">⏰ 定时 1 小时</text>
+        </view>
+      </view>
+      <text class="hint" v-if="mode == 'count'">记录感受 10 次胎动所需的时间，建议每天固定时段</text>
+      <text class="hint" v-else>计时 1 小时，感受 1 次点一下</text>
+      <button class="btn-save" @click="start">开始数胎动</button>
+    </view>
+
+    <view class="card" v-else>
+      <text class="count">{{ count }}</text>
+      <text class="hint">{{ mode == 'count' ? '每感受到一次胎动点一下' : '已计时 ' + elapsedText }}</text>
+      <view class="big-btn" @click="tap"><text class="big-btn-text">感到胎动了</text></view>
+      <text class="elapsed" v-if="mode == 'count' && count > 0">用时 {{ elapsedText }}</text>
+      <button class="btn-save btn-gray" @click="finish">完成并保存</button>
+    </view>
+
+    <view class="card" v-if="today.length > 0">
+      <text class="card-title">今天已记录</text>
+      <view class="s-row" v-for="(s, i) in today" :key="i">
+        <text class="s-time">{{ s.time }}</text>
+        <text class="s-val">{{ s.count }} 次 · 用时 {{ s.dur }}</text>
+      </view>
+    </view>
+
+    <lbc-redline v-if="alertText.length > 0" level="warn" :message="alertText" action="安静侧卧观察 1 小时，仍少请联系医生或就诊" />
   </view>
 </template>
 
 <script>
+  import { luckyRecord } from '../../utils/request.uts'
+  import { journeyState } from '../../store/journeyStore.uts'
+
+  type SRow = { time: string, count: number, dur: string }
+
   export default {
-    data() { return {} }
+    data() {
+      return {
+        mode: 'count', counting: false, count: 0,
+        startedAt: 0, now: 0, saving: false,
+        today: [] as SRow[], alertText: ''
+      }
+    },
+    computed: {
+      elapsedText(): string {
+        const s = Math.floor((this.now - this.startedAt) / 1000)
+        return `${Math.floor(s / 60)} 分 ${s % 60} 秒`
+      }
+    },
+    onUnload() { clearInterval(this._timer) },
+    onLoad() { this.load() },
+    methods: {
+      async load() {
+        try {
+          const res = await luckyRecord('listMetrics', { journeyId: journeyState.journeyId, code: 'fetal_movement', limit: 10 } as UTSJSONObject)
+          const arr = res.getArray('records') ?? []
+          const rows: SRow[] = []
+          for (let i = 0; i < arr.length; i++) {
+            const m = arr[i] as UTSJSONObject
+            const v = m.getJSON('value') as UTSJSONObject | null
+            rows.push({
+              time: new Date(m.getNumber('ts') ?? 0).toISOString().slice(11, 16),
+              count: (v?.getNumber('count') ?? 0).toInt(),
+              dur: `${(v?.getNumber('durationMin') ?? 0).toInt()} 分钟`
+            })
+          }
+          this.today = rows
+        } catch (e) { /* 忽略 */ }
+      },
+      start() {
+        this.count = 0
+        this.startedAt = Date.now()
+        this.now = this.startedAt
+        this.counting = true
+        this._timer = setInterval(() => { this.now = Date.now() }, 1000)
+      },
+      tap() { this.count += 1 },
+      async finish() {
+        clearInterval(this._timer)
+        if (this.count == 0) { this.counting = false; return }
+        const durMin = Math.max(1, Math.round((Date.now() - this.startedAt) / 60000))
+        // 数到 10 次模式：若提前数满，durationMin 按实际用时；定时模式固定 60 分钟
+        this.saving = true
+        try {
+          const res = await luckyRecord('addMetric', {
+            journeyId: journeyState.journeyId, code: 'fetal_movement',
+            value: { count: this.count, durationMin: durMin } as UTSJSONObject
+          } as UTSJSONObject)
+          this.counting = false
+          // 明显低于近期均值提示（服务端趋势提醒的端上简化版）
+          if (this.today.length >= 3) {
+            const avg = this.today.reduce((a, b) => a + b.count, 0) / this.today.length
+            if (this.count < avg * 0.5) {
+              this.alertText = `今天这次（${this.count} 次）明显少于平时（约 ${Math.round(avg)} 次）`
+            }
+          }
+          uni.showToast({ title: '已记录 ✓', icon: 'success' })
+          this.load()
+        } catch (e) {
+          uni.showToast({ title: (e as Error).message, icon: 'none' })
+        } finally { this.saving = false }
+      }
+    }
   }
 </script>
 
 <style>
-  .page { flex: 1; background-color: #F7F6F4; align-items: center; padding-top: 200rpx; }
-  .title { font-size: 40rpx; font-weight: bold; color: #1F2329; }
-  .desc { font-size: 26rpx; color: #6B7280; margin-top: 24rpx; width: 600rpx; text-align: center; }
-  .todo-note { font-size: 22rpx; color: #A3AAB5; margin-top: 48rpx; width: 600rpx; text-align: center; }
+  .page { flex: 1; background-color: #F7F6F4; padding: 24rpx; align-items: center; }
+  .card { width: 700rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 40rpx; margin-top: 24rpx; align-items: center; }
+  .label { font-size: 28rpx; color: #1F2329; margin-bottom: 16rpx; }
+  .opts { flex-direction: row; margin-bottom: 16rpx; }
+  .opt { background-color: #F7F6F4; border-radius: 16rpx; padding: 20rpx 40rpx; margin: 0 12rpx; }
+  .opt-active { background-color: #FFEFEA; }
+  .opt-text { font-size: 28rpx; color: #6B7280; }
+  .opt-text-active { color: #FF7A6B; font-weight: bold; }
+  .hint { font-size: 22rpx; color: #A3AAB5; margin: 8rpx 0 24rpx 0; text-align: center; }
+  .btn-save { width: 620rpx; height: 96rpx; line-height: 96rpx; background-color: #FF7A6B; color: #FFFFFF; font-size: 32rpx; border-radius: 44rpx; margin-top: 8rpx; }
+  .btn-gray { background-color: #F7F6F4; color: #6B7280; }
+  .count { font-size: 120rpx; font-weight: bold; color: #FF7A6B; }
+  .big-btn { width: 320rpx; height: 320rpx; border-radius: 160rpx; background-color: #FF7A6B; align-items: center; justify-content: center; margin: 32rpx 0; }
+  .big-btn-text { font-size: 36rpx; font-weight: bold; color: #FFFFFF; text-align: center; }
+  .elapsed { font-size: 24rpx; color: #6B7280; margin-bottom: 24rpx; }
+  .card-title { font-size: 28rpx; font-weight: bold; color: #1F2329; margin-bottom: 16rpx; align-self: flex-start; }
+  .s-row { flex-direction: row; padding: 10rpx 0; align-self: stretch; }
+  .s-time { width: 140rpx; font-size: 24rpx; color: #A3AAB5; }
+  .s-val { font-size: 26rpx; color: #1F2329; }
 </style>
