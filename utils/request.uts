@@ -1,0 +1,70 @@
+/**
+ * 统一请求层：云对象 RPC 封装（docs/06 A6）
+ * - 统一附带登录态（token 经 uniCloud uni_id_token 通道）
+ * - 统一错误约定：errCode=0 成功；TOKEN_ 前缀自动清登录态并跳登录（uniIdRouter 等价行为）
+ * 注：首次在 HBuilderX 编译时，如回调/结果类型标注与当前 uni-app-x 版本有出入，仅需微调本文件。
+ */
+import { appState, clearToken, saveToken } from '../store/appStore.uts'
+
+export type ApiError = Error & { errCode?: string }
+
+export function callCloud(objName: string, method: string, params: UTSJSONObject): Promise<UTSJSONObject> {
+  return new Promise<UTSJSONObject>((resolve, reject) => {
+    uniCloud.callFunction({
+      name: objName,
+      data: { method: method, params: params } as UTSJSONObject,
+      success: (res) => {
+        const result = res.result as UTSJSONObject
+        const errNum = result.getNumber('errCode') ?? -1
+        if (errNum == 0) {
+          resolve(result)
+          return
+        }
+        const code = result.getString('errCode') ?? 'UNKNOWN'
+        const msg = result.getString('errMsg') ?? '请求失败'
+        if (code.indexOf('TOKEN_') == 0) {
+          clearToken()
+          uni.reLaunch({ url: '/pages/account/login' })
+        }
+        const e = new Error(msg) as ApiError
+        e.errCode = code
+        reject(e)
+      },
+      fail: (err) => {
+        reject(new Error(err.errMsg ?? '网络异常，请稍后再试'))
+      }
+    } as CallFunctionOptions)
+  })
+}
+
+/** 保存登录态（登录/注册成功后调用） */
+export function applyLoginResult(result: UTSJSONObject) {
+  const token = result.getString('token') ?? ''
+  if (token.length > 0) saveToken(token)
+}
+
+/* ---------------- 常用便捷方法 ---------------- */
+export function luckyId(method: string, params: UTSJSONObject): Promise<UTSJSONObject> {
+  return callCloud('lucky-id', method, params)
+}
+export function luckyJourney(method: string, params: UTSJSONObject): Promise<UTSJSONObject> {
+  return callCloud('lucky-journey', method, params)
+}
+export function luckyRecord(method: string, params: UTSJSONObject): Promise<UTSJSONObject> {
+  return callCloud('lucky-record', method, params)
+}
+export function luckyBaby(method: string, params: UTSJSONObject): Promise<UTSJSONObject> {
+  return callCloud('lucky-baby', method, params)
+}
+export function luckyCare(method: string, params: UTSJSONObject): Promise<UTSJSONObject> {
+  return callCloud('lucky-care', method, params)
+}
+export function luckyFamily(method: string, params: UTSJSONObject): Promise<UTSJSONObject> {
+  return callCloud('lucky-family', method, params)
+}
+export function luckyReminder(method: string, params: UTSJSONObject): Promise<UTSJSONObject> {
+  return callCloud('lucky-reminder', method, params)
+}
+export function luckyData(method: string, params: UTSJSONObject): Promise<UTSJSONObject> {
+  return callCloud('lucky-data', method, params)
+}

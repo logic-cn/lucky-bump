@@ -1,0 +1,65 @@
+<template>
+  <view class="page">
+    <view class="logo-wrap">
+      <text class="logo-title">幸孕记</text>
+      <text class="logo-sub">从备孕到育儿，一条不断档的生命记录</text>
+    </view>
+    <view class="card">
+      <input class="input" v-model="username" placeholder="用户名（4-24 位字母数字）" placeholder-class="ph" />
+      <input class="input" v-model="password" :password="true" placeholder="密码（8-32 位）" placeholder-class="ph" />
+      <button class="btn-primary" :disabled="loading" @click="doLogin">{{ loading ? '登录中…' : '登录' }}</button>
+      <view class="row-links">
+        <text class="link" @click="goRegister">没有账号？去注册</text>
+      </view>
+    </view>
+    <text class="agreement">登录即代表同意《用户协议》与《隐私政策》；你的健康数据仅用于为你服务。</text>
+  </view>
+</template>
+
+<script>
+  import { luckyId, applyLoginResult } from '../../utils/request.uts'
+  import { loadCurrentJourney } from '../../store/journeyStore.uts'
+
+  export default {
+    data() {
+      return { username: '', password: '', loading: false }
+    },
+    methods: {
+      goRegister() { uni.navigateTo({ url: '/pages/account/register' }) },
+      async afterLogin() {
+        const j = await loadCurrentJourney()
+        uni.reLaunch({ url: j == null ? '/pages/onboarding/onboarding' : '/pages/index/index' })
+      },
+      async doLogin() {
+        if (this.loading) return
+        if (this.username.length == 0 || this.password.length == 0) {
+          uni.showToast({ title: '请输入用户名与密码', icon: 'none' }); return
+        }
+        this.loading = true
+        try {
+          const res = await luckyId('login', { username: this.username, password: this.password } as UTSJSONObject)
+          applyLoginResult(res)
+          await this.afterLogin()
+        } catch (e) {
+          uni.showToast({ title: (e as Error).message, icon: 'none' })
+        } finally {
+          this.loading = false
+        }
+      }
+    }
+  }
+</script>
+
+<style>
+  .page { flex: 1; background-color: #F7F6F4; align-items: center; padding-top: 120rpx; }
+  .logo-wrap { align-items: center; margin-bottom: 64rpx; }
+  .logo-title { font-size: 56rpx; font-weight: bold; color: #1F2329; }
+  .logo-sub { font-size: 24rpx; color: #6B7280; margin-top: 16rpx; }
+  .card { width: 640rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 48rpx 40rpx; }
+  .input { height: 96rpx; border-bottom-width: 1px; border-bottom-color: #EDEBE8; font-size: 28rpx; margin-bottom: 32rpx; padding: 0 8rpx; }
+  .ph { color: #A3AAB5; }
+  .btn-primary { background-color: #FF7A6B; color: #FFFFFF; font-size: 32rpx; height: 96rpx; line-height: 96rpx; border-radius: 44rpx; margin-top: 16rpx; }
+  .row-links { align-items: center; margin-top: 32rpx; }
+  .link { color: #FF7A6B; font-size: 26rpx; }
+  .agreement { font-size: 20rpx; color: #A3AAB5; margin-top: 48rpx; width: 640rpx; text-align: center; }
+</style>

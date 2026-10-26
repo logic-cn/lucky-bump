@@ -1,0 +1,108 @@
+<template>
+  <view class="page">
+    <text class="title">你好，欢迎来到幸孕记</text>
+    <text class="sub">你现在处于哪个阶段？我们会据此为你安排一切</text>
+
+    <view v-if="step == 0" class="options">
+      <view class="option" @click="choose('ttc')">
+        <text class="opt-title">我在备孕</text>
+        <text class="opt-sub">记录经期与排卵，迎接好孕</text>
+      </view>
+      <view class="option" @click="choose('pregnant')">
+        <text class="opt-title">我已经怀孕</text>
+        <text class="opt-sub">产检提醒、孕期记录、宝宝发育</text>
+      </view>
+      <view class="option" @click="choose('parenting')">
+        <text class="opt-title">宝宝已出生</text>
+        <text class="opt-sub">喂养睡眠记录、成长曲线、疫苗</text>
+      </view>
+    </view>
+
+    <view v-if="step == 1" class="card">
+      <text class="q">{{ questionText }}</text>
+      <picker mode="date" :value="dateValue" @change="onDateChange">
+        <view class="date-box"><text class="date-text">{{ dateValue == '' ? '点这里选择日期' : dateValue }}</text></view>
+      </picker>
+      <button class="btn-primary" :disabled="loading" @click="submit">{{ loading ? '保存中…' : '开始' }}</button>
+      <text class="link" @click="step = 0">返回上一步</text>
+    </view>
+
+    <text class="tip">日期不确定也没关系，之后可随时修正（页面会标注"估算"）。</text>
+  </view>
+</template>
+
+<script>
+  import { luckyJourney } from '../../utils/request.uts'
+  import { applyJourney } from '../../store/journeyStore.uts'
+
+  export default {
+    data() {
+      return {
+        step: 0,        // 0 选阶段 / 1 录日期
+        mode: 'ttc',
+        dateValue: '',
+        loading: false
+      }
+    },
+    computed: {
+      questionText(): string {
+        if (this.mode == 'ttc') return '最近一次月经（末次月经）是哪天？'
+        if (this.mode == 'pregnant') return '末次月经第一天是哪天？（记不清可选 B 超推算的孕周，稍后在"我的-旅程设置"中修正）'
+        return '宝宝的出生日期是哪天？'
+      }
+    },
+    methods: {
+      choose(m: string) {
+        this.mode = m
+        this.dateValue = ''
+        this.step = 1
+      },
+      onDateChange(e: UniPickerChangeEvent) {
+        this.dateValue = (e.detail.value as string) ?? ''
+      },
+      async submit() {
+        if (this.loading) return
+        if (this.dateValue.length == 0) { uni.showToast({ title: '请选择日期', icon: 'none' }); return }
+        this.loading = true
+        try {
+          if (this.mode == 'parenting') {
+            // 宝宝已出生：先建旅程占位，引导到分娩登记补录
+            const res = await luckyJourney('createJourney', { mode: 'ttc', title: '我的旅程' } as UTSJSONObject)
+            uni.showToast({ title: '请先补充分娩登记', icon: 'none' })
+            uni.reLaunch({ url: '/pages/baby/birth-register' })
+            return
+          }
+          const res = await luckyJourney('createJourney', { mode: this.mode, lmpDate: this.dateValue } as UTSJSONObject)
+          if (res.getNumber('errCode') == 0) {
+            const view = res.getJSON('view')
+            if (view != null) applyJourney(view as UTSJSONObject)
+            uni.reLaunch({ url: '/pages/index/index' })
+          } else {
+            uni.showToast({ title: res.getString('errMsg') ?? '创建失败', icon: 'none' })
+          }
+        } catch (e) {
+          uni.showToast({ title: (e as Error).message, icon: 'none' })
+        } finally {
+          this.loading = false
+        }
+      }
+    }
+  }
+</script>
+
+<style>
+  .page { flex: 1; background-color: #F7F6F4; align-items: center; padding-top: 100rpx; }
+  .title { font-size: 44rpx; font-weight: bold; color: #1F2329; }
+  .sub { font-size: 26rpx; color: #6B7280; margin-top: 16rpx; margin-bottom: 64rpx; }
+  .options { width: 640rpx; }
+  .option { background-color: #FFFFFF; border-radius: 24rpx; padding: 40rpx; margin-bottom: 24rpx; }
+  .opt-title { font-size: 32rpx; font-weight: bold; color: #1F2329; }
+  .opt-sub { font-size: 24rpx; color: #A3AAB5; margin-top: 8rpx; }
+  .card { width: 640rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 48rpx 40rpx; align-items: center; }
+  .q { font-size: 30rpx; color: #1F2329; margin-bottom: 32rpx; }
+  .date-box { width: 560rpx; height: 96rpx; background-color: #F7F6F4; border-radius: 16rpx; align-items: center; justify-content: center; margin-bottom: 40rpx; }
+  .date-text { font-size: 30rpx; color: #1F2329; }
+  .btn-primary { background-color: #FF7A6B; color: #FFFFFF; font-size: 32rpx; height: 96rpx; line-height: 96rpx; border-radius: 44rpx; width: 560rpx; }
+  .link { color: #FF7A6B; font-size: 26rpx; margin-top: 32rpx; }
+  .tip { font-size: 20rpx; color: #A3AAB5; margin-top: 48rpx; width: 640rpx; text-align: center; }
+</style>

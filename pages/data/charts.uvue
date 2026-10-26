@@ -1,0 +1,20 @@
+<template>
+  <view class="page">
+    <text class="title">指标曲线</text>
+    <text class="desc">lbc-chart-line 曲线（docs/03 M6.1）。</text>
+    <text class="todo-note">页面完整交互按 docs/03 对应小节实现中（见 docs/DEV-PROGRESS.md）。</text>
+  </view>
+</template>
+
+<script>
+  export default {
+    data() { return {} }
+  }
+</script>
+
+<style>
+  .page { flex: 1; background-color: #F7F6F4; align-items: center; padding-top: 200rpx; }
+  .title { font-size: 40rpx; font-weight: bold; color: #1F2329; }
+  .desc { font-size: 26rpx; color: #6B7280; margin-top: 24rpx; width: 600rpx; text-align: center; }
+  .todo-note { font-size: 22rpx; color: #A3AAB5; margin-top: 48rpx; width: 600rpx; text-align: center; }
+</style>

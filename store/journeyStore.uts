@@ -1,0 +1,83 @@
+/** 旅程状态（阶段引擎的客户端镜像；服务端为唯一事实源 docs/06 §4.2） */
+import { reactive } from 'vue'
+import { luckyJourney, luckyData } from '../utils/request.uts'
+import { appState } from './appStore.uts'
+
+export const journeyState = reactive({
+  journeyId: '',
+  stage: '',          // PRECONCEPTION/T1/T2/T3/POSTPARTUM/RECOVERY/PARENTING/MOURNING
+  weeks: 0,
+  days: 0,
+  daysToEdd: 0,
+  postpartumDays: 0,
+  edd: '',
+  lmpDate: '',
+  deliveryDate: '',
+  fetusCount: 1,
+  highRisk: false,
+  title: '',
+  loaded: false
+})
+
+export function stageText(stage: string): string {
+  if (stage == 'PRECONCEPTION') return '备孕中'
+  if (stage == 'T1') return '孕早期'
+  if (stage == 'T2') return '孕中期'
+  if (stage == 'T3') return '孕晚期'
+  if (stage == 'POSTPARTUM') return '产褥期'
+  if (stage == 'RECOVERY') return '产后恢复'
+  if (stage == 'PARENTING') return '育儿期'
+  if (stage == 'MOURNING') return '关怀模式'
+  return ''
+}
+
+export function weekText(): string {
+  if (journeyState.deliveryDate.length > 0) return `产后第 ${journeyState.postpartumDays} 天`
+  if (journeyState.weeks > 0 || journeyState.days > 0) return `孕 ${journeyState.weeks} 周 + ${journeyState.days} 天`
+  return '备孕中'
+}
+
+/** 拉取当前旅程并写入状态 */
+export async function loadCurrentJourney(): Promise<UTSJSONObject | null> {
+  const res = await luckyJourney('listJourneys', {} as UTSJSONObject)
+  const currentId = res.getString('currentId') ?? ''
+  if (currentId.length == 0) return null
+  const arr = res.getArray('journeys') ?? []
+  for (let i = 0; i < arr.length; i++) {
+    const j = arr[i] as UTSJSONObject
+    if ((j.getString('_id') ?? '') == currentId) {
+      applyJourney(j)
+      return j
+    }
+  }
+  return null
+}
+
+export function applyJourney(j: UTSJSONObject) {
+  journeyState.journeyId = j.getString('_id') ?? ''
+  journeyState.stage = j.getString('stage') ?? ''
+  journeyState.weeks = (j.getNumber('weeks') ?? 0).toInt()
+  journeyState.days = (j.getNumber('days') ?? 0).toInt()
+  journeyState.daysToEdd = (j.getNumber('daysToEdd') ?? 0).toInt()
+  journeyState.postpartumDays = (j.getNumber('postpartumDays') ?? 0).toInt()
+  journeyState.edd = j.getString('edd') ?? ''
+  journeyState.lmpDate = j.getString('lmpDate') ?? ''
+  journeyState.deliveryDate = j.getString('deliveryDate') ?? ''
+  journeyState.fetusCount = (j.getNumber('fetusCount') ?? 1).toInt()
+  journeyState.highRisk = j.getBoolean('highRisk') ?? false
+  journeyState.title = j.getString('title') ?? ''
+  journeyState.loaded = true
+  appState.journeyId = journeyState.journeyId
+  appState.stage = journeyState.stage
+}
+
+/** 首屏聚合（今天页一次请求） */
+export type TodayData = {
+  todos: UTSJSONObject[],
+  latestWeight: string,
+  latestBp: string
+}
+
+export async function loadToday(): Promise<UTSJSONObject> {
+  return await luckyData('today', { journeyId: journeyState.journeyId } as UTSJSONObject)
+}

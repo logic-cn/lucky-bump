@@ -1,0 +1,170 @@
+<template>
+  <view class="page">
+    <!-- 阶段大卡 -->
+    <view class="hero-card">
+      <view class="hero-row">
+        <text class="hero-week">{{ weekText }}</text>
+        <text class="hero-stage">{{ stageLabel }}</text>
+      </view>
+      <text class="hero-sub" v-if="showBabySize">宝宝现在约 {{ babySizeText }}，距预产期还有 {{ daysToEdd }} 天</text>
+      <text class="hero-sub" v-else-if="isPostpartum">产后第 {{ postpartumDays }} 天 · 照顾好你自己也是宝宝的事</text>
+      <text class="hero-sub" v-else-if="isTtc">距预测下次月经还有 {{ daysToPeriod }} 天 · 记录身体信号，好孕自来</text>
+    </view>
+
+    <!-- 今日待办 -->
+    <view class="card" v-if="todos.length > 0">
+      <text class="card-title">今日待办</text>
+      <view class="todo-row" v-for="(t, i) in todos" :key="i" @click="openTodo(t)">
+        <view class="todo-dot" :class="t.getBoolean('urgent') == true ? 'todo-dot-urgent' : ''" />
+        <view class="todo-body">
+          <text class="todo-title">{{ t.getString('title') ?? '' }}</text>
+          <text class="todo-sub">{{ todoDateText(t) }}</text>
+        </view>
+        <text class="arrow">›</text>
+      </view>
+    </view>
+    <view class="card" v-else>
+      <text class="card-title">今日待办</text>
+      <text class="empty-text">暂无待办，按节奏来就好 ☺</text>
+    </view>
+
+    <!-- 快捷记录宫格 -->
+    <view class="card">
+      <text class="card-title">快捷记录</text>
+      <view class="grid">
+        <view class="grid-item" v-for="(item, i) in quickItems" :key="i" @click="goRecord(item.url)">
+          <text class="grid-icon">{{ item.icon }}</text>
+          <text class="grid-label">{{ item.label }}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 趋势摘要 -->
+    <view class="card" v-if="trendText.length > 0">
+      <text class="card-title">最近记录</text>
+      <text class="trend-text">{{ trendText }}</text>
+    </view>
+  </view>
+</template>
+
+<script>
+  import { appState } from '../../store/appStore.uts'
+  import { journeyState, weekText, stageText, loadCurrentJourney, loadToday } from '../../store/journeyStore.uts'
+
+  type QuickItem = { icon: string, label: string, url: string }
+
+  export default {
+    data() {
+      return {
+        todos: [] as UTSJSONObject[],
+        babySizeText: '',
+        daysToPeriod: 0,
+        trendText: ''
+      }
+    },
+    computed: {
+      stageLabel(): string { return stageText(journeyState.stage) },
+      weekLabel(): string { return weekText() },
+      showBabySize(): boolean { return journeyState.stage == 'T1' || journeyState.stage == 'T2' || journeyState.stage == 'T3' },
+      isPostpartum(): boolean { return journeyState.deliveryDate.length > 0 },
+      isTtc(): boolean { return journeyState.stage == 'PRECONCEPTION' },
+      quickItems(): QuickItem[] {
+        const s = journeyState.stage
+        const items: QuickItem[] = []
+        if (s == 'PRECONCEPTION') {
+          items.push({ icon: '🌸', label: '经期', url: '/pages/record/cycle' })
+          items.push({ icon: '🧪', label: '排卵试纸', url: '/pages/record/ovulation-test' })
+          items.push({ icon: '🌡', label: '基础体温', url: '/pages/record/cycle' })
+          items.push({ icon: '🤰', label: '验孕', url: '/pages/record/pregnancy-test' })
+        } else if (this.isPostpartum) {
+          items.push({ icon: '🍼', label: '喂养', url: '/pages/baby/feeding' })
+          items.push({ icon: '🧷', label: '尿布', url: '/pages/baby/diaper' })
+          items.push({ icon: '😴', label: '睡眠', url: '/pages/baby/sleep' })
+          items.push({ icon: '🩸', label: '恶露', url: '/pages/record/lochia' })
+          items.push({ icon: '💗', label: '情绪自评', url: '/pages/record/epds' })
+        } else {
+          items.push({ icon: '⚖️', label: '体重', url: '/pages/record/weight' })
+          items.push({ icon: '🩺', label: '血压', url: '/pages/record/blood-pressure' })
+          items.push({ icon: '🦶', label: '胎动', url: '/pages/record/fetal-movement' })
+          items.push({ icon: '⏱', label: '宫缩计时', url: '/pages/record/contraction-timer' })
+          items.push({ icon: '🌸', label: '症状', url: '/pages/record/symptom' })
+          items.push({ icon: '📔', label: '日记', url: '/pages/record/diary' })
+          items.push({ icon: '🩸', label: '血糖', url: '/pages/record/blood-glucose' })
+          items.push({ icon: '🏥', label: '产检', url: '/pages/care/schedule' })
+        }
+        return items
+      }
+    },
+    onShow() {
+      this.refresh()
+    },
+    methods: {
+      goRecord(url: string) { uni.navigateTo({ url }) },
+      openTodo(t: UTSJSONObject) {
+        const kind = t.getString('kind') ?? ''
+        if (kind.indexOf('prenatal') == 0) uni.navigateTo({ url: '/pages/care/schedule' })
+        else if (kind == 'vaccine') uni.navigateTo({ url: '/pages/baby/vaccines' })
+      },
+      todoDateText(t: UTSJSONObject): string {
+        const due = t.getString('dueDate') ?? ''
+        const prep = t.getString('prep') ?? ''
+        return prep.length > 0 ? `${due} · ${prep}` : due
+      },
+      async refresh() {
+        if (appState.token.length == 0) { uni.reLaunch({ url: '/pages/account/login' }); return }
+        const j = await loadCurrentJourney()
+        if (j == null) { uni.reLaunch({ url: '/pages/onboarding/onboarding' }); return }
+        try {
+          const res = await loadToday()
+          this.todos = res.getArray('todos') ?? []
+          const latest = res.getJSON('latest')
+          if (latest != null) {
+            const parts: string[] = []
+            const w = (latest as UTSJSONObject).getJSON('weight')
+            if (w != null) parts.push(`体重 ${(w as UTSJSONObject).getNumber('kg')}kg`)
+            const bp = (latest as UTSJSONObject).getJSON('blood_pressure')
+            if (bp != null) parts.push(`血压 ${(bp as UTSJSONObject).getNumber('sbp')}/${(bp as UTSJSONObject).getNumber('dbp')}`)
+            this.trendText = parts.join(' · ')
+          }
+          const jv = res.getJSON('journey')
+          if (jv != null) {
+            const edd = (jv as UTSJSONObject).getString('edd') ?? ''
+            if (edd.length > 0 && journeyState.deliveryDate.length == 0) {
+              const diff = Math.max(0, Math.floor((Date.parse(edd + 'T12:00:00Z') - Date.now()) / 86400000))
+              journeyState.daysToEdd = diff
+              const sizeMap = ['约一颗草莓', '约一个柠檬', '约一个牛油果', '约一个菠萝', '约一个小西瓜']
+              const idx = Math.min(4, Math.floor(journeyState.weeks / 8))
+              this.babySizeText = sizeMap[idx]
+            }
+          }
+        } catch (e) {
+          // token 失效已由请求层统一跳登录
+        }
+      }
+    }
+  }
+</script>
+
+<style>
+  .page { flex: 1; background-color: #F7F6F4; padding: 24rpx; }
+  .hero-card { background-color: #FF7A6B; border-radius: 24rpx; padding: 40rpx; margin-bottom: 24rpx; }
+  .hero-row { flex-direction: row; align-items: flex-end; }
+  .hero-week { font-size: 48rpx; font-weight: bold; color: #FFFFFF; flex: 1; }
+  .hero-stage { font-size: 24rpx; color: #FFEFEA; background-color: rgba(255,255,255,0.2); border-radius: 12rpx; padding: 8rpx 16rpx; }
+  .hero-sub { font-size: 26rpx; color: #FFEFEA; margin-top: 16rpx; }
+  .card { background-color: #FFFFFF; border-radius: 24rpx; padding: 32rpx; margin-bottom: 24rpx; }
+  .card-title { font-size: 30rpx; font-weight: bold; color: #1F2329; margin-bottom: 24rpx; }
+  .todo-row { flex-direction: row; align-items: center; padding: 16rpx 0; }
+  .todo-dot { width: 16rpx; height: 16rpx; border-radius: 8rpx; background-color: #FF7A6B; margin-right: 16rpx; }
+  .todo-dot-urgent { background-color: #E5484D; }
+  .todo-body { flex: 1; }
+  .todo-title { font-size: 28rpx; color: #1F2329; }
+  .todo-sub { font-size: 22rpx; color: #A3AAB5; margin-top: 4rpx; }
+  .arrow { font-size: 36rpx; color: #C9CDD4; }
+  .empty-text { font-size: 26rpx; color: #A3AAB5; }
+  .grid { flex-direction: row; flex-wrap: wrap; }
+  .grid-item { width: 25%; align-items: center; padding: 20rpx 0; }
+  .grid-icon { font-size: 44rpx; }
+  .grid-label { font-size: 22rpx; color: #6B7280; margin-top: 8rpx; }
+  .trend-text { font-size: 28rpx; color: #6B7280; }
+</style>

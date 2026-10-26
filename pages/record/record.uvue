@@ -1,0 +1,79 @@
+<template>
+  <view class="page">
+    <view class="group" v-for="(g, gi) in groups" :key="gi">
+      <text class="group-title">{{ g.title }}</text>
+      <view class="grid">
+        <view class="grid-item" v-for="(item, i) in g.items" :key="i" @click="go(item.url)">
+          <text class="grid-icon">{{ item.icon }}</text>
+          <text class="grid-label">{{ item.label }}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script>
+  import { journeyState } from '../../store/journeyStore.uts'
+
+  type RItem = { icon: string, label: string, url: string }
+  type RGroup = { title: string, items: RItem[] }
+
+  export default {
+    data() { return {} },
+    computed: {
+      groups(): RGroup[] {
+        const s = journeyState.stage
+        const groups: RGroup[] = []
+        const ttc: RItem[] = [
+          { icon: '🌸', label: '经期', url: '/pages/record/cycle' },
+          { icon: '🧪', label: '排卵试纸', url: '/pages/record/ovulation-test' },
+          { icon: '🌡', label: '基础体温', url: '/pages/record/cycle' },
+          { icon: '🤰', label: '验孕', url: '/pages/record/pregnancy-test' },
+          { icon: '💗', label: '同房(隐私)', url: '/pages/record/cycle' }
+        ]
+        const pregnancy: RItem[] = [
+          { icon: '⚖️', label: '体重', url: '/pages/record/weight' },
+          { icon: '🩺', label: '血压', url: '/pages/record/blood-pressure' },
+          { icon: '🩸', label: '血糖', url: '/pages/record/blood-glucose' },
+          { icon: '🦶', label: '胎动', url: '/pages/record/fetal-movement' },
+          { icon: '⏱', label: '宫缩计时', url: '/pages/record/contraction-timer' },
+          { icon: '🌸', label: '症状情绪', url: '/pages/record/symptom' },
+          { icon: '📔', label: '日记', url: '/pages/record/diary' }
+        ]
+        const postpartum: RItem[] = [
+          { icon: '🩸', label: '恶露', url: '/pages/record/lochia' },
+          { icon: '💗', label: '情绪自评', url: '/pages/record/epds' },
+          { icon: '⚖️', label: '体重', url: '/pages/record/weight' }
+        ]
+        const baby: RItem[] = [
+          { icon: '🍼', label: '喂养', url: '/pages/baby/feeding' },
+          { icon: '🧷', label: '尿布', url: '/pages/baby/diaper' },
+          { icon: '😴', label: '睡眠', url: '/pages/baby/sleep' },
+          { icon: '📏', label: '成长', url: '/pages/baby/growth' },
+          { icon: '💉', label: '疫苗', url: '/pages/baby/vaccines' }
+        ]
+        if (s == 'PRECONCEPTION') groups.push({ title: '备孕', items: ttc })
+        if (s == 'T1' || s == 'T2' || s == 'T3') groups.push({ title: '孕期', items: pregnancy })
+        if (s == 'POSTPARTUM' || s == 'RECOVERY' || s == 'PARENTING') {
+          groups.push({ title: '产后恢复', items: postpartum })
+          groups.push({ title: '宝宝', items: baby })
+        }
+        groups.push({ title: '产检', items: [{ icon: '🏥', label: '产检中心', url: '/pages/care/schedule' }] })
+        return groups
+      }
+    },
+    methods: {
+      go(url: string) { uni.navigateTo({ url }) }
+    }
+  }
+</script>
+
+<style>
+  .page { flex: 1; background-color: #F7F6F4; padding: 24rpx; }
+  .group { background-color: #FFFFFF; border-radius: 24rpx; padding: 32rpx; margin-bottom: 24rpx; }
+  .group-title { font-size: 30rpx; font-weight: bold; color: #1F2329; margin-bottom: 24rpx; }
+  .grid { flex-direction: row; flex-wrap: wrap; }
+  .grid-item { width: 25%; align-items: center; padding: 20rpx 0; }
+  .grid-icon { font-size: 44rpx; }
+  .grid-label { font-size: 22rpx; color: #6B7280; margin-top: 8rpx; }
+</style>
