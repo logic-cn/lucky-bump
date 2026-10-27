@@ -13,9 +13,12 @@ const crypto = require('crypto')
 function loadSecret() {
   try {
     // uniCloud 环境下可用；本地 Node 测试环境无此模块则走默认。
+    // 插件目录：优先自研命名空间 lucky-id，回退官方约定 uni-id（两者均指向 uni-config-center/<id>/config.json）
     const createConfigCenter = require('uni-config-center')
-    const conf = createConfigCenter({ pluginId: 'lucky-id' }).config() || {}
-    if (conf.tokenSecret) return String(conf.tokenSecret)
+    for (const pid of ['lucky-id', 'uni-id']) {
+      const conf = createConfigCenter({ pluginId: pid }).config() || {}
+      if (conf.tokenSecret) return String(conf.tokenSecret)
+    }
   } catch (e) { /* 本地测试环境：忽略 */ }
   return 'lb-dev-secret-DO-NOT-USE-IN-PRODUCTION'
 }
