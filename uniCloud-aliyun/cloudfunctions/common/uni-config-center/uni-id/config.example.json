@@ -1,0 +1,4 @@
+{
+  "tokenSecret": "<替换为 openssl rand -hex 32 生成的 64 位随机串>",
+  "tokenExpiresIn": 2592000
+}

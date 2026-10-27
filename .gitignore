@@ -16,3 +16,6 @@ coverage/
 .env
 .env.local
 config/local.*
+
+# 生产密钥（模板已入库，真实值不入库）
+uniCloud-aliyun/cloudfunctions/common/uni-config-center/uni-id/config.json

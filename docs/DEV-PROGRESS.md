@@ -56,6 +56,14 @@
 - [x] lucky-seed.verifySeed 部署门禁纳入单元测试（模板完整性 + tokenSecret 上线告警）
 - [x] 公共模块补 package.json（uniCloud 上传识别规范）
 
+### 部署阶段（2026-10-27，用户提供 HBuilderX + uniCloud 空间后）✅
+- [x] DCloud appid 已生成（__UNI__1BC2635，用户在 HBuilderX 中完成）
+- [x] 阿里云空间 lucky-bump（<旧阿里云空间ID>）已关联工程（spacex.json 已回填）
+- [x] 9 云对象 + 3 公共模块经 HBuilderX CLI 上传成功；24 张 schema 上传；--initdatabase 完成
+- [x] 生产 tokenSecret 生成并随 uni-config-center 兼容层部署（真实值 gitignore，模板入库）
+- [ ] 剩余人工：真机运行/云打包（HBuilderX 一键）、§6 回归清单（真机项）
+- 已知 CLI 限制：`--run cloudobject` 阿里云下仅本地调试，云端冒烟由首屏登录自然覆盖
+
 ## 遗留说明（不阻塞上线评审）
 
 1. AI 报告识别（V1.1 会员功能，路线图见 docs/05）；前端已预留入口位。
