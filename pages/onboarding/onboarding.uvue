@@ -63,6 +63,7 @@
       if (mode.value == 'parenting') {
         // 宝宝已出生：先建旅程占位，引导到分娩登记补录
         const res = await luckyJourney('createJourney', { mode: 'ttc', title: '我的旅程' } as UTSJSONObject)
+        loading.value = false
         uni.showToast({ title: '请先补充分娩登记', icon: 'none' })
         uni.reLaunch({ url: '/pages/baby/birth-register' })
         return
@@ -71,14 +72,16 @@
       if (res.getNumber('errCode') == 0) {
         const view = res.getJSON('view')
         if (view != null) applyJourney(view as UTSJSONObject)
+        // 在页面卸载前复位 loading（reLaunch 会卸载当前页，finally 中再写 ref 会干扰卸载时序）
+        loading.value = false
         uni.reLaunch({ url: '/pages/index/index' })
-      } else {
-        uni.showToast({ title: res.getString('errMsg') ?? '创建失败', icon: 'none' })
+        return
       }
-    } catch (e) {
-      uni.showToast({ title: (e as Error).message, icon: 'none' })
-    } finally {
       loading.value = false
+      uni.showToast({ title: res.getString('errMsg') ?? '创建失败', icon: 'none' })
+    } catch (e) {
+      loading.value = false
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
     }
   }
 </script>
