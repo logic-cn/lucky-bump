@@ -84,20 +84,29 @@ function createRuntime() {
   }
   return {
     db, store,
-    /** 调用云对象：ctx 含 uniCloud/getUniIdToken/getClientInfo，token 经 uni_id_token 语义传递 */
+    /** 调用云对象：ctx 含 getUniIdToken/getClientInfo，token 经 uni_id_token 语义传递；
+     *  与阿里云真实运行时一致：uniCloud.database() 走全局变量，this 上仅暴露 getUniIdToken 等上下文方法 */
     async callObject(objName, method, params = {}, opts = {}) {
       if (method.startsWith('_')) throw new Error('私有方法不可外部调用')
       const mod = require(path.join(OBJ_DIR, objName, 'index.obj.js'))
       const fn = mod[method]
       if (typeof fn !== 'function') throw new Error(`method ${objName}.${method} not found`)
-      // 模拟云对象 this：上下文属性 + 模块方法原型链（支持 this._internal 调用）
-      const ctx = Object.create(mod)
-      Object.assign(ctx, {
-        uniCloud: { database: () => db },
-        getUniIdToken: () => opts.token || '',
-        getClientInfo: () => ({ clientIP: '127.0.0.1' })
-      })
-      return fn.call(ctx, params)
+      const prevGlobal = global.uniCloud
+      global.uniCloud = { database: () => db }
+      try {
+        // 模拟云对象 this：上下文属性 + 模块方法原型链（支持 this._internal 调用）
+        const ctx = Object.create(mod)
+        Object.assign(ctx, {
+          getUniIdToken: () => opts.token || '',
+          getClientInfo: () => ({ clientIP: '127.0.0.1' })
+        })
+        // 与云端 callFunction 语义一致：params 为参数数组时按 method(...params) 展开
+        const args = Array.isArray(params) ? params : [params]
+        return await fn.call(ctx, ...args)
+      } finally {
+        if (prevGlobal === undefined) delete global.uniCloud
+        else global.uniCloud = prevGlobal
+      }
     }
   }
 }

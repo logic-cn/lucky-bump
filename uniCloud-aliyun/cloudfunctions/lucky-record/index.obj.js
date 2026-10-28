@@ -14,7 +14,7 @@ const EVENTS = 'lb-cycle-events'
 const CYCLES = 'lb-cycles'
 const TRACKERS = 'lb-tracker-sessions'
 
-function db() { return this.uniCloud.database() }
+function db() { return uniCloud.database() }
 
 /* ---------------- 权限 ---------------- */
 async function requireUser() {

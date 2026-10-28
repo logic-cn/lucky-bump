@@ -10,7 +10,9 @@ export function callCloud(objName: string, method: string, params: UTSJSONObject
   return new Promise<UTSJSONObject>((resolve, reject) => {
     uniCloud.callFunction({
       name: objName,
-      data: { method: method, params: params } as UTSJSONObject,
+      // 云对象经 callFunction 调用的约定：data={method, params[]}，params 为参数数组，
+      // 平台按 method(...params) 展开；单参数对象需包一层 [params]。
+      data: { method: method, params: [params] } as UTSJSONObject,
       success: (res) => {
         const result = res.result as UTSJSONObject
         const errNum = result.getNumber('errCode') ?? -1

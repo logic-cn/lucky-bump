@@ -5,7 +5,7 @@
 const auth = require('./common/lucky-auth-common')
 
 const DAY = 24 * 3600 * 1000
-function db() { return this.uniCloud.database() }
+function db() { return uniCloud.database() }
 async function requireUser() {
   const token = (this.__mockToken != null) ? this.__mockToken : this.getUniIdToken()
   const v = auth.verifyToken(token)

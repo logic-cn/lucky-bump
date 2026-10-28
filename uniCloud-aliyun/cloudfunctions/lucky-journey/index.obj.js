@@ -109,7 +109,7 @@ async function requireUser() {
   return v.uid
 }
 async function ownedJourney(uid, journeyId) {
-  const res = await this.uniCloud.database().collection(col).where({ _id: journeyId, user_id: uid }).get()
+  const res = await uniCloud.database().collection(col).where({ _id: journeyId, user_id: uid }).get()
   return res.data[0] || null
 }
 function publicView(j, now = Date.now()) {
@@ -145,14 +145,14 @@ module.exports = {
     } else {
       return auth.fail('PARAM_ERROR', 'mode 无效')
     }
-    const res = await this.uniCloud.database().collection(col).add(doc)
+    const res = await uniCloud.database().collection(col).add(doc)
     return auth.ok({ journeyId: res.id, view: publicView(Object.assign({ _id: res.id }, doc), now) })
   },
 
   async listJourneys() {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const res = await this.uniCloud.database().collection(col).where({ user_id: uid }).orderBy('created_at', 'desc').get()
+    const res = await uniCloud.database().collection(col).where({ user_id: uid }).orderBy('created_at', 'desc').get()
     const now = Date.now()
     const views = res.data.map(j => publicView(j, now))
     // 默认旅程：非归档非哀伤优先
@@ -167,7 +167,7 @@ module.exports = {
     if (params.journeyId) {
       j = await ownedJourney.call(this, uid, params.journeyId)
     } else {
-      const res = await this.uniCloud.database().collection(col).where({ user_id: uid, stage_code: this.uniCloud.database().command.neq('ARCHIVED') }).orderBy('created_at', 'desc').limit(1).get()
+      const res = await uniCloud.database().collection(col).where({ user_id: uid, stage_code: uniCloud.database().command.neq('ARCHIVED') }).orderBy('created_at', 'desc').limit(1).get()
       j = res.data[0]
     }
     if (!j) return auth.ok({ journey: null })
@@ -195,7 +195,7 @@ module.exports = {
       if (params.eddSource === 'lmp') patch.lmp_date = parseDate(params.lmpDate)
       if (isFirstTrimesterUS) { patch.ultrasound_locked = true; patch.lmp_date = v.edd - 280 * DAY }
     }
-    await this.uniCloud.database().collection(col).doc(j._id).update(patch)
+    await uniCloud.database().collection(col).doc(j._id).update(patch)
     const nj = Object.assign({}, j, patch)
     return auth.ok({ view: publicView(nj) })
   },
@@ -211,7 +211,7 @@ module.exports = {
     const v = validateEddInput(src, params)
     if (!v) return auth.fail('PARAM_ERROR', '请提供有效孕周日期（如末次月经）')
     const patch = { edd: v.edd, edd_source: v.eddSource, lmp_date: params.lmpDate ? parseDate(params.lmpDate) : (v.edd - 280 * DAY), stage_code: 'PREGNANT', confirmed_at: Date.now(), updated_at: Date.now() }
-    await this.uniCloud.database().collection(col).doc(j._id).update(patch)
+    await uniCloud.database().collection(col).doc(j._id).update(patch)
     const nj = Object.assign({}, j, patch)
     const view = publicView(nj)
     // 好孕仪式包：视图 + 下一步引导
@@ -224,7 +224,7 @@ module.exports = {
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
     const j = await ownedJourney.call(this, uid, params.journeyId)
     if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
-    await this.uniCloud.database().collection(col).doc(j._id).update({ stage_code: 'MOURNING', mourning_since: Date.now(), mourning_reason: String(params.reason || '').slice(0, 20), updated_at: Date.now() })
+    await uniCloud.database().collection(col).doc(j._id).update({ stage_code: 'MOURNING', mourning_since: Date.now(), mourning_reason: String(params.reason || '').slice(0, 20), updated_at: Date.now() })
     return auth.ok({ undoDeadlineDays: 30 })
   },
 
@@ -234,7 +234,7 @@ module.exports = {
     const j = await ownedJourney.call(this, uid, params.journeyId)
     if (!j || j.stage_code !== 'MOURNING') return auth.fail('STATE_ERROR', '当前不在哀伤模式')
     if (Date.now() - j.mourning_since > 30 * DAY) return auth.fail('STATE_ERROR', '已超过 30 天撤销期')
-    await this.uniCloud.database().collection(col).doc(j._id).update({ stage_code: j.edd ? 'PREGNANT' : 'PRECONCEPTION', mourning_since: 0, updated_at: Date.now() })
+    await uniCloud.database().collection(col).doc(j._id).update({ stage_code: j.edd ? 'PREGNANT' : 'PRECONCEPTION', mourning_since: 0, updated_at: Date.now() })
     return auth.ok()
   },
 
@@ -242,7 +242,7 @@ module.exports = {
   async startNewJourney(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const res = await this.uniCloud.database().collection(col).add({ user_id: uid, title: params.title || '新的旅程', fetus_count: 1, stage_code: 'PRECONCEPTION', created_at: Date.now(), updated_at: Date.now(), from_journey_id: params.fromJourneyId || '' })
+    const res = await uniCloud.database().collection(col).add({ user_id: uid, title: params.title || '新的旅程', fetus_count: 1, stage_code: 'PRECONCEPTION', created_at: Date.now(), updated_at: Date.now(), from_journey_id: params.fromJourneyId || '' })
     return auth.ok({ journeyId: res.id })
   },
 
@@ -257,7 +257,7 @@ module.exports = {
     const babies = Array.isArray(params.babies) ? params.babies : []
     if (babies.length === 0) return auth.fail('PARAM_ERROR', '至少登记一位宝宝')
     if (babies.length !== j.fetus_count && j.fetus_count > 1) return auth.fail('PARAM_ERROR', `多胎旅程需登记 ${j.fetus_count} 位宝宝`)
-    const dbase = this.uniCloud.database()
+    const dbase = uniCloud.database()
     const ids = []
     for (const b of babies) {
       const r = await dbase.collection('lb-babies').add({
@@ -284,11 +284,11 @@ module.exports = {
     if (params.journeyId) {
       j = await ownedJourney.call(this, uid, params.journeyId)
     } else {
-      const res = await this.uniCloud.database().collection(col).where({ user_id: uid }).orderBy('created_at', 'desc').limit(5).get()
+      const res = await uniCloud.database().collection(col).where({ user_id: uid }).orderBy('created_at', 'desc').limit(5).get()
       j = res.data.find(x => x.stage_code !== 'ARCHIVED' && x.stage_code !== 'MOURNING') || res.data[0]
     }
     if (!j) return auth.ok({ babies: [] })
-    const res2 = await this.uniCloud.database().collection('lb-babies').where({ journey_id: j._id }).orderBy('birth_date', 'asc').get()
+    const res2 = await uniCloud.database().collection('lb-babies').where({ journey_id: j._id }).orderBy('birth_date', 'asc').get()
     return auth.ok({
       babies: res2.data.map(b => ({
         _id: b._id, nickname: b.nickname, sex: b.sex,
@@ -303,7 +303,7 @@ module.exports = {
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
     const j = await ownedJourney.call(this, uid, params.journeyId)
     if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
-    await this.uniCloud.database().collection(col).doc(j._id).update({ stage_code: 'ARCHIVED', updated_at: Date.now() })
+    await uniCloud.database().collection(col).doc(j._id).update({ stage_code: 'ARCHIVED', updated_at: Date.now() })
     return auth.ok()
   }
 }

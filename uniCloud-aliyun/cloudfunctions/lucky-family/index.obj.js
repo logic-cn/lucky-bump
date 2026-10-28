@@ -12,7 +12,7 @@ const GROUPS = ['prenatal', 'reports', 'emotions', 'diary', 'intimate', 'screeni
 const STRICT_ONLY = new Set(['intimate', 'screenings'])
 const ROLES = ['admin', 'recorder', 'viewer']
 
-function db() { return this.uniCloud.database() }
+function db() { return uniCloud.database() }
 async function requireUser() {
   const token = (this.__mockToken != null) ? this.__mockToken : this.getUniIdToken()
   const v = auth.verifyToken(token)

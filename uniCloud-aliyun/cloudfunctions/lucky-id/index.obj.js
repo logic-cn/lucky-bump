@@ -8,7 +8,7 @@ const auth = require('./common/lucky-auth-common')
 
 const TOKEN_TTL_DAYS = 30
 
-function db() { return this.uniCloud.database() }
+function db() { return uniCloud.database() }
 const usersCol = 'uni-id-users'
 const tokenCol = 'lb-token'
 
