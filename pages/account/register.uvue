@@ -15,31 +15,30 @@
   </view>
 </template>
 
-<script>
+<script setup lang="uts">
+  import { ref } from 'vue'
   import { luckyId, applyLoginResult } from '../../utils/request.uts'
-  import { clearToken } from '../../store/appStore.uts'
 
-  export default {
-    data() {
-      return { username: '', nickname: '', password: '', password2: '', loading: false }
-    },
-    methods: {
-      goLogin() { uni.navigateBack() },
-      async doRegister() {
-        if (this.loading) return
-        if (this.password.length < 8) { uni.showToast({ title: '密码至少 8 位', icon: 'none' }); return }
-        if (this.password != this.password2) { uni.showToast({ title: '两次密码不一致', icon: 'none' }); return }
-        this.loading = true
-        try {
-          const res = await luckyId('register', { username: this.username, password: this.password, nickname: this.nickname } as UTSJSONObject)
-          applyLoginResult(res)
-          uni.reLaunch({ url: '/pages/onboarding/onboarding' })
-        } catch (e) {
-          uni.showToast({ title: (e as Error).message, icon: 'none' })
-        } finally {
-          this.loading = false
-        }
-      }
+  const username = ref<string>('')
+  const nickname = ref<string>('')
+  const password = ref<string>('')
+  const password2 = ref<string>('')
+  const loading = ref<boolean>(false)
+
+  function goLogin() { uni.navigateBack() }
+  async function doRegister() {
+    if (loading.value) return
+    if (password.value.length < 8) { uni.showToast({ title: '密码至少 8 位', icon: 'none' }); return }
+    if (password.value != password2.value) { uni.showToast({ title: '两次密码不一致', icon: 'none' }); return }
+    loading.value = true
+    try {
+      const res = await luckyId('register', { username: username.value, password: password.value, nickname: nickname.value } as UTSJSONObject)
+      applyLoginResult(res)
+      uni.reLaunch({ url: '/pages/onboarding/onboarding' })
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    } finally {
+      loading.value = false
     }
   }
 </script>

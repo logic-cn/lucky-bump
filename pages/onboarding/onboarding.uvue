@@ -31,61 +31,54 @@
   </view>
 </template>
 
-<script>
+<script setup lang="uts">
+  import { computed, ref } from 'vue'
   import { luckyJourney } from '../../utils/request.uts'
   import { applyJourney } from '../../store/journeyStore.uts'
 
-  export default {
-    data() {
-      return {
-        step: 0,        // 0 选阶段 / 1 录日期
-        mode: 'ttc',
-        dateValue: '',
-        loading: false
+  const step = ref<number>(0)        // 0 选阶段 / 1 录日期
+  const mode = ref<string>('ttc')
+  const dateValue = ref<string>('')
+  const loading = ref<boolean>(false)
+
+  const questionText = computed((): string => {
+    if (mode.value == 'ttc') return '最近一次月经（末次月经）是哪天？'
+    if (mode.value == 'pregnant') return '末次月经第一天是哪天？（记不清可选 B 超推算的孕周，稍后在"我的-旅程设置"中修正）'
+    return '宝宝的出生日期是哪天？'
+  })
+
+  function choose(m: string) {
+    mode.value = m
+    dateValue.value = ''
+    step.value = 1
+  }
+  function onDateChange(e: UniPickerChangeEvent) {
+    dateValue.value = (e.detail.value as string) ?? ''
+  }
+  async function submit() {
+    if (loading.value) return
+    if (dateValue.value.length == 0) { uni.showToast({ title: '请选择日期', icon: 'none' }); return }
+    loading.value = true
+    try {
+      if (mode.value == 'parenting') {
+        // 宝宝已出生：先建旅程占位，引导到分娩登记补录
+        const res = await luckyJourney('createJourney', { mode: 'ttc', title: '我的旅程' } as UTSJSONObject)
+        uni.showToast({ title: '请先补充分娩登记', icon: 'none' })
+        uni.reLaunch({ url: '/pages/baby/birth-register' })
+        return
       }
-    },
-    computed: {
-      questionText(): string {
-        if (this.mode == 'ttc') return '最近一次月经（末次月经）是哪天？'
-        if (this.mode == 'pregnant') return '末次月经第一天是哪天？（记不清可选 B 超推算的孕周，稍后在"我的-旅程设置"中修正）'
-        return '宝宝的出生日期是哪天？'
+      const res = await luckyJourney('createJourney', { mode: mode.value, lmpDate: dateValue.value } as UTSJSONObject)
+      if (res.getNumber('errCode') == 0) {
+        const view = res.getJSON('view')
+        if (view != null) applyJourney(view as UTSJSONObject)
+        uni.reLaunch({ url: '/pages/index/index' })
+      } else {
+        uni.showToast({ title: res.getString('errMsg') ?? '创建失败', icon: 'none' })
       }
-    },
-    methods: {
-      choose(m: string) {
-        this.mode = m
-        this.dateValue = ''
-        this.step = 1
-      },
-      onDateChange(e: UniPickerChangeEvent) {
-        this.dateValue = (e.detail.value as string) ?? ''
-      },
-      async submit() {
-        if (this.loading) return
-        if (this.dateValue.length == 0) { uni.showToast({ title: '请选择日期', icon: 'none' }); return }
-        this.loading = true
-        try {
-          if (this.mode == 'parenting') {
-            // 宝宝已出生：先建旅程占位，引导到分娩登记补录
-            const res = await luckyJourney('createJourney', { mode: 'ttc', title: '我的旅程' } as UTSJSONObject)
-            uni.showToast({ title: '请先补充分娩登记', icon: 'none' })
-            uni.reLaunch({ url: '/pages/baby/birth-register' })
-            return
-          }
-          const res = await luckyJourney('createJourney', { mode: this.mode, lmpDate: this.dateValue } as UTSJSONObject)
-          if (res.getNumber('errCode') == 0) {
-            const view = res.getJSON('view')
-            if (view != null) applyJourney(view as UTSJSONObject)
-            uni.reLaunch({ url: '/pages/index/index' })
-          } else {
-            uni.showToast({ title: res.getString('errMsg') ?? '创建失败', icon: 'none' })
-          }
-        } catch (e) {
-          uni.showToast({ title: (e as Error).message, icon: 'none' })
-        } finally {
-          this.loading = false
-        }
-      }
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    } finally {
+      loading.value = false
     }
   }
 </script>

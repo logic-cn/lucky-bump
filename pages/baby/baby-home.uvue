@@ -37,58 +37,57 @@
   </view>
 </template>
 
-<script>
+<script setup lang="uts">
+  import { computed, ref } from 'vue'
+  import { onLoad } from '@dcloudio/uni-app'
   import { luckyJourney, luckyBaby } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
 
-  export default {
-    data() {
-      return { babies: [] as UTSJSONObject[], summary: null, currentBabyId: '' }
-    },
-    computed: {
-      sumFeedCount(): number { return ((this.summary as UTSJSONObject | null)?.getJSON('feeding') as UTSJSONObject | null)?.getNumber('count')?.toInt() ?? 0 },
-      sumMl(): number { return ((this.summary as UTSJSONObject | null)?.getJSON('feeding') as UTSJSONObject | null)?.getNumber('totalMl')?.toInt() ?? 0 },
-      sumDiaper(): number { return ((this.summary as UTSJSONObject | null)?.getJSON('diaper') as UTSJSONObject | null)?.getNumber('count')?.toInt() ?? 0 },
-      sumSleepMin(): number { return ((this.summary as UTSJSONObject | null)?.getJSON('sleep') as UTSJSONObject | null)?.getNumber('totalMin')?.toInt() ?? 0 }
-    },
-    onLoad() { this.load() },
-    methods: {
-      go(url: string) { uni.navigateTo({ url }) },
-      goRegister() { uni.navigateTo({ url: '/pages/baby/birth-register' }) },
-      monthText(b: UTSJSONObject): string {
-        const birth = b.getString('birthDate') ?? ''
-        if (birth.length == 0) return ''
-        const days = Math.floor((Date.now() - Date.parse(birth + 'T12:00:00Z')) / 86400000)
-        const months = Math.floor(days / 30.4375)
-        return `${months} 个月 ${days % 30} 天`
-      },
-      selectBaby(b: UTSJSONObject) {
-        this.currentBabyId = b.getString('_id') ?? ''
-        journeyState.currentBabyId = this.currentBabyId
-        uni.setStorageSync('current_baby_id', this.currentBabyId)
-        this.loadSummary()
-      },
-      async load() {
-        try {
-          const stored = uni.getStorageSync('current_baby_id') as string
-          this.currentBabyId = stored ?? ''
-          const res = await luckyJourney('listBabies', { journeyId: journeyState.journeyId } as UTSJSONObject)
-          this.babies = res.getArray('babies') ?? []
-          if (this.currentBabyId.length == 0 && this.babies.length > 0) {
-            this.selectBaby(this.babies[0])
-          } else {
-            this.loadSummary()
-          }
-        } catch (e) { /* 忽略 */ }
-      },
-      async loadSummary() {
-        if (this.currentBabyId.length == 0) { this.summary = null; return }
-        try {
-          this.summary = await luckyBaby('dailySummary', { journeyId: journeyState.journeyId, babyId: this.currentBabyId } as UTSJSONObject)
-        } catch (e) { this.summary = null }
-      }
-    }
+  const babies = ref<UTSJSONObject[]>([])
+  const summary = ref<UTSJSONObject | null>(null)
+  const currentBabyId = ref<string>('')
+
+  const sumFeedCount = computed((): number => ((summary.value as UTSJSONObject | null)?.getJSON('feeding') as UTSJSONObject | null)?.getNumber('count')?.toInt() ?? 0)
+  const sumMl = computed((): number => ((summary.value as UTSJSONObject | null)?.getJSON('feeding') as UTSJSONObject | null)?.getNumber('totalMl')?.toInt() ?? 0)
+  const sumDiaper = computed((): number => ((summary.value as UTSJSONObject | null)?.getJSON('diaper') as UTSJSONObject | null)?.getNumber('count')?.toInt() ?? 0)
+  const sumSleepMin = computed((): number => ((summary.value as UTSJSONObject | null)?.getJSON('sleep') as UTSJSONObject | null)?.getNumber('totalMin')?.toInt() ?? 0)
+
+  function go(url: string) { uni.navigateTo({ url }) }
+  function goRegister() { uni.navigateTo({ url: '/pages/baby/birth-register' }) }
+  function monthText(b: UTSJSONObject): string {
+    const birth = b.getString('birthDate') ?? ''
+    if (birth.length == 0) return ''
+    const days = Math.floor((Date.now() - Date.parse(birth + 'T12:00:00Z')) / 86400000)
+    const months = Math.floor(days / 30.4375)
+    return `${months} 个月 ${days % 30} 天`
   }
+  function selectBaby(b: UTSJSONObject) {
+    currentBabyId.value = b.getString('_id') ?? ''
+    journeyState.currentBabyId = currentBabyId.value
+    uni.setStorageSync('current_baby_id', currentBabyId.value)
+    loadSummary()
+  }
+  async function load() {
+    try {
+      const stored = uni.getStorageSync('current_baby_id') as string
+      currentBabyId.value = stored ?? ''
+      const res = await luckyJourney('listBabies', { journeyId: journeyState.journeyId } as UTSJSONObject)
+      babies.value = res.getArray<UTSJSONObject>('babies') ?? []
+      if (currentBabyId.value.length == 0 && babies.value.length > 0) {
+        selectBaby(babies.value[0])
+      } else {
+        loadSummary()
+      }
+    } catch (e) { /* 忽略 */ }
+  }
+  async function loadSummary() {
+    if (currentBabyId.value.length == 0) { summary.value = null; return }
+    try {
+      summary.value = await luckyBaby('dailySummary', { journeyId: journeyState.journeyId, babyId: currentBabyId.value } as UTSJSONObject)
+    } catch (e) { summary.value = null }
+  }
+
+  onLoad(() => { load() })
 </script>
 
 <style>

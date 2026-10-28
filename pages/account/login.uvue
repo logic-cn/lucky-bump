@@ -16,36 +16,34 @@
   </view>
 </template>
 
-<script>
+<script setup lang="uts">
+  import { ref } from 'vue'
   import { luckyId, applyLoginResult } from '../../utils/request.uts'
   import { loadCurrentJourney } from '../../store/journeyStore.uts'
 
-  export default {
-    data() {
-      return { username: '', password: '', loading: false }
-    },
-    methods: {
-      goRegister() { uni.navigateTo({ url: '/pages/account/register' }) },
-      async afterLogin() {
-        const j = await loadCurrentJourney()
-        uni.reLaunch({ url: j == null ? '/pages/onboarding/onboarding' : '/pages/index/index' })
-      },
-      async doLogin() {
-        if (this.loading) return
-        if (this.username.length == 0 || this.password.length == 0) {
-          uni.showToast({ title: '请输入用户名与密码', icon: 'none' }); return
-        }
-        this.loading = true
-        try {
-          const res = await luckyId('login', { username: this.username, password: this.password } as UTSJSONObject)
-          applyLoginResult(res)
-          await this.afterLogin()
-        } catch (e) {
-          uni.showToast({ title: (e as Error).message, icon: 'none' })
-        } finally {
-          this.loading = false
-        }
-      }
+  const username = ref<string>('')
+  const password = ref<string>('')
+  const loading = ref<boolean>(false)
+
+  function goRegister() { uni.navigateTo({ url: '/pages/account/register' }) }
+  async function afterLogin() {
+    const j = await loadCurrentJourney()
+    uni.reLaunch({ url: j == null ? '/pages/onboarding/onboarding' : '/pages/index/index' })
+  }
+  async function doLogin() {
+    if (loading.value) return
+    if (username.value.length == 0 || password.value.length == 0) {
+      uni.showToast({ title: '请输入用户名与密码', icon: 'none' }); return
+    }
+    loading.value = true
+    try {
+      const res = await luckyId('login', { username: username.value, password: password.value } as UTSJSONObject)
+      applyLoginResult(res)
+      await afterLogin()
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    } finally {
+      loading.value = false
     }
   }
 </script>

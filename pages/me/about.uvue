@@ -20,8 +20,8 @@
   </view>
 </template>
 
-<script>
-  export default { data() { return {} } }
+<script setup lang="uts">
+  // 纯静态页面，无状态与逻辑
 </script>
 
 <style>

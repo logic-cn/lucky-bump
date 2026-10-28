@@ -34,62 +34,60 @@
   </view>
 </template>
 
-<script>
+<script setup lang="uts">
+  import { ref } from 'vue'
+  import { onLoad } from '@dcloudio/uni-app'
   import { luckyJourney } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
 
   type BabyForm = { nickname: string, sex: number, weightG: string, lengthCm: string }
+  type MOpt = { value: string, label: string }
 
-  export default {
-    data() {
-      return {
-        deliveryDate: '', mode: 'vaginal', hospital: '', saving: false,
-        fetusCount: 1,
-        babies: [{ nickname: '', sex: 2, weightG: '', lengthCm: '' } as BabyForm],
-        modes: [
-          { value: 'vaginal', label: '顺产' }, { value: 'assisted', label: '助产' }, { value: 'c_section', label: '剖宫产' }
-        ] as MOpt[],
-        sexLabels: ['男', '女', '还不告诉你们']
+  const deliveryDate = ref<string>('')
+  const mode = ref<string>('vaginal')
+  const hospital = ref<string>('')
+  const saving = ref<boolean>(false)
+  const fetusCount = ref<number>(1)
+  const babies = ref<BabyForm[]>([{ nickname: '', sex: 2, weightG: '', lengthCm: '' } as BabyForm])
+  const modes = ref<MOpt[]>([
+    { value: 'vaginal', label: '顺产' }, { value: 'assisted', label: '助产' }, { value: 'c_section', label: '剖宫产' }
+  ])
+  const sexLabels = ref<string[]>(['男', '女', '还不告诉你们'])
+
+  function onDateChange(e: UniPickerChangeEvent) { deliveryDate.value = (e.detail.value as string) ?? '' }
+  function onSexChange(i: number, e: UniPickerChangeEvent) {
+    babies.value[i].sex = (parseInt(e.detail.value as string) || 2)
+  }
+  function addBaby() { babies.value.push({ nickname: '', sex: 2, weightG: '', lengthCm: '' } as BabyForm) }
+  async function save() {
+    if (deliveryDate.value.length == 0) { uni.showToast({ title: '请选择分娩日期', icon: 'none' }); return }
+    const list = babies.value.map((b, i) => ({
+      nickname: b.nickname.trim().length > 0 ? b.nickname : `宝宝${i + 1}`,
+      sex: ['male', 'female', 'unknown'][b.sex],
+      weightG: parseInt(b.weightG) || 0,
+      lengthCm: parseFloat(b.lengthCm) || 0
+    }))
+    saving.value = true
+    try {
+      const res = await luckyJourney('registerDelivery', {
+        journeyId: journeyState.journeyId, deliveryDate: deliveryDate.value,
+        deliveryMode: mode.value, hospital: hospital.value, babies: list
+      } as UTSJSONObject)
+      const ids = res.getArray('babyIds') ?? []
+      if (ids.length > 0) {
+        journeyState.currentBabyId = (ids[0] as string)
+        uni.setStorageSync('current_baby_id', ids[0])
       }
-    },
-    onLoad() {
-      this.fetusCount = journeyState.fetusCount > 0 ? journeyState.fetusCount : 1
-    },
-    methods: {
-      onDateChange(e: UniPickerChangeEvent) { this.deliveryDate = (e.detail.value as string) ?? '' },
-      onSexChange(i: number, e: UniPickerChangeEvent) {
-        this.babies[i].sex = (parseInt(e.detail.value as string) || 2)
-      },
-      addBaby() { this.babies.push({ nickname: '', sex: 2, weightG: '', lengthCm: '' } as BabyForm) },
-      async save() {
-        if (this.deliveryDate.length == 0) { uni.showToast({ title: '请选择分娩日期', icon: 'none' }); return }
-        const list = this.babies.map((b, i) => ({
-          nickname: b.nickname.trim().length > 0 ? b.nickname : `宝宝${i + 1}`,
-          sex: ['male', 'female', 'unknown'][b.sex],
-          weightG: parseInt(b.weightG) || 0,
-          lengthCm: parseFloat(b.lengthCm) || 0
-        }))
-        this.saving = true
-        try {
-          const res = await luckyJourney('registerDelivery', {
-            journeyId: journeyState.journeyId, deliveryDate: this.deliveryDate,
-            deliveryMode: this.mode, hospital: this.hospital, babies: list
-          } as UTSJSONObject)
-          const ids = res.getArray('babyIds') ?? []
-          if (ids.length > 0) {
-            journeyState.currentBabyId = (ids[0] as string)
-            uni.setStorageSync('current_baby_id', ids[0])
-          }
-          uni.showToast({ title: '欢迎小宝贝 🎉', icon: 'none' })
-          setTimeout(() => { uni.reLaunch({ url: '/pages/baby/baby-home' }) }, 800)
-        } catch (e) {
-          uni.showToast({ title: (e as Error).message, icon: 'none' })
-        } finally { this.saving = false }
-      }
-    }
+      uni.showToast({ title: '欢迎小宝贝 🎉', icon: 'none' })
+      setTimeout(() => { uni.reLaunch({ url: '/pages/baby/baby-home' }) }, 800)
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    } finally { saving.value = false }
   }
 
-  type MOpt = { value: string, label: string }
+  onLoad(() => {
+    fetusCount.value = journeyState.fetusCount > 0 ? journeyState.fetusCount : 1
+  })
 </script>
 
 <style>
