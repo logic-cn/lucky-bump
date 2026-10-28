@@ -3,11 +3,11 @@
     <!-- 阶段大卡 -->
     <view class="hero-card">
       <view class="hero-row">
-        <text class="hero-week">{{ weekText }}</text>
+        <text class="hero-week">{{ weekLabel }}</text>
         <text class="hero-stage">{{ stageLabel }}</text>
       </view>
-      <text class="hero-sub" v-if="showBabySize">宝宝现在约 {{ babySizeText }}，距预产期还有 {{ daysToEdd }} 天</text>
-      <text class="hero-sub" v-else-if="isPostpartum">产后第 {{ postpartumDays }} 天 · 照顾好你自己也是宝宝的事</text>
+      <text class="hero-sub" v-if="showBabySize">宝宝现在约 {{ babySizeText }}，距预产期还有 {{ journeyState.daysToEdd }} 天</text>
+      <text class="hero-sub" v-else-if="isPostpartum">产后第 {{ journeyState.postpartumDays }} 天 · 照顾好你自己也是宝宝的事</text>
       <text class="hero-sub" v-else-if="isTtc">距预测下次月经还有 {{ daysToPeriod }} 天 · 记录身体信号，好孕自来</text>
     </view>
 
@@ -47,102 +47,108 @@
   </view>
 </template>
 
-<script>
+<script setup lang="uts">
+  import { computed, ref } from 'vue'
+  import { onShow } from '@dcloudio/uni-app'
   import { appState } from '../../store/appStore.uts'
   import { journeyState, weekText, stageText, loadCurrentJourney, loadToday } from '../../store/journeyStore.uts'
+  import { luckyRecord } from '../../utils/request.uts'
 
   type QuickItem = { icon: string, label: string, url: string }
 
-  export default {
-    data() {
-      return {
-        todos: [] as UTSJSONObject[],
-        babySizeText: '',
-        daysToPeriod: 0,
-        trendText: ''
+  const todos = ref<UTSJSONObject[]>([])
+  const babySizeText = ref('')
+  const daysToPeriod = ref(0)
+  const trendText = ref('')
+
+  const stageLabel = computed((): string => stageText(journeyState.stage))
+  const weekLabel = computed((): string => weekText())
+  const showBabySize = computed((): boolean => journeyState.stage == 'T1' || journeyState.stage == 'T2' || journeyState.stage == 'T3')
+  const isPostpartum = computed((): boolean => journeyState.deliveryDate.length > 0)
+  const isTtc = computed((): boolean => journeyState.stage == 'PRECONCEPTION')
+  const quickItems = computed((): QuickItem[] => {
+    const s = journeyState.stage
+    const items: QuickItem[] = []
+    if (s == 'PRECONCEPTION') {
+      items.push({ icon: '🌸', label: '经期', url: '/pages/record/cycle' })
+      items.push({ icon: '🧪', label: '排卵试纸', url: '/pages/record/ovulation-test' })
+      items.push({ icon: '🌡', label: '基础体温', url: '/pages/record/cycle' })
+      items.push({ icon: '🤰', label: '验孕', url: '/pages/record/pregnancy-test' })
+    } else if (isPostpartum.value) {
+      items.push({ icon: '🍼', label: '喂养', url: '/pages/baby/feeding' })
+      items.push({ icon: '🧷', label: '尿布', url: '/pages/baby/diaper' })
+      items.push({ icon: '😴', label: '睡眠', url: '/pages/baby/sleep' })
+      items.push({ icon: '🩸', label: '恶露', url: '/pages/record/lochia' })
+      items.push({ icon: '💗', label: '情绪自评', url: '/pages/record/epds' })
+    } else {
+      items.push({ icon: '⚖️', label: '体重', url: '/pages/record/weight' })
+      items.push({ icon: '🩺', label: '血压', url: '/pages/record/blood-pressure' })
+      items.push({ icon: '🦶', label: '胎动', url: '/pages/record/fetal-movement' })
+      items.push({ icon: '⏱', label: '宫缩计时', url: '/pages/record/contraction-timer' })
+      items.push({ icon: '🌸', label: '症状', url: '/pages/record/symptom' })
+      items.push({ icon: '📔', label: '日记', url: '/pages/record/diary' })
+      items.push({ icon: '🩸', label: '血糖', url: '/pages/record/blood-glucose' })
+      items.push({ icon: '🏥', label: '产检', url: '/pages/care/schedule' })
+    }
+    return items
+  })
+
+  function goRecord(url: string) { uni.navigateTo({ url }) }
+  function openTodo(t: UTSJSONObject) {
+    const kind = t.getString('kind') ?? ''
+    if (kind.indexOf('prenatal') == 0) uni.navigateTo({ url: '/pages/care/schedule' })
+    else if (kind == 'vaccine') uni.navigateTo({ url: '/pages/baby/vaccines' })
+  }
+  function todoDateText(t: UTSJSONObject): string {
+    const due = t.getString('dueDate') ?? ''
+    const prep = t.getString('prep') ?? ''
+    return prep.length > 0 ? `${due} · ${prep}` : due
+  }
+
+  async function refresh() {
+    if (appState.token.length == 0) { uni.reLaunch({ url: '/pages/account/login' }); return }
+    try {
+      const j = await loadCurrentJourney()
+      if (j == null) { uni.reLaunch({ url: '/pages/onboarding/onboarding' }); return }
+      const res = await loadToday()
+      todos.value = res.getArray<UTSJSONObject>('todos') ?? []
+      const latest = res.getJSON('latest')
+      if (latest != null) {
+        const parts: string[] = []
+        const w = latest.getJSON('weight')
+        if (w != null) parts.push(`体重 ${w.getNumber('kg') ?? 0}kg`)
+        const bp = latest.getJSON('blood_pressure')
+        if (bp != null) parts.push(`血压 ${bp.getNumber('sbp') ?? 0}/${bp.getNumber('dbp') ?? 0}`)
+        trendText.value = parts.join(' · ')
       }
-    },
-    computed: {
-      stageLabel(): string { return stageText(journeyState.stage) },
-      weekLabel(): string { return weekText() },
-      showBabySize(): boolean { return journeyState.stage == 'T1' || journeyState.stage == 'T2' || journeyState.stage == 'T3' },
-      isPostpartum(): boolean { return journeyState.deliveryDate.length > 0 },
-      isTtc(): boolean { return journeyState.stage == 'PRECONCEPTION' },
-      quickItems(): QuickItem[] {
-        const s = journeyState.stage
-        const items: QuickItem[] = []
-        if (s == 'PRECONCEPTION') {
-          items.push({ icon: '🌸', label: '经期', url: '/pages/record/cycle' })
-          items.push({ icon: '🧪', label: '排卵试纸', url: '/pages/record/ovulation-test' })
-          items.push({ icon: '🌡', label: '基础体温', url: '/pages/record/cycle' })
-          items.push({ icon: '🤰', label: '验孕', url: '/pages/record/pregnancy-test' })
-        } else if (this.isPostpartum) {
-          items.push({ icon: '🍼', label: '喂养', url: '/pages/baby/feeding' })
-          items.push({ icon: '🧷', label: '尿布', url: '/pages/baby/diaper' })
-          items.push({ icon: '😴', label: '睡眠', url: '/pages/baby/sleep' })
-          items.push({ icon: '🩸', label: '恶露', url: '/pages/record/lochia' })
-          items.push({ icon: '💗', label: '情绪自评', url: '/pages/record/epds' })
-        } else {
-          items.push({ icon: '⚖️', label: '体重', url: '/pages/record/weight' })
-          items.push({ icon: '🩺', label: '血压', url: '/pages/record/blood-pressure' })
-          items.push({ icon: '🦶', label: '胎动', url: '/pages/record/fetal-movement' })
-          items.push({ icon: '⏱', label: '宫缩计时', url: '/pages/record/contraction-timer' })
-          items.push({ icon: '🌸', label: '症状', url: '/pages/record/symptom' })
-          items.push({ icon: '📔', label: '日记', url: '/pages/record/diary' })
-          items.push({ icon: '🩸', label: '血糖', url: '/pages/record/blood-glucose' })
-          items.push({ icon: '🏥', label: '产检', url: '/pages/care/schedule' })
-        }
-        return items
-      }
-    },
-    onShow() {
-      this.refresh()
-    },
-    methods: {
-      goRecord(url: string) { uni.navigateTo({ url }) },
-      openTodo(t: UTSJSONObject) {
-        const kind = t.getString('kind') ?? ''
-        if (kind.indexOf('prenatal') == 0) uni.navigateTo({ url: '/pages/care/schedule' })
-        else if (kind == 'vaccine') uni.navigateTo({ url: '/pages/baby/vaccines' })
-      },
-      todoDateText(t: UTSJSONObject): string {
-        const due = t.getString('dueDate') ?? ''
-        const prep = t.getString('prep') ?? ''
-        return prep.length > 0 ? `${due} · ${prep}` : due
-      },
-      async refresh() {
-        if (appState.token.length == 0) { uni.reLaunch({ url: '/pages/account/login' }); return }
-        const j = await loadCurrentJourney()
-        if (j == null) { uni.reLaunch({ url: '/pages/onboarding/onboarding' }); return }
-        try {
-          const res = await loadToday()
-          this.todos = res.getArray('todos') ?? []
-          const latest = res.getJSON('latest')
-          if (latest != null) {
-            const parts: string[] = []
-            const w = (latest as UTSJSONObject).getJSON('weight')
-            if (w != null) parts.push(`体重 ${(w as UTSJSONObject).getNumber('kg')}kg`)
-            const bp = (latest as UTSJSONObject).getJSON('blood_pressure')
-            if (bp != null) parts.push(`血压 ${(bp as UTSJSONObject).getNumber('sbp')}/${(bp as UTSJSONObject).getNumber('dbp')}`)
-            this.trendText = parts.join(' · ')
-          }
-          const jv = res.getJSON('journey')
-          if (jv != null) {
-            const edd = (jv as UTSJSONObject).getString('edd') ?? ''
-            if (edd.length > 0 && journeyState.deliveryDate.length == 0) {
-              const diff = Math.max(0, Math.floor((Date.parse(edd + 'T12:00:00Z') - Date.now()) / 86400000))
-              journeyState.daysToEdd = diff
-              const sizeMap = ['约一颗草莓', '约一个柠檬', '约一个牛油果', '约一个菠萝', '约一个小西瓜']
-              const idx = Math.min(4, Math.floor(journeyState.weeks / 8))
-              this.babySizeText = sizeMap[idx]
-            }
-          }
-        } catch (e) {
-          // token 失效已由请求层统一跳登录
+      const jv = res.getJSON('journey')
+      if (jv != null) {
+        const edd = jv.getString('edd') ?? ''
+        if (edd.length > 0 && journeyState.deliveryDate.length == 0) {
+          const diff = Math.max(0, Math.floor((Date.parse(edd + 'T12:00:00Z') - Date.now()) / 86400000))
+          journeyState.daysToEdd = diff
+          const sizeMap = ['约一颗草莓', '约一个柠檬', '约一个牛油果', '约一个菠萝', '约一个小西瓜']
+          const idx = Math.max(0, Math.min(4, Math.floor(journeyState.weeks / 8)))
+          babySizeText.value = sizeMap[idx]
         }
       }
+      if (journeyState.stage == 'PRECONCEPTION') {
+        const c = await luckyRecord('listCycleEvents', { journeyId: journeyState.journeyId } as UTSJSONObject)
+        const pred = c.getJSON('prediction')
+        const nextPeriod = pred != null ? (pred as UTSJSONObject).getString('nextPeriodDate') ?? '' : ''
+        if (nextPeriod.length > 0) {
+          const diff = Math.max(0, Math.floor((Date.parse(nextPeriod + 'T12:00:00Z') - Date.now()) / 86400000))
+          daysToPeriod.value = diff
+        }
+      }
+    } catch (e) {
+      // token 失效已由请求层统一跳登录
     }
   }
+
+  onShow(() => {
+    refresh()
+  })
 </script>
 
 <style>

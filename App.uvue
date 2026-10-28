@@ -1,14 +1,13 @@
-<script>
+<script setup>
+  import { onLaunch, onShow, onHide } from '@dcloudio/uni-app'
   import { appInit } from './store/appStore.uts'
 
-  export default {
-    onLaunch: function () {
-      appInit()
-      console.log('幸孕记 App Launch')
-    },
-    onShow: function () {},
-    onHide: function () {}
-  }
+  onLaunch(() => {
+    appInit()
+    console.log('幸孕记 App Launch')
+  })
+  onShow(() => {})
+  onHide(() => {})
 </script>
 
 <style>
