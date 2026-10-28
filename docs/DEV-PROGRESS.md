@@ -56,6 +56,10 @@
 - [x] lucky-seed.verifySeed 部署门禁纳入单元测试（模板完整性 + tokenSecret 上线告警）
 - [x] 公共模块补 package.json（uniCloud 上传识别规范）
 
+### 真机运行反馈修复（2026-10-27）✅
+- [x] App.uvue 启动调用修复：appState.init() → appInit()（store 实际导出为函数，原写法在 app 端会启动崩溃；用户真机运行发现并修复，已全库扫描确认无同类引用）
+- [x] 全量回归 17/17
+
 ### 部署阶段（2026-10-27，用户提供 HBuilderX + uniCloud 空间后）✅
 - [x] DCloud appid 已生成（__UNI__1BC2635，用户在 HBuilderX 中完成）
 - [x] 阿里云空间 lucky-bump（<旧阿里云空间ID>）已关联工程（spacex.json 已回填）

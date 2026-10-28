@@ -1,9 +1,9 @@
 <script>
-  import { appState } from './store/appStore.uts'
+  import { appInit } from './store/appStore.uts'
 
   export default {
     onLaunch: function () {
-      appState.init()
+      appInit()
       console.log('幸孕记 App Launch')
     },
     onShow: function () {},
