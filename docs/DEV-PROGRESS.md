@@ -56,6 +56,10 @@
 - [x] lucky-seed.verifySeed 部署门禁纳入单元测试（模板完整性 + tokenSecret 上线告警）
 - [x] 公共模块补 package.json（uniCloud 上传识别规范）
 
+### 编译反馈重构（2026-10-29）✅
+- [x] App.uvue / pages/index 迁移至 <script setup> 组合式 API（Options API 在当前 uni-app-x 编译器下报错，用户侧重构）；request.uts 移除 UTS 不支持的交叉类型与 as 断言；daysToPeriod 补上真实计算
+- [x] npm test 17/17；无移除符号遗留引用
+
 ### 运行反馈修复（2026-10-27，web/真机联调中）✅
 - [x] index.html web 入口修正：/main.uts → /main（带扩展名被当静态资源返回致白屏）+ 管线注入注释 + viewport coverSupport（用户 web 运行修正）
 - [x] .vapor 蒸汽模式标记入库（web 运行生成，功能性文件）
