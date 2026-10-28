@@ -8,7 +8,7 @@
       </view>
       <text class="label">基础体温（晨起未活动时，°C）</text>
       <view class="input-row">
-        <input class="num-input" type="digit" v-model="bbt" placeholder="36.5" placeholder-class="ph" />
+        <input class="num-input" type="number" v-model="bbt" placeholder="36.5" placeholder-class="ph" />
         <button class="btn-small" :disabled="saving" @click="saveBbt">记录</button>
       </view>
     </view>

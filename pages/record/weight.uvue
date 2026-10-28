@@ -3,7 +3,7 @@
     <view class="card">
       <text class="label">今天的体重（kg）</text>
       <view class="input-row">
-        <input class="num-input" type="digit" v-model="kg" placeholder="58.2" placeholder-class="ph" />
+        <input class="num-input" type="number" v-model="kg" placeholder="58.2" placeholder-class="ph" />
         <text class="unit">kg</text>
       </view>
       <text class="hint" v-if="gainRange.length == 2">孕期推荐增重 {{ gainRange[0] }}-{{ gainRange[1] }}kg（按孕前 BMI 估算，参考 IOM 口径）</text>

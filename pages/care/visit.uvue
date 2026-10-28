@@ -20,7 +20,7 @@
       </view>
       <text class="add-exam" @click="exams.push({ name: '', result: '', abnormal: false } as Exam)">＋ 添加项目</text>
       <text class="label">费用（元，选填）</text>
-      <input class="input" type="digit" v-model="cost" placeholder="0.00" placeholder-class="ph" />
+      <input class="input" type="number" v-model="cost" placeholder="0.00" placeholder-class="ph" />
       <text class="label">医生结论与叮嘱</text>
       <textarea class="ta" v-model="conclusion" placeholder="如：一切正常，继续补铁…" placeholder-class="ph" :maxlength="500" />
       <text class="label">报告照片（按孕周自动归档）</text>

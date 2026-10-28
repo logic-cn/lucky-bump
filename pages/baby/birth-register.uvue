@@ -24,7 +24,7 @@
         </view>
         <view class="row2">
           <input class="input half" type="number" v-model="b.weightG" placeholder="出生体重 g" placeholder-class="ph" />
-          <input class="input half" type="digit" v-model="b.lengthCm" placeholder="出生身长 cm" placeholder-class="ph" />
+          <input class="input half" type="number" v-model="b.lengthCm" placeholder="出生身长 cm" placeholder-class="ph" />
         </view>
       </view>
       <view class="add-baby" v-if="babies.length < fetusCount" @click="addBaby"><text class="add-baby-text">＋ 添加{{ fetusCount > 1 ? '另一个宝宝' : '' }}</text></view>

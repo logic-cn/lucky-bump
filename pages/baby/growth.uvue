@@ -6,11 +6,11 @@
         <view class="pick-box wide"><text class="pick-text">{{ measureDate }}</text></view>
       </picker>
       <text class="label">体重（kg）</text>
-      <input class="input" type="digit" v-model="weightKg" placeholder="如 6.8" placeholder-class="ph" />
+      <input class="input" type="number" v-model="weightKg" placeholder="如 6.8" placeholder-class="ph" />
       <text class="label">身长（cm，选填）</text>
-      <input class="input" type="digit" v-model="heightCm" placeholder="如 62.5" placeholder-class="ph" />
+      <input class="input" type="number" v-model="heightCm" placeholder="如 62.5" placeholder-class="ph" />
       <text class="label">头围（cm，选填）</text>
-      <input class="input" type="digit" v-model="headCm" placeholder="如 41.0" placeholder-class="ph" />
+      <input class="input" type="number" v-model="headCm" placeholder="如 41.0" placeholder-class="ph" />
     </view>
     <button class="btn-save" :disabled="saving" @click="save">{{ saving ? '计算中…' : '保存并看百分位' }}</button>
 

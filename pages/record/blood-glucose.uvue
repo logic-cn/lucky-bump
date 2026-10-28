@@ -9,7 +9,7 @@
       </view>
       <text class="label">血糖值（mmol/L）</text>
       <view class="input-row">
-        <input class="num-input" type="digit" v-model="mmol" placeholder="5.2" placeholder-class="ph" />
+        <input class="num-input" type="number" v-model="mmol" placeholder="5.2" placeholder-class="ph" />
         <text class="unit">mmol/L</text>
       </view>
       <text class="hint">糖耐参考切点：空腹 ≥5.1 / 餐后1h ≥10.0 / 餐后2h ≥8.5，超出将提示与医生确认（不构成诊断）</text>
