@@ -19,11 +19,27 @@
       </view>
     </view>
     <text class="foot">记录的意义，是看见时间里的变化</text>
+  
+    <!-- 自绘提示弹窗（web 端 uni.showModal 回调不触发） -->
+    <view class="mask" v-if="infoVisible">
+      <view class="dialog">
+        <text class="dlg-title">{{ infoTitle }}</text>
+        <text class="dlg-content">{{ infoContent }}</text>
+        <view class="dlg-actions">
+          <text class="dlg-btn dlg-btn-ok" @click="infoVisible = false">知道了</text>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
 <script setup lang="ts">
+  import { ref } from 'vue'
   import { luckyData } from '../../utils/request.uts'
+
+  const infoVisible = ref<boolean>(false)
+  const infoTitle = ref<string>('')
+  const infoContent = ref<string>('')
   import { journeyState } from '../../store/journeyStore.uts'
 
   function go(url: string) { uni.navigateTo({ url }) }
@@ -31,7 +47,9 @@
   async function goExport() {
     try {
       await luckyData('exportAll', { journeyId: journeyState.journeyId } as UTSJSONObject)
-      uni.showModal({ title: '导出成功', content: '数据包已生成。V1.1 将支持打包下载到本机与网盘（当前可在云函数控制台获取）。', showCancel: false })
+      infoTitle.value = '导出成功'
+      infoContent.value = '数据包已生成。V1.1 将支持打包下载到本机与网盘（当前可在云函数控制台获取）。'
+      infoVisible.value = true
     } catch (e) {
       uni.showToast({ title: (e as Error).message, icon: 'none' })
     }
@@ -49,4 +67,11 @@
   .nav-sub { font-size: 22rpx; color: #A3AAB5; margin-top: 4rpx; }
   .nav-arrow { font-size: 36rpx; color: #C9CDD4; }
   .foot { font-size: 22rpx; color: #A3AAB5; margin-top: 64rpx; }
+
+  .mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.45); justify-content: center; align-items: center; }
+  .dialog { width: 560rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 40rpx 32rpx 24rpx 32rpx; }
+  .dlg-title { font-size: 32rpx; font-weight: bold; color: #1F2329; text-align: center; }
+  .dlg-content { font-size: 27rpx; color: #6B7280; margin-top: 20rpx; text-align: center; line-height: 40rpx; }
+  .dlg-actions { flex-direction: row; justify-content: center; margin-top: 36rpx; }
+  .dlg-btn { width: 300rpx; height: 80rpx; line-height: 80rpx; text-align: center; font-size: 29rpx; color: #FFFFFF; background-color: #FF7A6B; border-radius: 40rpx; }
 </style>

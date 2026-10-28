@@ -17,11 +17,23 @@
     </view>
 
     <button class="btn-logout" @click="logout">退出登录</button>
+
+    <!-- 自绘确认弹窗（web 端 uni.showModal 回调不触发，见 docs/08 已知限制） -->
+    <view class="mask" v-if="confirmVisible">
+      <view class="dialog">
+        <text class="dlg-title">{{ confirmTitle }}</text>
+        <text class="dlg-content">{{ confirmContent }}</text>
+        <view class="dlg-actions">
+          <text class="dlg-btn" v-if="confirmShowCancel" @click="confirmVisible = false">取消</text>
+          <text class="dlg-btn dlg-btn-ok" @click="onConfirm">确定</text>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
 <script setup lang="ts">
-  import { computed } from 'vue'
+  import { computed, ref } from 'vue'
   import { onLoad } from '@dcloudio/uni-app'
   import { appState, clearToken } from '../../store/appStore.uts'
   import { journeyState, stageText as journeyStageText } from '../../store/journeyStore.uts'
@@ -43,18 +55,23 @@
     } catch (e) { /* 已登录态校验由请求层兜底 */ }
   }
 
+  const confirmVisible = ref<boolean>(false)
+  const confirmTitle = ref<string>('')
+  const confirmContent = ref<string>('')
+  const confirmShowCancel = ref<boolean>(true)
+
   function logout() {
-    uni.showModal({
-      title: '退出登录',
-      content: '你的记录会安全保存在云端，随时可以回来。',
-      success: async (r) => {
-        if (r.confirm) {
-          try { await luckyId('logout', {} as UTSJSONObject) } catch (e) { /* 忽略 */ }
-          clearToken()
-          uni.reLaunch({ url: '/pages/account/login' })
-        }
-      }
-    })
+    confirmTitle.value = '退出登录'
+    confirmContent.value = '你的记录会安全保存在云端，随时可以回来。'
+    confirmShowCancel.value = true
+    confirmVisible.value = true
+  }
+
+  async function onConfirm() {
+    confirmVisible.value = false
+    try { await luckyId('logout', {} as UTSJSONObject) } catch (e) { /* 忽略 */ }
+    clearToken()
+    uni.reLaunch({ url: '/pages/account/login' })
   }
 
   onLoad(() => { loadProfile() })
@@ -73,4 +90,12 @@
   .row-text { flex: 1; font-size: 30rpx; color: #1F2329; }
   .arrow { font-size: 36rpx; color: #C9CDD4; }
   .btn-logout { width: 700rpx; height: 96rpx; line-height: 96rpx; background-color: #FFFFFF; color: #E5484D; font-size: 30rpx; border-radius: 24rpx; margin-top: 40rpx; }
+
+  .mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.45); justify-content: center; align-items: center; }
+  .dialog { width: 560rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 40rpx 32rpx 24rpx 32rpx; }
+  .dlg-title { font-size: 32rpx; font-weight: bold; color: #1F2329; text-align: center; }
+  .dlg-content { font-size: 27rpx; color: #6B7280; margin-top: 20rpx; text-align: center; line-height: 40rpx; }
+  .dlg-actions { flex-direction: row; justify-content: space-between; margin-top: 36rpx; }
+  .dlg-btn { width: 230rpx; height: 80rpx; line-height: 80rpx; text-align: center; font-size: 29rpx; color: #6B7280; background-color: #F5F4F2; border-radius: 40rpx; }
+  .dlg-btn-ok { color: #FFFFFF; background-color: #FF7A6B; }
 </style>

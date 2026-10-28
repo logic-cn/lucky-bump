@@ -42,6 +42,18 @@
       </view>
       <text class="hint">同房记录与情绪自评永远仅本人可见，产品级不可授权。</text>
     </view>
+
+    <!-- 自绘确认弹窗（web 端 uni.showModal 回调不触发） -->
+    <view class="mask" v-if="confirmVisible">
+      <view class="dialog">
+        <text class="dlg-title">{{ confirmTitle }}</text>
+        <text class="dlg-content">{{ confirmContent }}</text>
+        <view class="dlg-actions">
+          <text class="dlg-btn" @click="confirmVisible = false">取消</text>
+          <text class="dlg-btn dlg-btn-ok" @click="onConfirmRemove">确定</text>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -54,6 +66,10 @@
   type GOpt = { value: string, label: string, allow: boolean }
 
   const members = ref<UTSJSONObject[]>([])
+  const confirmVisible = ref<boolean>(false)
+  const confirmTitle = ref<string>('')
+  const confirmContent = ref<string>('')
+  const confirmTarget = ref<string>('')
   const isOwner = ref<boolean>(false)
   const inviteCode = ref<string>('')
   const joinCode = ref<string>('')
@@ -108,20 +124,21 @@
     }
   }
   async function remove(m: UTSJSONObject) {
-    uni.showModal({
-      title: '移除成员', content: `确定移除「${m.getString('nickname') ?? ''}」吗？`,
-      success: async (r) => {
-        if (r.confirm) {
-          try {
-            await luckyFamily('removeMember', { journeyId: journeyState.journeyId, memberUserId: m.getString('user_id') ?? '' } as UTSJSONObject)
-            uni.showToast({ title: '已移除', icon: 'success' })
-            load()
-          } catch (err) {
-            uni.showToast({ title: (err as Error).message, icon: 'none' })
-          }
-        }
-      }
-    })
+    confirmTitle.value = '移除成员'
+    confirmContent.value = `确定移除「${m.getString('nickname') ?? ''}」吗？`
+    confirmTarget.value = m.getString('user_id') ?? ''
+    confirmVisible.value = true
+  }
+
+  async function onConfirmRemove() {
+    confirmVisible.value = false
+    try {
+      await luckyFamily('removeMember', { journeyId: journeyState.journeyId, memberUserId: confirmTarget.value } as UTSJSONObject)
+      uni.showToast({ title: '已移除', icon: 'success' })
+      load()
+    } catch (err) {
+      uni.showToast({ title: (err as Error).message, icon: 'none' })
+    }
   }
 
   onLoad(() => { load() })
@@ -150,4 +167,12 @@
   .p-row { flex-direction: row; align-items: center; justify-content: space-between; padding: 14rpx 0; }
   .p-label { font-size: 26rpx; color: #1F2329; }
   .link { font-size: 24rpx; color: #FF7A6B; margin-top: 12rpx; }
+
+  .mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.45); justify-content: center; align-items: center; }
+  .dialog { width: 560rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 40rpx 32rpx 24rpx 32rpx; }
+  .dlg-title { font-size: 32rpx; font-weight: bold; color: #1F2329; text-align: center; }
+  .dlg-content { font-size: 27rpx; color: #6B7280; margin-top: 20rpx; text-align: center; line-height: 40rpx; }
+  .dlg-actions { flex-direction: row; justify-content: space-between; margin-top: 36rpx; }
+  .dlg-btn { width: 230rpx; height: 80rpx; line-height: 80rpx; text-align: center; font-size: 29rpx; color: #6B7280; background-color: #F5F4F2; border-radius: 40rpx; }
+  .dlg-btn-ok { color: #FFFFFF; background-color: #FF7A6B; }
 </style>

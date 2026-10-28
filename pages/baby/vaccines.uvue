@@ -23,6 +23,17 @@
         </view>
       </view>
     </view>
+  
+    <!-- 自绘提示弹窗（web 端 uni.showModal 回调不触发） -->
+    <view class="mask" v-if="infoVisible">
+      <view class="dialog">
+        <text class="dlg-title">{{ infoTitle }}</text>
+        <text class="dlg-content">{{ infoContent }}</text>
+        <view class="dlg-actions">
+          <text class="dlg-btn dlg-btn-ok" @click="infoVisible = false">知道了</text>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -33,6 +44,9 @@
   import { journeyState } from '../../store/journeyStore.uts'
 
   const babyId = ref<string>('')
+  const infoVisible = ref<boolean>(false)
+  const infoTitle = ref<string>('')
+  const infoContent = ref<string>('')
   const plan = ref<UTSJSONObject[]>([])
   const selfPaid = ref<UTSJSONObject[]>([])
 
@@ -54,7 +68,9 @@
       } as UTSJSONObject)
       const rl = res.getJSON('redline')
       if (rl != null) {
-        uni.showModal({ title: '接种反应提示', content: (rl as UTSJSONObject).getString('message') ?? '', showCancel: false })
+        infoTitle.value = '接种反应提示'
+        infoContent.value = (rl as UTSJSONObject).getString('message') ?? ''
+        infoVisible.value = true
       } else {
         uni.showToast({ title: '已记录 ✓', icon: 'success' })
       }
@@ -91,4 +107,11 @@
   .v-record { font-size: 22rpx; color: #4CAF7D; margin-top: 4rpx; }
   .btn-record { width: 140rpx; height: 64rpx; line-height: 64rpx; background-color: #FFEFEA; color: #E85D4E; font-size: 24rpx; border-radius: 32rpx; }
   .hint { font-size: 20rpx; color: #A3AAB5; margin-top: 24rpx; }
+
+  .mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.45); justify-content: center; align-items: center; }
+  .dialog { width: 560rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 40rpx 32rpx 24rpx 32rpx; }
+  .dlg-title { font-size: 32rpx; font-weight: bold; color: #1F2329; text-align: center; }
+  .dlg-content { font-size: 27rpx; color: #6B7280; margin-top: 20rpx; text-align: center; line-height: 40rpx; }
+  .dlg-actions { flex-direction: row; justify-content: center; margin-top: 36rpx; }
+  .dlg-btn { width: 300rpx; height: 80rpx; line-height: 80rpx; text-align: center; font-size: 29rpx; color: #FFFFFF; background-color: #FF7A6B; border-radius: 40rpx; }
 </style>
