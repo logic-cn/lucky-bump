@@ -20,7 +20,7 @@
   </view>
 </template>
 
-<script setup lang="uts">
+<script setup lang="ts">
   // 纯静态页面，无状态与逻辑
 </script>
 

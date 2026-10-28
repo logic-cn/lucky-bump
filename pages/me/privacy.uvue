@@ -27,7 +27,7 @@
   </view>
 </template>
 
-<script setup lang="uts">
+<script setup lang="ts">
   // 安全读取：key 首次不存在时 getStorageSync 返回 null，不能强转 as boolean
   const rawLock = uni.getStorageSync('lb_app_lock')
   const appLock = ref<boolean>(rawLock != null && rawLock == true)

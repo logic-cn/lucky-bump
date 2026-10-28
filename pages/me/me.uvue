@@ -20,7 +20,7 @@
   </view>
 </template>
 
-<script setup lang="uts">
+<script setup lang="ts">
   import { computed } from 'vue'
   import { onLoad } from '@dcloudio/uni-app'
   import { appState, clearToken } from '../../store/appStore.uts'

@@ -34,7 +34,7 @@
   </view>
 </template>
 
-<script setup lang="uts">
+<script setup lang="ts">
   import { ref } from 'vue'
   import { luckyRecord } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'

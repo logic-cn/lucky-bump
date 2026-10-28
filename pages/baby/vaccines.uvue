@@ -26,7 +26,7 @@
   </view>
 </template>
 
-<script setup lang="uts">
+<script setup lang="ts">
   import { ref } from 'vue'
   import { onLoad } from '@dcloudio/uni-app'
   import { luckyBaby } from '../../utils/request.uts'
