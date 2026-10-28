@@ -4,7 +4,7 @@
  * 客户端经 callFunction {method, params} 或 importObject 调用；token 经 uni_id_token 通道传递。
  */
 'use strict'
-const auth = require('../common/./lucky-auth-common')
+const auth = require('./common/lucky-auth-common')
 
 const TOKEN_TTL_DAYS = 30
 

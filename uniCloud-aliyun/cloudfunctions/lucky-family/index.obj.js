@@ -3,7 +3,7 @@
  * 数据组授权矩阵按「数据组 × 角色」过滤；同房与 EPDS 服务端硬编码仅本人（docs/03 M7.1）。
  */
 'use strict'
-const auth = require('../common/lucky-auth-common')
+const auth = require('./common/lucky-auth-common')
 
 const DAY = 24 * 3600 * 1000
 // 可授权数据组（strict 组不可授权，见 STRICT_ONLY）

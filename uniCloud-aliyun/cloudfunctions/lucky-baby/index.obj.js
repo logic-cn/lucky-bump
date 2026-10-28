@@ -4,8 +4,8 @@
  *       国家免疫规划疫苗计划生成与接种记录、里程碑、辅食 3 天观察窗、用药记录。
  */
 'use strict'
-const auth = require('../common/lucky-auth-common')
-const T = require('../common/lucky-templates')
+const auth = require('./common/lucky-auth-common')
+const T = require('./common/lucky-templates')
 
 const DAY = 24 * 3600 * 1000
 const MONTH = 30.4375 * DAY

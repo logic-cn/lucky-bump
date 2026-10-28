@@ -1,8 +1,4 @@
 {
   "name": "lucky-reminder",
-  "version": "1.0.0",
-  "dependencies": {
-    "lucky-auth-common": "file:../common/lucky-auth-common",
-    "uni-config-center": "file:../common/uni-config-center"
-  }
+  "version": "1.0.0"
 }

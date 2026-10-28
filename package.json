@@ -9,7 +9,8 @@
     "test:e2e": "node --test \"test/e2e/*.test.js\"",
     "schemas": "python3 scripts/gen_schemas.py",
     "icons": "python3 scripts/gen_icons.py",
-    "dev:web": "echo 'uni-app-x web 构建需 HBuilderX 或官方 CLI 模板（npx degit dcloudio/uni-preset-vue#vite-uts）配置，见 docs/06-技术架构设计.md §5'"
+    "dev:web": "echo 'uni-app-x web 构建需 HBuilderX 或官方 CLI 模板（npx degit dcloudio/uni-preset-vue#vite-uts）配置，见 docs/06-技术架构设计.md §5'",
+    "pretest": "bash scripts/sync_commons.sh"
   },
   "engines": {
     "node": ">=18"

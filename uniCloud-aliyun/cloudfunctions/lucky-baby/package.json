@@ -1,9 +1,4 @@
 {
   "name": "lucky-baby",
-  "version": "1.0.0",
-  "dependencies": {
-    "lucky-auth-common": "file:../common/lucky-auth-common",
-    "lucky-templates": "file:../common/lucky-templates",
-    "uni-config-center": "file:../common/uni-config-center"
-  }
+  "version": "1.0.0"
 }

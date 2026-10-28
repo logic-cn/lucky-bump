@@ -4,7 +4,7 @@
  * 策略：免打扰时段由端上执行；未处理超 24h 降级为站内待办不再推送（docs/03 M9）。
  */
 'use strict'
-const auth = require('../common/lucky-auth-common')
+const auth = require('./common/lucky-auth-common')
 
 const DAY = 24 * 3600 * 1000
 const MONTH = 30.4375 * DAY

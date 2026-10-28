@@ -5,8 +5,8 @@
  * 红线约定（docs/03）：只描述现象 + 建议动作，绝不诊断。
  */
 'use strict'
-const auth = require('../common/lucky-auth-common')
-const T = require('../common/lucky-templates')
+const auth = require('./common/lucky-auth-common')
+const T = require('./common/lucky-templates')
 
 const DAY = 24 * 3600 * 1000
 const LOGS = 'lb-daily-logs'

@@ -4,8 +4,8 @@
  *       产检记录（项目/结果/费用/报告照片占位 fileID/下次产检时间）。
  */
 'use strict'
-const auth = require('../common/lucky-auth-common')
-const T = require('../common/lucky-templates')
+const auth = require('./common/lucky-auth-common')
+const T = require('./common/lucky-templates')
 
 const DAY = 24 * 3600 * 1000
 function db() { return this.uniCloud.database() }

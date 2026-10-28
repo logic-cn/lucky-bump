@@ -5,7 +5,7 @@
  * 服务端为唯一事实源：前端 utils/pregnancy.uts 仅为展示镜像。
  */
 'use strict'
-const auth = require('../common/lucky-auth-common')
+const auth = require('./common/lucky-auth-common')
 
 const DAY = 24 * 3600 * 1000
 const col = 'lb-journeys'

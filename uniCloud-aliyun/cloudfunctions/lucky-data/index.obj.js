@@ -2,7 +2,7 @@
  * lucky-data —— 数据中心：今日聚合（首屏一次请求）、指标曲线、时间线、全量导出
  */
 'use strict'
-const auth = require('../common/lucky-auth-common')
+const auth = require('./common/lucky-auth-common')
 
 const DAY = 24 * 3600 * 1000
 function db() { return this.uniCloud.database() }
