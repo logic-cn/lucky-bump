@@ -56,6 +56,10 @@
 - [x] lucky-seed.verifySeed 部署门禁纳入单元测试（模板完整性 + tokenSecret 上线告警）
 - [x] 公共模块补 package.json（uniCloud 上传识别规范）
 
+### 运行反馈修复（2026-10-27，web/真机联调中）✅
+- [x] index.html web 入口修正：/main.uts → /main（带扩展名被当静态资源返回致白屏）+ 管线注入注释 + viewport coverSupport（用户 web 运行修正）
+- [x] .vapor 蒸汽模式标记入库（web 运行生成，功能性文件）
+
 ### 真机运行反馈修复（2026-10-27）✅
 - [x] App.uvue 启动调用修复：appState.init() → appInit()（store 实际导出为函数，原写法在 app 端会启动崩溃；用户真机运行发现并修复，已全库扫描确认无同类引用）
 - [x] 全量回归 17/17
