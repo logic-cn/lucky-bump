@@ -5,9 +5,9 @@
 
 ## 状态总览
 
-- 当前阶段：**编码工作全部完成** —— 后端 100%、前端 36 页全部真实实现（零骨架残留）、端到端测试 13/13 通过
-- 最近更新：2026-10-27（巡检轮次 2：质量修复）
-- 测试：`npm test` → 17 pass / 0 fail（含端到端全生命周期测试、防爆破限速、部署自检、静态一致性回归网）
+- 当前阶段：**Web 端生产可用已达** —— 白屏根因修复完毕（4 层），浏览器端到端全链路验证通过（注册→引导→首页→记录→预测→时间线→退出→复登），生产 uniCloud 空间联调可用
+- 最近更新：2026-10-28（Web 端白屏修复 + 运行时缺陷规避 + 云端部署修复，详见 docs/08 §8/§9）
+- 测试：`npm test` → 17 pass / 0 fail
 
 ## 任务清单
 
@@ -88,6 +88,13 @@
 4. lbc 组件库为最小集（card/redline/disclaimer），按钮与表单组件在页面内联实现，后续可增量抽取。
 5. 应用锁的端上强制执行（隐私页开关已落本地存储）：触发时机为 App onShow，需接入原生生物识别能力（HBuilderX 环境配置，见 docs/08 §7 依赖用户环境）。
 
+### Web 端修复轮（2026-10-28）✅
+
+- [x] 白屏四层根因：App.uvue 调用不存在的 appState.init()；缺 `.vapor` 标记（web 不进 uni-app x 管线）；index.html 入口应为无扩展名 `/main`；全部页面 Options API → `<script setup lang="ts">`（web 蒸汽运行时 data/computed 不挂实例）
+- [x] 运行时缺陷规避：uni.showModal 回调不触发（4 页自绘弹窗）、number.toInt 缺失（main.uts WEB 补丁）、单 input asset 组件（main.uts 全局注册）、digit→number（6 页）、reLaunch 前写全局状态竞态（登录/引导改由首页 onShow 统一加载）、tabBar 页补 onShow 重载
+- [x] 云端修复：公共模块 vendor 进云对象（CLI 不解析 file: 依赖）+ `scripts/sync_commons.sh`；callFunction 云对象 params 数组约定；云端 this 语义对齐（全局 uniCloud、模块级内部函数）
+- [x] 全部 36 页 + App.uvue 编译通过（vapor 管线）；浏览器端到端全链路验证通过（docs/08 §9）；`npm test` 17/17
+
 ## 中断恢复指引
 
-编码已完成。后续运行只涉及：1) `npm test` 保持 10/10；2) 按用户在 docs/08 的介入项推进部署；3) 如用户提出功能修改，按 docs/03 规范实现并回归测试。
+Web 端已可用。后续运行只涉及：1) `npm test` 保持 17/17；2) 上传云函数前先跑 `scripts/sync_commons.sh`；3) 真机运行/云打包按 docs/08 §5（需 HBuilderX 用户操作）；4) 如用户提出功能修改，按 docs/03 规范实现并回归测试（web 端限制见 docs/08 §8）。
