@@ -19,7 +19,6 @@
 <script setup lang="ts">
   import { ref } from 'vue'
   import { luckyId, applyLoginResult } from '../../utils/request.uts'
-  import { loadCurrentJourney } from '../../store/journeyStore.uts'
 
   const username = ref<string>('')
   const password = ref<string>('')
@@ -27,8 +26,9 @@
 
   function goRegister() { uni.navigateTo({ url: '/pages/account/register' }) }
   async function afterLogin() {
-    const j = await loadCurrentJourney()
-    uni.reLaunch({ url: j == null ? '/pages/onboarding/onboarding' : '/pages/index/index' })
+    // 直接进首页：首页 onShow 会经 loadCurrentJourney 加载旅程并处理"无旅程→引导"重定向；
+    // 此处若先拉取旅程（写全局响应式）再立即 reLaunch，会触发 web 端渲染竞态（见 docs/08 已知限制）
+    uni.reLaunch({ url: '/pages/index/index' })
   }
   async function doLogin() {
     if (loading.value) return
