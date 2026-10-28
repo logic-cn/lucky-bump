@@ -1,0 +1,1 @@
+# uni-app x Web Vapor 启用标记：HBuilderX web 运行以此文件判定走 uni-app x 编译管线（缺失则 .uts/.uvue 不会被编译导致白屏）
