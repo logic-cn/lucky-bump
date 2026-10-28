@@ -72,9 +72,10 @@
       if (res.getNumber('errCode') == 0) {
         const view = res.getJSON('view')
         if (view != null) applyJourney(view as UTSJSONObject)
-        // 在页面卸载前复位 loading（reLaunch 会卸载当前页，finally 中再写 ref 会干扰卸载时序）
+        // 在页面卸载前复位 loading（reLaunch 会卸载当前页，finally 中再写 ref 会干扰卸载时序）；
+        // reLaunch 延迟一拍，避免与 applyJourney 的响应式更新同帧触发 web 端渲染竞态
         loading.value = false
-        uni.reLaunch({ url: '/pages/index/index' })
+        setTimeout(() => { uni.reLaunch({ url: '/pages/index/index' }) }, 50)
         return
       }
       loading.value = false
