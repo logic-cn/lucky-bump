@@ -58,7 +58,7 @@
 
 ### 编译反馈重构·第二批（2026-10-29）✅
 - [x] 27 页批量迁移 <script setup>（record/baby/care/data/learn/me 大部分）；无 this. 残留（逐文件扫描）；npm test 17/17
-- [ ] 余 7 页仍为 Options API：login/register/onboarding/settings/about/birth-register/baby-home——按编译报错情况决定是否迁移（若这些页可正常编译则保持现状）
+- [x] 第二批 6 页迁移完成（login/register/onboarding/baby-home/birth-register/about）；仅 settings.uvue 保持 Options API（如编译正常则无需迁移）
 
 ### 编译反馈重构（2026-10-29）✅
 - [x] App.uvue / pages/index 迁移至 <script setup> 组合式 API（Options API 在当前 uni-app-x 编译器下报错，用户侧重构）；request.uts 移除 UTS 不支持的交叉类型与 as 断言；daysToPeriod 补上真实计算
