@@ -2,13 +2,21 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <script>
+      var coverSupport = 'CSS' in window && typeof CSS.supports === 'function' && (CSS.supports('top: env(a)') || CSS.supports('top: constant(a)'))
+      document.write(
+        '<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0' +
+          (coverSupport ? ', viewport-fit=cover' : '') + '" />'
+      )
+    </script>
     <meta name="theme-color" content="#FF7A6B" />
     <title>幸孕记 Lucky Bump</title>
-    <!-- 编译产物由 uni-app-x 构建管线注入 -->
+    <!--preload-links-->
+    <!--app-context-->
   </head>
   <body>
-    <div id="app"></div>
-    <script type="module" src="/main.uts"></script>
+    <div id="app"><!--app-html--></div>
+    <!-- uni-app x 入口必须使用无扩展名 /main，由编译管线解析为 main.uts 编译产物；写 /main.uts 会被当作静态资源原样返回导致白屏 -->
+    <script type="module" src="/main"></script>
   </body>
 </html>
