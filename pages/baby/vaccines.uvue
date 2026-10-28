@@ -26,54 +26,54 @@
   </view>
 </template>
 
-<script>
+<script setup lang="uts">
+  import { ref } from 'vue'
+  import { onLoad } from '@dcloudio/uni-app'
   import { luckyBaby } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
 
-  export default {
-    data() {
-      return { babyId: '', plan: [] as UTSJSONObject[], selfPaid: [] as UTSJSONObject[] }
-    },
-    onLoad() {
-      const stored = uni.getStorageSync('current_baby_id') as string
-      this.babyId = stored ?? ''
-      if (this.babyId.length == 0) {
-        uni.showToast({ title: '请先在宝宝页选择宝宝', icon: 'none' })
-        setTimeout(() => { uni.reLaunch({ url: '/pages/baby/baby-home' }) }, 800)
-        return
+  const babyId = ref<string>('')
+  const plan = ref<UTSJSONObject[]>([])
+  const selfPaid = ref<UTSJSONObject[]>([])
+
+  async function load() {
+    try {
+      const res = await luckyBaby('getVaccinePlan', { journeyId: journeyState.journeyId, babyId: babyId.value } as UTSJSONObject)
+      plan.value = res.getArray<UTSJSONObject>('plan') ?? []
+      selfPaid.value = res.getArray<UTSJSONObject>('selfPaidCatalog') ?? []
+    } catch (e) { /* 忽略 */ }
+  }
+  async function record(v: UTSJSONObject) {
+    const now = new Date()
+    const today = `${now.getFullYear()}-${now.getMonth() + 1 < 10 ? '0' + (now.getMonth() + 1) : '' + (now.getMonth() + 1)}-${now.getDate() < 10 ? '0' + now.getDate() : '' + now.getDate()}`
+    try {
+      const res = await luckyBaby('recordVaccine', {
+        journeyId: journeyState.journeyId, babyId: babyId.value,
+        code: v.getString('code') ?? '', name: v.getString('name') ?? '',
+        dose: v.getNumber('dose')?.toInt() ?? 1, free: v.getBoolean('free') ?? true, date: today
+      } as UTSJSONObject)
+      const rl = res.getJSON('redline')
+      if (rl != null) {
+        uni.showModal({ title: '接种反应提示', content: (rl as UTSJSONObject).getString('message') ?? '', showCancel: false })
+      } else {
+        uni.showToast({ title: '已记录 ✓', icon: 'success' })
       }
-      this.load()
-    },
-    methods: {
-      async load() {
-        try {
-          const res = await luckyBaby('getVaccinePlan', { journeyId: journeyState.journeyId, babyId: this.babyId } as UTSJSONObject)
-          this.plan = res.getArray('plan') ?? []
-          this.selfPaid = res.getArray('selfPaidCatalog') ?? []
-        } catch (e) { /* 忽略 */ }
-      },
-      async record(v: UTSJSONObject) {
-        const now = new Date()
-        const today = `${now.getFullYear()}-${now.getMonth() + 1 < 10 ? '0' + (now.getMonth() + 1) : '' + (now.getMonth() + 1)}-${now.getDate() < 10 ? '0' + now.getDate() : '' + now.getDate()}`
-        try {
-          const res = await luckyBaby('recordVaccine', {
-            journeyId: journeyState.journeyId, babyId: this.babyId,
-            code: v.getString('code') ?? '', name: v.getString('name') ?? '',
-            dose: v.getNumber('dose')?.toInt() ?? 1, free: v.getBoolean('free') ?? true, date: today
-          } as UTSJSONObject)
-          const rl = res.getJSON('redline')
-          if (rl != null) {
-            uni.showModal({ title: '接种反应提示', content: (rl as UTSJSONObject).getString('message') ?? '', showCancel: false })
-          } else {
-            uni.showToast({ title: '已记录 ✓', icon: 'success' })
-          }
-          this.load()
-        } catch (e) {
-          uni.showToast({ title: (e as Error).message, icon: 'none' })
-        }
-      }
+      load()
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
     }
   }
+
+  onLoad(() => {
+    const stored = uni.getStorageSync('current_baby_id') as string
+    babyId.value = stored ?? ''
+    if (babyId.value.length == 0) {
+      uni.showToast({ title: '请先在宝宝页选择宝宝', icon: 'none' })
+      setTimeout(() => { uni.reLaunch({ url: '/pages/baby/baby-home' }) }, 800)
+      return
+    }
+    load()
+  })
 </script>
 
 <style>

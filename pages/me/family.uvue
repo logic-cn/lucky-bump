@@ -45,87 +45,86 @@
   </view>
 </template>
 
-<script>
+<script setup lang="uts">
+  import { ref } from 'vue'
+  import { onLoad } from '@dcloudio/uni-app'
   import { luckyFamily } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
 
   type GOpt = { value: string, label: string, allow: boolean }
 
-  export default {
-    data() {
-      return {
-        members: [] as UTSJSONObject[], isOwner: false,
-        inviteCode: '', joinCode: '', joinCodeMode: false,
-        groups: [
-          { value: 'prenatal', label: '产检与就诊', allow: true },
-          { value: 'reports', label: '检查报告', allow: true },
-          { value: 'emotions', label: '情绪与状态', allow: true },
-          { value: 'diary', label: '日记', allow: true }
-        ] as GOpt[]
-      }
-    },
-    onLoad() { this.load() },
-    methods: {
-      roleText(r: string): string {
-        if (r == 'admin') return '管理员'
-        if (r == 'recorder') return '记录者'
-        return '围观者'
-      },
-      async load() {
-        try {
-          const res = await luckyFamily('getFamily', { journeyId: journeyState.journeyId } as UTSJSONObject)
-          this.members = res.getArray('members') ?? []
-          const fam = res.getJSON('family')
-          this.isOwner = this.members.some(m => (m as UTSJSONObject).getBoolean('isMe') == true && (m as UTSJSONObject).getString('role') == 'admin')
-          if (fam != null) {
-            const matrix = (fam as UTSJSONObject).getJSON('matrix')
-            const rec = (matrix as UTSJSONObject | null)?.getJSON('recorder')
-            for (let i = 0; i < this.groups.length; i++) {
-              const allow = (rec as UTSJSONObject | null)?.getBoolean(this.groups[i].value)
-              if (allow != null) this.groups[i].allow = allow
-            }
-          }
-        } catch (e) { /* 忽略 */ }
-      },
-      async invite(role: string) {
-        try {
-          const res = await luckyFamily('invite', { journeyId: journeyState.journeyId, role } as UTSJSONObject)
-          this.inviteCode = res.getString('code') ?? ''
-        } catch (e) { uni.showToast({ title: (e as Error).message, icon: 'none' }) }
-      },
-      async join() {
-        try {
-          await luckyFamily('join', { code: this.joinCode, nickname: '我' } as UTSJSONObject)
-          uni.showToast({ title: '加入成功 🎉', icon: 'success' })
-          this.load()
-        } catch (e) { uni.showToast({ title: (e as Error).message, icon: 'none' }) }
-      },
-      async togglePerm(group: string, e: UniSwitchChangeEvent) {
-        try {
-          await luckyFamily('setPermission', { journeyId: journeyState.journeyId, group, role: 'recorder', allow: e.detail.value } as UTSJSONObject)
-        } catch (err) {
-          uni.showToast({ title: (err as Error).message, icon: 'none' })
-          this.load()
+  const members = ref<UTSJSONObject[]>([])
+  const isOwner = ref<boolean>(false)
+  const inviteCode = ref<string>('')
+  const joinCode = ref<string>('')
+  const joinCodeMode = ref<boolean>(false)
+  const groups = ref<GOpt[]>([
+    { value: 'prenatal', label: '产检与就诊', allow: true },
+    { value: 'reports', label: '检查报告', allow: true },
+    { value: 'emotions', label: '情绪与状态', allow: true },
+    { value: 'diary', label: '日记', allow: true }
+  ] as GOpt[])
+
+  function roleText(r: string): string {
+    if (r == 'admin') return '管理员'
+    if (r == 'recorder') return '记录者'
+    return '围观者'
+  }
+  async function load() {
+    try {
+      const res = await luckyFamily('getFamily', { journeyId: journeyState.journeyId } as UTSJSONObject)
+      members.value = res.getArray<UTSJSONObject>('members') ?? []
+      const fam = res.getJSON('family')
+      isOwner.value = members.value.some(m => m.getBoolean('isMe') == true && m.getString('role') == 'admin')
+      if (fam != null) {
+        const matrix = (fam as UTSJSONObject).getJSON('matrix')
+        const rec = (matrix as UTSJSONObject | null)?.getJSON('recorder')
+        for (let i = 0; i < groups.value.length; i++) {
+          const allow = (rec as UTSJSONObject | null)?.getBoolean(groups.value[i].value)
+          if (allow != null) groups.value[i].allow = allow
         }
-      },
-      async remove(m: UTSJSONObject) {
-        uni.showModal({
-          title: '移除成员', content: `确定移除「${m.getString('nickname') ?? ''}」吗？`,
-          success: async (r) => {
-            if (r.confirm) {
-              try {
-                await luckyFamily('removeMember', { journeyId: journeyState.journeyId, memberUserId: m.getString('user_id') ?? '' } as UTSJSONObject)
-                uni.showToast({ title: '已移除', icon: 'success' })
-                this.load()
-              } catch (err) {
-                uni.showToast({ title: (err as Error).message, icon: 'none' })
-              }
-            }
-          }
-        })
       }
+    } catch (e) { /* 忽略 */ }
+  }
+  async function invite(role: string) {
+    try {
+      const res = await luckyFamily('invite', { journeyId: journeyState.journeyId, role } as UTSJSONObject)
+      inviteCode.value = res.getString('code') ?? ''
+    } catch (e) { uni.showToast({ title: (e as Error).message, icon: 'none' }) }
+  }
+  async function join() {
+    try {
+      await luckyFamily('join', { code: joinCode.value, nickname: '我' } as UTSJSONObject)
+      uni.showToast({ title: '加入成功 🎉', icon: 'success' })
+      load()
+    } catch (e) { uni.showToast({ title: (e as Error).message, icon: 'none' }) }
+  }
+  async function togglePerm(group: string, e: UniSwitchChangeEvent) {
+    try {
+      await luckyFamily('setPermission', { journeyId: journeyState.journeyId, group, role: 'recorder', allow: e.detail.value } as UTSJSONObject)
+    } catch (err) {
+      uni.showToast({ title: (err as Error).message, icon: 'none' })
+      load()
     }
   }
+  async function remove(m: UTSJSONObject) {
+    uni.showModal({
+      title: '移除成员', content: `确定移除「${m.getString('nickname') ?? ''}」吗？`,
+      success: async (r) => {
+        if (r.confirm) {
+          try {
+            await luckyFamily('removeMember', { journeyId: journeyState.journeyId, memberUserId: m.getString('user_id') ?? '' } as UTSJSONObject)
+            uni.showToast({ title: '已移除', icon: 'success' })
+            load()
+          } catch (err) {
+            uni.showToast({ title: (err as Error).message, icon: 'none' })
+          }
+        }
+      }
+    })
+  }
+
+  onLoad(() => { load() })
 </script>
 
 <style>

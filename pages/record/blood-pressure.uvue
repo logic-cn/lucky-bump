@@ -26,41 +26,44 @@
   </view>
 </template>
 
-<script>
+<script setup lang="uts">
+  import { ref } from 'vue'
   import { luckyRecord } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
 
-  export default {
-    data() {
-      return { sbp: '', dbp: '', hr: '', saving: false, redlineLevel: '', redlineMsg: '', redlineAction: '' }
-    },
-    methods: {
-      async save() {
-        const sbp = parseInt(this.sbp), dbp = parseInt(this.dbp)
-        if (!(sbp >= 60 && sbp <= 260) || !(dbp >= 30 && dbp <= 160)) {
-          uni.showToast({ title: '请输入有效血压值', icon: 'none' }); return
-        }
-        const value = { sbp: sbp, dbp: dbp } as UTSJSONObject
-        const hr = parseInt(this.hr)
-        if (hr >= 30 && hr <= 220) value['hr'] = hr
-        this.saving = true
-        try {
-          const res = await luckyRecord('addMetric', { journeyId: journeyState.journeyId, code: 'blood_pressure', value } as UTSJSONObject)
-          const rl = res.getJSON('redline')
-          if (rl != null) {
-            const r = rl as UTSJSONObject
-            this.redlineLevel = r.getString('level') ?? ''
-            this.redlineMsg = r.getString('message') ?? ''
-            this.redlineAction = r.getString('action') ?? ''
-          } else {
-            uni.showToast({ title: '已记录 ✓', icon: 'success' })
-            setTimeout(() => { uni.navigateBack() }, 600)
-          }
-        } catch (e) {
-          uni.showToast({ title: (e as Error).message, icon: 'none' })
-        } finally { this.saving = false }
-      }
+  const sbp = ref<string>('')
+  const dbp = ref<string>('')
+  const hr = ref<string>('')
+  const saving = ref<boolean>(false)
+  const redlineLevel = ref<string>('')
+  const redlineMsg = ref<string>('')
+  const redlineAction = ref<string>('')
+
+  async function save() {
+    const sbpVal = parseInt(sbp.value)
+    const dbpVal = parseInt(dbp.value)
+    if (!(sbpVal >= 60 && sbpVal <= 260) || !(dbpVal >= 30 && dbpVal <= 160)) {
+      uni.showToast({ title: '请输入有效血压值', icon: 'none' }); return
     }
+    const value = { sbp: sbpVal, dbp: dbpVal } as UTSJSONObject
+    const hrVal = parseInt(hr.value)
+    if (hrVal >= 30 && hrVal <= 220) value['hr'] = hrVal
+    saving.value = true
+    try {
+      const res = await luckyRecord('addMetric', { journeyId: journeyState.journeyId, code: 'blood_pressure', value } as UTSJSONObject)
+      const rl = res.getJSON('redline')
+      if (rl != null) {
+        const r = rl as UTSJSONObject
+        redlineLevel.value = r.getString('level') ?? ''
+        redlineMsg.value = r.getString('message') ?? ''
+        redlineAction.value = r.getString('action') ?? ''
+      } else {
+        uni.showToast({ title: '已记录 ✓', icon: 'success' })
+        setTimeout(() => { uni.navigateBack() }, 600)
+      }
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    } finally { saving.value = false }
   }
 </script>
 

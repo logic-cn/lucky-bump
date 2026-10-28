@@ -15,7 +15,7 @@
       <view class="item-body">
         <view class="row1">
           <text class="item-title">{{ it.getString('title') ?? '' }}</text>
-          <text class="status" :class="'status-' + it.getString('displayStatus')">{{ statusText(it.getString('displayStatus') ?? '') }}</text>
+          <text class="status" :class="'status-' + (it.getString('displayStatus') ?? '')">{{ statusText(it.getString('displayStatus') ?? '') }}</text>
         </view>
         <text class="item-sub">孕 {{ it.getNumber('week')?.toInt() }} 周 · {{ it.getString('planDate') ?? '' }}</text>
         <text class="item-prep" v-if="(it.getString('prep') ?? '').length > 0">📋 {{ it.getString('prep') }}</text>
@@ -24,53 +24,53 @@
   </view>
 </template>
 
-<script>
+<script setup lang="uts">
+  import { ref } from 'vue'
+  import { onLoad, onShow } from '@dcloudio/uni-app'
   import { luckyCare } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
 
-  export default {
-    data() {
-      return { items: [] as UTSJSONObject[], generating: false, highRiskNote: '' }
-    },
-    onLoad() { this.load() },
-    onShow() { if (this.items.length > 0) this.load() },
-    methods: {
-      statusText(s: string): string {
-        if (s == 'done') return '已完成'
-        if (s == 'skipped') return '已跳过'
-        if (s == 'due') return '该去产检了'
-        return '未到'
-      },
-      dotClass(it: UTSJSONObject): string {
-        const s = it.getString('displayStatus') ?? ''
-        if (s == 'done') return 'dot-done'
-        if (s == 'due') return 'dot-due'
-        return 'dot-upcoming'
-      },
-      async load() {
-        try {
-          const res = await luckyCare('listPlan', { journeyId: journeyState.journeyId } as UTSJSONObject)
-          this.items = res.getArray('items') ?? []
-          this.highRiskNote = res.getString('highRiskNote') ?? ''
-        } catch (e) { /* 忽略 */ }
-      },
-      async generate() {
-        this.generating = true
-        try {
-          const res = await luckyCare('generatePlan', { journeyId: journeyState.journeyId } as UTSJSONObject)
-          uni.showToast({ title: `已生成 ${res.getNumber('count')?.toInt() ?? 0} 次产检计划 ✓`, icon: 'none' })
-          this.load()
-        } catch (e) {
-          uni.showToast({ title: (e as Error).message, icon: 'none' })
-        } finally { this.generating = false }
-      },
-      openVisit(it: UTSJSONObject) {
-        const status = it.getString('displayStatus') ?? ''
-        if (status == 'done' || status == 'skipped') return
-        uni.navigateTo({ url: `/pages/care/visit?scheduleId=${it.getString('_id') ?? ''}&week=${it.getNumber('week')?.toInt() ?? 0}` })
-      }
-    }
+  const items = ref<UTSJSONObject[]>([])
+  const generating = ref<boolean>(false)
+  const highRiskNote = ref<string>('')
+
+  function statusText(s: string): string {
+    if (s == 'done') return '已完成'
+    if (s == 'skipped') return '已跳过'
+    if (s == 'due') return '该去产检了'
+    return '未到'
   }
+  function dotClass(it: UTSJSONObject): string {
+    const s = it.getString('displayStatus') ?? ''
+    if (s == 'done') return 'dot-done'
+    if (s == 'due') return 'dot-due'
+    return 'dot-upcoming'
+  }
+  async function load() {
+    try {
+      const res = await luckyCare('listPlan', { journeyId: journeyState.journeyId } as UTSJSONObject)
+      items.value = res.getArray<UTSJSONObject>('items') ?? []
+      highRiskNote.value = res.getString('highRiskNote') ?? ''
+    } catch (e) { /* 忽略 */ }
+  }
+  async function generate() {
+    generating.value = true
+    try {
+      const res = await luckyCare('generatePlan', { journeyId: journeyState.journeyId } as UTSJSONObject)
+      uni.showToast({ title: `已生成 ${res.getNumber('count')?.toInt() ?? 0} 次产检计划 ✓`, icon: 'none' })
+      load()
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    } finally { generating.value = false }
+  }
+  function openVisit(it: UTSJSONObject) {
+    const status = it.getString('displayStatus') ?? ''
+    if (status == 'done' || status == 'skipped') return
+    uni.navigateTo({ url: `/pages/care/visit?scheduleId=${it.getString('_id') ?? ''}&week=${it.getNumber('week')?.toInt() ?? 0}` })
+  }
+
+  onLoad(() => { load() })
+  onShow(() => { if (items.value.length > 0) load() })
 </script>
 
 <style>

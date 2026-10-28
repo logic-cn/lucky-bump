@@ -31,63 +31,72 @@
   </view>
 </template>
 
-<script>
+<script setup lang="uts">
+  import { computed, ref } from 'vue'
+  import { onLoad } from '@dcloudio/uni-app'
   import { luckyRecord } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
 
-  export default {
-    data() {
-      return { bbt: '', saving: false, events: [] as UTSJSONObject[], prediction: null }
-    },
-    computed: {
-      predAvgLen(): string { return String((this.prediction as UTSJSONObject)?.getNumber('avgCycleLength') ?? 28) },
-      predRegular(): boolean { return (this.prediction as UTSJSONObject)?.getBoolean('regular') ?? false },
-      predOvu(): string { return (this.prediction as UTSJSONObject)?.getString('ovulationDate') ?? '-' },
-      predFrom(): string { return ((this.prediction as UTSJSONObject)?.getJSON('fertileWindow') as UTSJSONObject)?.getString('from') ?? '-' },
-      predTo(): string { return ((this.prediction as UTSJSONObject)?.getJSON('fertileWindow') as UTSJSONObject)?.getString('to') ?? '-' },
-      predNext(): string { return (this.prediction as UTSJSONObject)?.getString('nextPeriodDate') ?? '-' }
-    },
-    onLoad() { this.load() },
-    methods: {
-      eventText(type: string, value: any): string {
-        if (type == 'period_start') return '🌸 经期开始'
-        if (type == 'period_end') return '经期结束'
-        if (type == 'ovulation_test') {
-          const r = (value as UTSJSONObject)?.getString('result') ?? ''
-          return r == 'strong_positive' ? '🧪 排卵试纸强阳' : (r == 'weak_positive' ? '排卵试纸弱阳' : '排卵试纸阴性')
-        }
-        if (type == 'bbt') return `🌡 体温 ${(value as UTSJSONObject)?.getNumber('tempC') ?? ''}°C`
-        if (type == 'intercourse') return '💗 同房（仅自己可见）'
-        if (type == 'pregnancy_test') return '🤰 验孕记录'
-        return type
-      },
-      async load() {
-        try {
-          const res = await luckyRecord('listCycleEvents', { journeyId: journeyState.journeyId } as UTSJSONObject)
-          this.events = res.getArray('events') ?? []
-          this.prediction = res.getJSON('prediction')
-        } catch (e) { /* 忽略 */ }
-      },
-      async markPeriod(kind: string) {
-        try {
-          await luckyRecord('addCycleEvent', { journeyId: journeyState.journeyId, type: kind == 'start' ? 'period_start' : 'period_end' } as UTSJSONObject)
-          uni.showToast({ title: '已记录 ✓', icon: 'success' })
-          this.load()
-        } catch (e) { uni.showToast({ title: (e as Error).message, icon: 'none' }) }
-      },
-      async saveBbt() {
-        const t = parseFloat(this.bbt)
-        if (!(t >= 34 && t <= 42)) { uni.showToast({ title: '请输入有效体温', icon: 'none' }); return }
-        this.saving = true
-        try {
-          await luckyRecord('addCycleEvent', { journeyId: journeyState.journeyId, type: 'bbt', value: { tempC: t } } as UTSJSONObject)
-          this.bbt = ''
-          uni.showToast({ title: '已记录 ✓', icon: 'success' })
-          this.load()
-        } catch (e) { uni.showToast({ title: (e as Error).message, icon: 'none' }) } finally { this.saving = false }
-      }
+  const bbt = ref('')
+  const saving = ref(false)
+  const events = ref<UTSJSONObject[]>([])
+  const prediction = ref<UTSJSONObject | null>(null)
+
+  const predAvgLen = computed((): string => String(prediction.value?.getNumber('avgCycleLength') ?? 28))
+  const predRegular = computed((): boolean => prediction.value?.getBoolean('regular') ?? false)
+  const predOvu = computed((): string => prediction.value?.getString('ovulationDate') ?? '-')
+  const predFrom = computed((): string => {
+    const fw = prediction.value?.getJSON('fertileWindow')
+    return fw != null ? (fw as UTSJSONObject).getString('from') ?? '-' : '-'
+  })
+  const predTo = computed((): string => {
+    const fw = prediction.value?.getJSON('fertileWindow')
+    return fw != null ? (fw as UTSJSONObject).getString('to') ?? '-' : '-'
+  })
+  const predNext = computed((): string => prediction.value?.getString('nextPeriodDate') ?? '-')
+
+  function eventText(type: string, value: any): string {
+    if (type == 'period_start') return '🌸 经期开始'
+    if (type == 'period_end') return '经期结束'
+    if (type == 'ovulation_test') {
+      const r = (value as UTSJSONObject)?.getString('result') ?? ''
+      return r == 'strong_positive' ? '🧪 排卵试纸强阳' : (r == 'weak_positive' ? '排卵试纸弱阳' : '排卵试纸阴性')
     }
+    if (type == 'bbt') return `🌡 体温 ${(value as UTSJSONObject)?.getNumber('tempC') ?? ''}°C`
+    if (type == 'intercourse') return '💗 同房（仅自己可见）'
+    if (type == 'pregnancy_test') return '🤰 验孕记录'
+    return type
   }
+
+  async function load() {
+    try {
+      const res = await luckyRecord('listCycleEvents', { journeyId: journeyState.journeyId } as UTSJSONObject)
+      events.value = res.getArray<UTSJSONObject>('events') ?? []
+      prediction.value = res.getJSON('prediction')
+    } catch (e) { /* 忽略 */ }
+  }
+
+  async function markPeriod(kind: string) {
+    try {
+      await luckyRecord('addCycleEvent', { journeyId: journeyState.journeyId, type: kind == 'start' ? 'period_start' : 'period_end' } as UTSJSONObject)
+      uni.showToast({ title: '已记录 ✓', icon: 'success' })
+      load()
+    } catch (e) { uni.showToast({ title: (e as Error).message, icon: 'none' }) }
+  }
+
+  async function saveBbt() {
+    const t = parseFloat(bbt.value)
+    if (!(t >= 34 && t <= 42)) { uni.showToast({ title: '请输入有效体温', icon: 'none' }); return }
+    saving.value = true
+    try {
+      await luckyRecord('addCycleEvent', { journeyId: journeyState.journeyId, type: 'bbt', value: { tempC: t } } as UTSJSONObject)
+      bbt.value = ''
+      uni.showToast({ title: '已记录 ✓', icon: 'success' })
+      load()
+    } catch (e) { uni.showToast({ title: (e as Error).message, icon: 'none' }) } finally { saving.value = false }
+  }
+
+  onLoad(() => { load() })
 </script>
 
 <style>

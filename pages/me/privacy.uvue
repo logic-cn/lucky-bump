@@ -27,25 +27,21 @@
   </view>
 </template>
 
-<script>
-  export default {
-    data() {
-      return {
-        appLock: (uni.getStorageSync('lb_app_lock') as boolean ?? false),
-        quietPush: (uni.getStorageSync('lb_quiet_push') as boolean ?? true)
-      }
-    },
-    methods: {
-      go(url: string) { uni.navigateTo({ url }) },
-      onAppLock(e: UniSwitchChangeEvent) {
-        this.appLock = e.detail.value
-        uni.setStorageSync('lb_app_lock', e.detail.value)
-      },
-      onQuietPush(e: UniSwitchChangeEvent) {
-        this.quietPush = e.detail.value
-        uni.setStorageSync('lb_quiet_push', e.detail.value)
-      }
-    }
+<script setup lang="uts">
+  // 安全读取：key 首次不存在时 getStorageSync 返回 null，不能强转 as boolean
+  const rawLock = uni.getStorageSync('lb_app_lock')
+  const appLock = ref<boolean>(rawLock != null && rawLock == true)
+  const rawPush = uni.getStorageSync('lb_quiet_push')
+  const quietPush = ref<boolean>(rawPush == null ? true : (rawPush == true || rawPush == 'true'))
+
+  function go(url: string) { uni.navigateTo({ url }) }
+  function onAppLock(e: UniSwitchChangeEvent) {
+    appLock.value = e.detail.value
+    uni.setStorageSync('lb_app_lock', e.detail.value)
+  }
+  function onQuietPush(e: UniSwitchChangeEvent) {
+    quietPush.value = e.detail.value
+    uni.setStorageSync('lb_quiet_push', e.detail.value)
   }
 </script>
 

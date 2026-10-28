@@ -31,81 +31,79 @@
   </view>
 </template>
 
-<script>
+<script setup lang="uts">
+  import { computed, ref } from 'vue'
+  import { onLoad } from '@dcloudio/uni-app'
   import { luckyBaby } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
 
   type FOpt = { value: string, label: string }
+  type FRow = { time: string, desc: string }
 
-  export default {
-    data() {
-      return {
-        mode: 'breastmilk_bottle', ml: 60, saving: false,
-        babyId: '', summary: null,
-        modes: [
-          { value: 'nursing', label: '🍼 亲喂' },
-          { value: 'breastmilk_bottle', label: '瓶喂母乳' },
-          { value: 'formula', label: '配方奶' },
-          { value: 'mixed', label: '混合' }
-        ] as FOpt[]
-      }
-    },
-    computed: {
-      feedCount(): number { return ((this.summary as UTSJSONObject | null)?.getJSON('feeding') as UTSJSONObject | null)?.getNumber('count')?.toInt() ?? 0 },
-      totalMl(): number { return ((this.summary as UTSJSONObject | null)?.getJSON('feeding') as UTSJSONObject | null)?.getNumber('totalMl')?.toInt() ?? 0 },
-      nursingMin(): number { return (((this.summary as UTSJSONObject | null)?.getJSON('feeding') as UTSJSONObject | null)?.getNumber('nursingSec')?.toInt() ?? 0) / 60 | 0 },
-      feedings(): FRow[] {
-        const arr = ((this.summary as UTSJSONObject | null)?.getJSON('feeding') as UTSJSONObject | null)?.getArray('items') ?? []
-        const rows: FRow[] = []
-        for (let i = 0; i < arr.length; i++) {
-          const f = arr[i] as UTSJSONObject
-          const mode = f.getString('mode') ?? ''
-          const ml = (f.getNumber('ml') ?? 0).toInt()
-          const dur = Math.floor((f.getNumber('duration_sec') ?? 0).toInt() / 60)
-          rows.push({ time: this.timeStr(f), desc: mode == 'nursing' ? `亲喂 ${dur} 分钟` : `${ml} ml` })
-        }
-        return rows
-      }
-    },
-    onLoad() {
-      const stored = uni.getStorageSync('current_baby_id') as string
-      this.babyId = stored ?? ''
-      if (this.babyId.length == 0) {
-        uni.showToast({ title: '请先在宝宝页选择宝宝', icon: 'none' })
-        setTimeout(() => { uni.reLaunch({ url: '/pages/baby/baby-home' }) }, 800)
-        return
-      }
-      this.load()
-    },
-    methods: {
-      goTimer() { uni.navigateTo({ url: '/pages/record/nursing-timer' }) },
-      step(d: number) { this.ml = Math.max(0, this.ml + d) },
-      timeStr(f: UTSJSONObject): string {
-        const ts = f.getNumber('ts') ?? 0
-        const d = new Date(ts)
-        const hh = d.getHours() < 10 ? '0' + d.getHours() : '' + d.getHours()
-        const mm = d.getMinutes() < 10 ? '0' + d.getMinutes() : '' + d.getMinutes()
-        return `${hh}:${mm}`
-      },
-      async load() {
-        try {
-          this.summary = await luckyBaby('dailySummary', { journeyId: journeyState.journeyId, babyId: this.babyId } as UTSJSONObject)
-        } catch (e) { /* 忽略 */ }
-      },
-      async save() {
-        this.saving = true
-        try {
-          await luckyBaby('addFeeding', { journeyId: journeyState.journeyId, babyId: this.babyId, mode: this.mode, ml: this.ml } as UTSJSONObject)
-          uni.showToast({ title: '已记录 ✓', icon: 'success' })
-          this.load()
-        } catch (e) {
-          uni.showToast({ title: (e as Error).message, icon: 'none' })
-        } finally { this.saving = false }
-      }
-    }
+  const mode = ref<string>('breastmilk_bottle')
+  const ml = ref<number>(60)
+  const saving = ref<boolean>(false)
+  const babyId = ref<string>('')
+  const summary = ref<UTSJSONObject | null>(null)
+  const modes = ref<FOpt[]>([
+    { value: 'nursing', label: '🍼 亲喂' },
+    { value: 'breastmilk_bottle', label: '瓶喂母乳' },
+    { value: 'formula', label: '配方奶' },
+    { value: 'mixed', label: '混合' }
+  ])
+
+  function timeStr(f: UTSJSONObject): string {
+    const ts = f.getNumber('ts') ?? 0
+    const d = new Date(ts)
+    const hh = d.getHours() < 10 ? '0' + d.getHours() : '' + d.getHours()
+    const mm = d.getMinutes() < 10 ? '0' + d.getMinutes() : '' + d.getMinutes()
+    return `${hh}:${mm}`
   }
 
-  type FRow = { time: string, desc: string }
+  const feedCount = computed((): number => ((summary.value as UTSJSONObject | null)?.getJSON('feeding') as UTSJSONObject | null)?.getNumber('count')?.toInt() ?? 0)
+  const totalMl = computed((): number => ((summary.value as UTSJSONObject | null)?.getJSON('feeding') as UTSJSONObject | null)?.getNumber('totalMl')?.toInt() ?? 0)
+  const nursingMin = computed((): number => Math.floor((((summary.value as UTSJSONObject | null)?.getJSON('feeding') as UTSJSONObject | null)?.getNumber('nursingSec')?.toInt() ?? 0) / 60))
+  const feedings = computed((): FRow[] => {
+    const arr = ((summary.value as UTSJSONObject | null)?.getJSON('feeding') as UTSJSONObject | null)?.getArray('items') ?? []
+    const rows: FRow[] = []
+    for (let i = 0; i < arr.length; i++) {
+      const f = arr[i] as UTSJSONObject
+      const modeVal = f.getString('mode') ?? ''
+      const mlVal = (f.getNumber('ml') ?? 0).toInt()
+      const dur = Math.floor((f.getNumber('duration_sec') ?? 0).toInt() / 60)
+      rows.push({ time: timeStr(f), desc: modeVal == 'nursing' ? `亲喂 ${dur} 分钟` : `${mlVal} ml` })
+    }
+    return rows
+  })
+
+  function goTimer() { uni.navigateTo({ url: '/pages/record/nursing-timer' }) }
+  function step(d: number) { ml.value = Math.max(0, ml.value + d) }
+  async function load() {
+    try {
+      summary.value = await luckyBaby('dailySummary', { journeyId: journeyState.journeyId, babyId: babyId.value } as UTSJSONObject)
+    } catch (e) { /* 忽略 */ }
+  }
+  async function save() {
+    saving.value = true
+    try {
+      await luckyBaby('addFeeding', { journeyId: journeyState.journeyId, babyId: babyId.value, mode: mode.value, ml: ml.value } as UTSJSONObject)
+      uni.showToast({ title: '已记录 ✓', icon: 'success' })
+      load()
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    } finally { saving.value = false }
+  }
+
+  onLoad(() => {
+    const stored = uni.getStorageSync('current_baby_id') as string
+    babyId.value = stored ?? ''
+    if (babyId.value.length == 0) {
+      uni.showToast({ title: '请先在宝宝页选择宝宝', icon: 'none' })
+      setTimeout(() => { uni.reLaunch({ url: '/pages/baby/baby-home' }) }, 800)
+      return
+    }
+    load()
+  })
 </script>
 
 <style>

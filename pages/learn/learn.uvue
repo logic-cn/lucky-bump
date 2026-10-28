@@ -22,15 +22,11 @@
   </view>
 </template>
 
-<script>
+<script setup lang="uts">
+  import { computed } from 'vue'
   import { journeyState } from '../../store/journeyStore.uts'
 
-  export default {
-    data() { return {} },
-    computed: {
-      stage(): string { return journeyState.stage }
-    }
-  }
+  const stage = computed((): string => journeyState.stage)
 </script>
 
 <style>

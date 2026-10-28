@@ -27,60 +27,62 @@
 
     <view class="card" v-if="step == 2">
       <text class="celebrate-title">已进入孕期模式 🌸</text>
-      <text class="hint">现在你处于 {{ stageText }}，去首页看看宝宝本周有多大吧</text>
+      <text class="hint">现在你处于 {{ stageLabel }}，去首页看看宝宝本周有多大吧</text>
       <button class="btn-save" @click="goHome">回到首页</button>
     </view>
   </view>
 </template>
 
-<script>
+<script setup lang="uts">
+  import { computed, ref } from 'vue'
   import { luckyRecord, luckyJourney } from '../../utils/request.uts'
   import { journeyState, applyJourney, stageText } from '../../store/journeyStore.uts'
 
-  export default {
-    data() {
-      return {
-        result: '', step: 0, lmp: '', saving: false,
-        opts: [
-          { value: 'negative', label: '一道杠', emoji: '⚪' },
-          { value: 'faint', label: '一深一浅', emoji: '🌓' },
-          { value: 'positive', label: '两道杠', emoji: '🎉' }
-        ] as Opt[]
+  type Opt = { value: string, label: string, emoji: string }
+
+  const result = ref('')
+  const step = ref(0)
+  const lmp = ref('')
+  const saving = ref(false)
+  const opts = ref<Opt[]>([
+    { value: 'negative', label: '一道杠', emoji: '⚪' },
+    { value: 'faint', label: '一深一浅', emoji: '🌓' },
+    { value: 'positive', label: '两道杠', emoji: '🎉' }
+  ])
+
+  const stageLabel = computed((): string => stageText(journeyState.stage))
+
+  function onLmpChange(e: UniPickerChangeEvent) { lmp.value = (e.detail.value as string) ?? '' }
+
+  async function save() {
+    saving.value = true
+    try {
+      const res = await luckyRecord('addCycleEvent', { journeyId: journeyState.journeyId, type: 'pregnancy_test', value: { result: result.value } } as UTSJSONObject)
+      if (res.getBoolean('pregnancyPositive') == true) {
+        step.value = 1
+      } else {
+        uni.showToast({ title: '已记录 ✓', icon: 'success' })
+        setTimeout(() => { uni.navigateBack() }, 600)
       }
-    },
-    methods: {
-      onLmpChange(e: UniPickerChangeEvent) { this.lmp = (e.detail.value as string) ?? '' },
-      async save() {
-        this.saving = true
-        try {
-          const res = await luckyRecord('addCycleEvent', { journeyId: journeyState.journeyId, type: 'pregnancy_test', value: { result: this.result } } as UTSJSONObject)
-          if (res.getBoolean('pregnancyPositive') == true) {
-            this.step = 1
-          } else {
-            uni.showToast({ title: '已记录 ✓', icon: 'success' })
-            setTimeout(() => { uni.navigateBack() }, 600)
-          }
-        } catch (e) {
-          uni.showToast({ title: (e as Error).message, icon: 'none' })
-        } finally { this.saving = false }
-      },
-      async confirmPregnancy() {
-        if (this.lmp.length == 0) { uni.showToast({ title: '请选择末次月经日期', icon: 'none' }); return }
-        this.saving = true
-        try {
-          const res = await luckyJourney('confirmPregnancy', { journeyId: journeyState.journeyId, eddSource: 'lmp', lmpDate: this.lmp } as UTSJSONObject)
-          const view = res.getJSON('view')
-          if (view != null) applyJourney(view as UTSJSONObject)
-          this.step = 2
-        } catch (e) {
-          uni.showToast({ title: (e as Error).message, icon: 'none' })
-        } finally { this.saving = false }
-      },
-      goHome() { uni.switchTab({ url: '/pages/index/index' }) }
-    }
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    } finally { saving.value = false }
   }
 
-  type Opt = { value: string, label: string, emoji: string }
+  async function confirmPregnancy() {
+    if (lmp.value.length == 0) { uni.showToast({ title: '请选择末次月经日期', icon: 'none' }); return }
+    saving.value = true
+    try {
+      const res = await luckyJourney('confirmPregnancy', { journeyId: journeyState.journeyId, eddSource: 'lmp', lmpDate: lmp.value } as UTSJSONObject)
+      const view = res.getJSON('view')
+      if (view != null) applyJourney(view as UTSJSONObject)
+      step.value = 2
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    } finally { saving.value = false }
+  }
+
+  function goHome() { uni.switchTab({ url: '/pages/index/index' }) }
 </script>
 
 <style>

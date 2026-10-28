@@ -52,7 +52,9 @@
   </view>
 </template>
 
-<script>
+<script setup lang="uts">
+  import { ref } from 'vue'
+  import { onLoad } from '@dcloudio/uni-app'
   import { luckyCare } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
 
@@ -60,97 +62,100 @@
 
   // 注：chooseImage/uploadFile 回调类型在 HBuilderX 首次编译时如与当前 uni-app-x 版本有出入，仅需微调本文件标注。
 
-  export default {
-    data() {
-      return {
-        scheduleId: '', week: '',
-        visitDate: this.todayStr(), nextDate: '',
-        hospital: '', doctor: '', cost: '', conclusion: '',
-        exams: [{ name: '', result: '', abnormal: false } as Exam],
-        saving: false, visits: [] as UTSJSONObject[],
-        reportFileIds: [] as string[], reportPreviews: [] as string[], uploading: false
-      }
-    },
-    onLoad(options: OnLoadOptions) {
-      this.scheduleId = options['scheduleId'] ?? ''
-      const w = options['week'] ?? ''
-      if (w.length > 0) this.week = w
-      this.loadVisits()
-    },
-    methods: {
-      todayStr(): string {
-        const d = new Date()
-        const m = d.getMonth() + 1 < 10 ? '0' + (d.getMonth() + 1) : '' + (d.getMonth() + 1)
-        const dd = d.getDate() < 10 ? '0' + d.getDate() : '' + d.getDate()
-        return `${d.getFullYear()}-${m}-${dd}`
-      },
-      onDateChange(e: UniPickerChangeEvent) { this.visitDate = (e.detail.value as string) ?? this.visitDate },
-      onNextChange(e: UniPickerChangeEvent) { this.nextDate = (e.detail.value as string) ?? '' },
-      /** 报告照片：选择 → 上传 uniCloud 存储 → 记录 fileID（预览用本地临时路径） */
-      chooseReport() {
-        uni.chooseImage({
-          count: 9 - this.reportPreviews.length,
-          success: async (res) => {
-            const paths = res.tempFilePaths
-            this.uploading = true
-            try {
-              for (let i = 0; i < paths.length; i++) {
-                const cloudPath = `reports/${journeyState.journeyId}/${Date.now()}_${i}.jpg`
-                const up = await this.uploadOne(paths[i], cloudPath)
-                this.reportFileIds.push(up)
-                this.reportPreviews.push(paths[i])
-              }
-            } catch (e) {
-              uni.showToast({ title: (e as Error).message, icon: 'none' })
-            } finally { this.uploading = false }
-          }
-        })
-      },
-      uploadOne(filePath: string, cloudPath: string): Promise<string> {
-        return new Promise<string>((resolve, reject) => {
-          uniCloud.uploadFile({
-            filePath: filePath,
-            cloudPath: cloudPath,
-            success: (res) => { resolve(res.fileID) },
-            fail: (err) => { reject(new Error(err.errMsg ?? '上传失败')) }
-          } as UploadFileOptions)
-        })
-      },
-      removeReport(i: number) {
-        this.reportFileIds.splice(i, 1)
-        this.reportPreviews.splice(i, 1)
-      },
-      async loadVisits() {
+  const scheduleId = ref<string>('')
+  const week = ref<string>('')
+  const nextDate = ref<string>('')
+  const hospital = ref<string>('')
+  const doctor = ref<string>('')
+  const cost = ref<string>('')
+  const conclusion = ref<string>('')
+  const exams = ref<Exam[]>([{ name: '', result: '', abnormal: false } as Exam])
+  const saving = ref<boolean>(false)
+  const visits = ref<UTSJSONObject[]>([])
+  const reportFileIds = ref<string[]>([])
+  const reportPreviews = ref<string[]>([])
+  const uploading = ref<boolean>(false)
+
+  function todayStr(): string {
+    const d = new Date()
+    const m = d.getMonth() + 1 < 10 ? '0' + (d.getMonth() + 1) : '' + (d.getMonth() + 1)
+    const dd = d.getDate() < 10 ? '0' + d.getDate() : '' + d.getDate()
+    return `${d.getFullYear()}-${m}-${dd}`
+  }
+  const visitDate = ref<string>(todayStr())
+
+  function onDateChange(e: UniPickerChangeEvent) { visitDate.value = (e.detail.value as string) ?? visitDate.value }
+  function onNextChange(e: UniPickerChangeEvent) { nextDate.value = (e.detail.value as string) ?? '' }
+  /** 报告照片：选择 → 上传 uniCloud 存储 → 记录 fileID（预览用本地临时路径） */
+  function chooseReport() {
+    uni.chooseImage({
+      count: 9 - reportPreviews.value.length,
+      success: async (res) => {
+        const paths = res.tempFilePaths
+        uploading.value = true
         try {
-          const res = await luckyCare('listVisits', { journeyId: journeyState.journeyId } as UTSJSONObject)
-          this.visits = res.getArray('visits') ?? []
-        } catch (e) { /* 忽略 */ }
-      },
-      async save() {
-        const w = parseInt(this.week)
-        if (!(w >= 0 && w <= 45)) { uni.showToast({ title: '请填写孕周', icon: 'none' }); return }
-        const items = this.exams.filter(e => e.name.trim().length > 0)
-        this.saving = true
-        try {
-          const res = await luckyCare('addVisit', {
-            journeyId: journeyState.journeyId, visitDate: this.visitDate,
-            hospital: this.hospital, doctor: this.doctor, week: w,
-            items: items, costYuan: parseFloat(this.cost) || 0,
-            conclusion: this.conclusion, nextVisitDate: this.nextDate,
-            reportFileIds: this.reportFileIds
-          } as UTSJSONObject)
-          if (this.scheduleId.length > 0) {
-            await luckyCare('updateItem', { journeyId: journeyState.journeyId, itemId: this.scheduleId, status: 'done' } as UTSJSONObject)
+          for (let i = 0; i < paths.length; i++) {
+            const cloudPath = `reports/${journeyState.journeyId}/${Date.now()}_${i}.jpg`
+            const up = await uploadOne(paths[i], cloudPath)
+            reportFileIds.value.push(up)
+            reportPreviews.value.push(paths[i])
           }
-          uni.showToast({ title: '已保存 ✓', icon: 'success' })
-          this.loadVisits()
-          setTimeout(() => { uni.navigateBack() }, 700)
         } catch (e) {
           uni.showToast({ title: (e as Error).message, icon: 'none' })
-        } finally { this.saving = false }
+        } finally { uploading.value = false }
       }
-    }
+    })
   }
+  function uploadOne(filePath: string, cloudPath: string): Promise<string> {
+    return new Promise<string>((resolve, reject) => {
+      uniCloud.uploadFile({
+        filePath: filePath,
+        cloudPath: cloudPath,
+        success: (res) => { resolve(res.fileID) },
+        fail: (err) => { reject(new Error(err.errMsg ?? '上传失败')) }
+      } as UploadFileOptions)
+    })
+  }
+  function removeReport(i: number) {
+    reportFileIds.value.splice(i, 1)
+    reportPreviews.value.splice(i, 1)
+  }
+  async function loadVisits() {
+    try {
+      const res = await luckyCare('listVisits', { journeyId: journeyState.journeyId } as UTSJSONObject)
+      visits.value = res.getArray<UTSJSONObject>('visits') ?? []
+    } catch (e) { /* 忽略 */ }
+  }
+  async function save() {
+    const w = parseInt(week.value)
+    if (!(w >= 0 && w <= 45)) { uni.showToast({ title: '请填写孕周', icon: 'none' }); return }
+    const items = exams.value.filter(e => e.name.trim().length > 0)
+    saving.value = true
+    try {
+      const res = await luckyCare('addVisit', {
+        journeyId: journeyState.journeyId, visitDate: visitDate.value,
+        hospital: hospital.value, doctor: doctor.value, week: w,
+        items: items, costYuan: parseFloat(cost.value) || 0,
+        conclusion: conclusion.value, nextVisitDate: nextDate.value,
+        reportFileIds: reportFileIds.value
+      } as UTSJSONObject)
+      if (scheduleId.value.length > 0) {
+        await luckyCare('updateItem', { journeyId: journeyState.journeyId, itemId: scheduleId.value, status: 'done' } as UTSJSONObject)
+      }
+      uni.showToast({ title: '已保存 ✓', icon: 'success' })
+      loadVisits()
+      setTimeout(() => { uni.navigateBack() }, 700)
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    } finally { saving.value = false }
+  }
+
+  onLoad((options: OnLoadOptions) => {
+    scheduleId.value = options['scheduleId'] ?? ''
+    const w = options['week'] ?? ''
+    if (w.length > 0) week.value = w
+    loadVisits()
+  })
 </script>
 
 <style>

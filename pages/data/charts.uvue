@@ -33,62 +33,57 @@
   </view>
 </template>
 
-<script>
+<script setup lang="uts">
+  import { computed, ref } from 'vue'
+  import { onLoad } from '@dcloudio/uni-app'
   import { luckyData } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
 
   type MOpt = { value: string, label: string }
   type Pt = { date: string, y: number, display: string }
 
-  export default {
-    data() {
-      return {
-        code: 'weight',
-        metricList: [
-          { value: 'weight', label: '体重' },
-          { value: 'blood_pressure', label: '血压' },
-          { value: 'blood_glucose', label: '血糖' },
-          { value: 'fetal_movement', label: '胎动' },
-          { value: 'mood', label: '情绪' }
-        ] as MOpt[],
-        points: [] as Pt[]
+  const code = ref<string>('weight')
+  const metricList = ref<MOpt[]>([
+    { value: 'weight', label: '体重' },
+    { value: 'blood_pressure', label: '血压' },
+    { value: 'blood_glucose', label: '血糖' },
+    { value: 'fetal_movement', label: '胎动' },
+    { value: 'mood', label: '情绪' }
+  ] as MOpt[])
+  const points = ref<Pt[]>([] as Pt[])
+
+  const metricLabel = computed((): string => {
+    for (let i = 0; i < metricList.value.length; i++) { if (metricList.value[i].value == code.value) return metricList.value[i].label }
+    return ''
+  })
+  const maxVal = computed((): number => {
+    let mx = 1
+    for (let i = 0; i < points.value.length; i++) { if (points.value[i].y > mx) mx = points.value[i].y }
+    return mx
+  })
+
+  function select(c: string) { code.value = c; load() }
+  function barHeight(y: number): number { return Math.max(12, Math.round(y / maxVal.value * 160)) }
+  async function load() {
+    try {
+      const res = await luckyData('series', { journeyId: journeyState.journeyId, code: code.value } as UTSJSONObject)
+      const arr = res.getArray<UTSJSONObject>('points') ?? []
+      const pts: Pt[] = []
+      for (let i = Math.max(0, arr.length - 14); i < arr.length; i++) {
+        const p = arr[i].getJSON('primary')
+        const raw = arr[i].getJSON('raw') as UTSJSONObject | null
+        if (p == null) continue
+        const y = (p as UTSJSONObject).getNumber('y') ?? 0
+        let display = `${y}`
+        if (code.value == 'blood_pressure') display = `${y}/${(p as UTSJSONObject).getNumber('y2') ?? ''}`
+        else if (code.value == 'fetal_movement') display = `${(raw as UTSJSONObject | null)?.getNumber('count')?.toInt() ?? y} 次`
+        pts.push({ date: arr[i].getString('date') ?? '', y, display })
       }
-    },
-    computed: {
-      metricLabel(): string {
-        for (let i = 0; i < this.metricList.length; i++) { if (this.metricList[i].value == this.code) return this.metricList[i].label }
-        return ''
-      },
-      maxVal(): number {
-        let mx = 1
-        for (let i = 0; i < this.points.length; i++) { if (this.points[i].y > mx) mx = this.points[i].y }
-        return mx
-      }
-    },
-    onLoad() { this.load() },
-    methods: {
-      select(c: string) { this.code = c; this.load() },
-      barHeight(y: number): number { return Math.max(12, Math.round(y / this.maxVal * 160)) },
-      async load() {
-        try {
-          const res = await luckyData('series', { journeyId: journeyState.journeyId, code: this.code } as UTSJSONObject)
-          const arr = res.getArray('points') ?? []
-          const pts: Pt[] = []
-          for (let i = Math.max(0, arr.length - 14); i < arr.length; i++) {
-            const p = (arr[i] as UTSJSONObject).getJSON('primary')
-            const raw = (arr[i] as UTSJSONObject).getJSON('raw') as UTSJSONObject | null
-            if (p == null) continue
-            const y = (p as UTSJSONObject).getNumber('y') ?? 0
-            let display = `${y}`
-            if (this.code == 'blood_pressure') display = `${y}/${(p as UTSJSONObject).getNumber('y2') ?? ''}`
-            else if (this.code == 'fetal_movement') display = `${(raw as UTSJSONObject | null)?.getNumber('count')?.toInt() ?? y} 次`
-            pts.push({ date: (arr[i] as UTSJSONObject).getString('date') ?? '', y, display })
-          }
-          this.points = pts
-        } catch (e) { /* 忽略 */ }
-      }
-    }
+      points.value = pts
+    } catch (e) { /* 忽略 */ }
   }
+
+  onLoad(() => { load() })
 </script>
 
 <style>

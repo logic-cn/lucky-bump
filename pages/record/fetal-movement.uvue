@@ -35,81 +35,86 @@
   </view>
 </template>
 
-<script>
+<script setup lang="uts">
+  import { computed, ref } from 'vue'
+  import { onLoad, onUnload } from '@dcloudio/uni-app'
   import { luckyRecord } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
 
   type SRow = { time: string, count: number, dur: string }
 
-  export default {
-    data() {
-      return {
-        mode: 'count', counting: false, count: 0,
-        startedAt: 0, now: 0, saving: false,
-        today: [] as SRow[], alertText: ''
+  let tickTimer = -1
+
+  const mode = ref('count')
+  const counting = ref(false)
+  const count = ref(0)
+  const startedAt = ref(0)
+  const now = ref(0)
+  const saving = ref(false)
+  const today = ref<SRow[]>([])
+  const alertText = ref('')
+
+  const elapsedText = computed((): string => {
+    const s = Math.floor((now.value - startedAt.value) / 1000)
+    return `${Math.floor(s / 60)} 分 ${s % 60} 秒`
+  })
+
+  async function load() {
+    try {
+      const res = await luckyRecord('listMetrics', { journeyId: journeyState.journeyId, code: 'fetal_movement', limit: 10 } as UTSJSONObject)
+      const arr = res.getArray<UTSJSONObject>('records') ?? []
+      const rows: SRow[] = []
+      for (let i = 0; i < arr.length; i++) {
+        const m = arr[i] as UTSJSONObject
+        const v = m.getJSON('value') as UTSJSONObject | null
+        rows.push({
+          time: new Date(m.getNumber('ts') ?? 0).toISOString().slice(11, 16),
+          count: (v?.getNumber('count') ?? 0).toInt(),
+          dur: `${(v?.getNumber('durationMin') ?? 0).toInt()} 分钟`
+        })
       }
-    },
-    computed: {
-      elapsedText(): string {
-        const s = Math.floor((this.now - this.startedAt) / 1000)
-        return `${Math.floor(s / 60)} 分 ${s % 60} 秒`
-      }
-    },
-    onUnload() { clearInterval(this._timer) },
-    onLoad() { this.load() },
-    methods: {
-      async load() {
-        try {
-          const res = await luckyRecord('listMetrics', { journeyId: journeyState.journeyId, code: 'fetal_movement', limit: 10 } as UTSJSONObject)
-          const arr = res.getArray('records') ?? []
-          const rows: SRow[] = []
-          for (let i = 0; i < arr.length; i++) {
-            const m = arr[i] as UTSJSONObject
-            const v = m.getJSON('value') as UTSJSONObject | null
-            rows.push({
-              time: new Date(m.getNumber('ts') ?? 0).toISOString().slice(11, 16),
-              count: (v?.getNumber('count') ?? 0).toInt(),
-              dur: `${(v?.getNumber('durationMin') ?? 0).toInt()} 分钟`
-            })
-          }
-          this.today = rows
-        } catch (e) { /* 忽略 */ }
-      },
-      start() {
-        this.count = 0
-        this.startedAt = Date.now()
-        this.now = this.startedAt
-        this.counting = true
-        this._timer = setInterval(() => { this.now = Date.now() }, 1000)
-      },
-      tap() { this.count += 1 },
-      async finish() {
-        clearInterval(this._timer)
-        if (this.count == 0) { this.counting = false; return }
-        const durMin = Math.max(1, Math.round((Date.now() - this.startedAt) / 60000))
-        // 数到 10 次模式：若提前数满，durationMin 按实际用时；定时模式固定 60 分钟
-        this.saving = true
-        try {
-          const res = await luckyRecord('addMetric', {
-            journeyId: journeyState.journeyId, code: 'fetal_movement',
-            value: { count: this.count, durationMin: durMin } as UTSJSONObject
-          } as UTSJSONObject)
-          this.counting = false
-          // 明显低于近期均值提示（服务端趋势提醒的端上简化版）
-          if (this.today.length >= 3) {
-            const avg = this.today.reduce((a, b) => a + b.count, 0) / this.today.length
-            if (this.count < avg * 0.5) {
-              this.alertText = `今天这次（${this.count} 次）明显少于平时（约 ${Math.round(avg)} 次）`
-            }
-          }
-          uni.showToast({ title: '已记录 ✓', icon: 'success' })
-          this.load()
-        } catch (e) {
-          uni.showToast({ title: (e as Error).message, icon: 'none' })
-        } finally { this.saving = false }
-      }
-    }
+      today.value = rows
+    } catch (e) { /* 忽略 */ }
   }
+
+  function start() {
+    count.value = 0
+    startedAt.value = Date.now()
+    now.value = startedAt.value
+    counting.value = true
+    tickTimer = setInterval(() => { now.value = Date.now() }, 1000)
+  }
+
+  function tap() { count.value += 1 }
+
+  async function finish() {
+    clearInterval(tickTimer)
+    if (count.value == 0) { counting.value = false; return }
+    const durMin = Math.max(1, Math.round((Date.now() - startedAt.value) / 60000))
+    // 数到 10 次模式：若提前数满，durationMin 按实际用时；定时模式固定 60 分钟
+    saving.value = true
+    try {
+      const res = await luckyRecord('addMetric', {
+        journeyId: journeyState.journeyId, code: 'fetal_movement',
+        value: { count: count.value, durationMin: durMin } as UTSJSONObject
+      } as UTSJSONObject)
+      counting.value = false
+      // 明显低于近期均值提示（服务端趋势提醒的端上简化版）
+      if (today.value.length >= 3) {
+        const avg = today.value.reduce((a, b) => a + b.count, 0) / today.value.length
+        if (count.value < avg * 0.5) {
+          alertText.value = `今天这次（${count.value} 次）明显少于平时（约 ${Math.round(avg)} 次）`
+        }
+      }
+      uni.showToast({ title: '已记录 ✓', icon: 'success' })
+      load()
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    } finally { saving.value = false }
+  }
+
+  onLoad(() => { load() })
+  onUnload(() => { clearInterval(tickTimer) })
 </script>
 
 <style>

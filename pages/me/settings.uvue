@@ -39,66 +39,68 @@
   </view>
 </template>
 
-<script>
+<script setup lang="uts">
+  import { ref } from 'vue'
+  import { onLoad } from '@dcloudio/uni-app'
   import { luckyReminder } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
 
   type TOpt = { value: string, label: string }
 
-  export default {
-    data() {
-      return {
-        rules: [] as UTSJSONObject[], saving: false,
-        title: '', type: 'absolute', anchorDate: '', week: '', month: '', intervalDays: '',
-        darkMode: true,
-        types: [
-          { value: 'absolute', label: '指定日期' },
-          { value: 'by_week', label: '按孕周' },
-          { value: 'by_month', label: '按月龄' },
-          { value: 'recurring', label: '周期重复' }
-        ] as TOpt[]
-      }
-    },
-    onLoad() { this.load() },
-    methods: {
-      ruleTypeText(t: string): string {
-        for (let i = 0; i < this.types.length; i++) { if (this.types[i].value == t) return this.types[i].label }
-        return t
-      },
-      onAnchorChange(e: UniPickerChangeEvent) { this.anchorDate = (e.detail.value as string) ?? '' },
-      onDark(e: UniSwitchChangeEvent) { this.darkMode = e.detail.value },
-      async load() {
-        try {
-          const res = await luckyReminder('listRules', { journeyId: journeyState.journeyId } as UTSJSONObject)
-          this.rules = res.getArray('rules') ?? []
-        } catch (e) { /* 忽略 */ }
-      },
-      async toggleRule(r: UTSJSONObject, e: UniSwitchChangeEvent) {
-        try {
-          await luckyReminder('updateRule', { journeyId: journeyState.journeyId, ruleId: r.getString('_id') ?? '', enabled: e.detail.value } as UTSJSONObject)
-        } catch (err) { uni.showToast({ title: (err as Error).message, icon: 'none' }) }
-      },
-      async add() {
-        if (this.title.trim().length == 0) { uni.showToast({ title: '请填写提醒名称', icon: 'none' }); return }
-        const params = { journeyId: journeyState.journeyId, type: this.type, title: this.title } as UTSJSONObject
-        if (this.type == 'absolute') {
-          if (this.anchorDate.length == 0) { uni.showToast({ title: '请选择日期', icon: 'none' }); return }
-          params['anchorDate'] = this.anchorDate
-        } else if (this.type == 'by_week') params['week'] = parseInt(this.week) || 0
-        else if (this.type == 'by_month') params['month'] = parseInt(this.month) || 0
-        else params['intervalDays'] = parseInt(this.intervalDays) || 1
-        this.saving = true
-        try {
-          await luckyReminder('addRule', params)
-          this.title = ''
-          uni.showToast({ title: '已添加 ✓', icon: 'success' })
-          this.load()
-        } catch (e) {
-          uni.showToast({ title: (e as Error).message, icon: 'none' })
-        } finally { this.saving = false }
-      }
-    }
+  const rules = ref<UTSJSONObject[]>([])
+  const saving = ref<boolean>(false)
+  const title = ref<string>('')
+  const type = ref<string>('absolute')
+  const anchorDate = ref<string>('')
+  const week = ref<string>('')
+  const month = ref<string>('')
+  const intervalDays = ref<string>('')
+  const darkMode = ref<boolean>(true)
+  const types = ref<TOpt[]>([
+    { value: 'absolute', label: '指定日期' },
+    { value: 'by_week', label: '按孕周' },
+    { value: 'by_month', label: '按月龄' },
+    { value: 'recurring', label: '周期重复' }
+  ])
+
+  function ruleTypeText(t: string): string {
+    for (let i = 0; i < types.value.length; i++) { if (types.value[i].value == t) return types.value[i].label }
+    return t
   }
+  function onAnchorChange(e: UniPickerChangeEvent) { anchorDate.value = (e.detail.value as string) ?? '' }
+  function onDark(e: UniSwitchChangeEvent) { darkMode.value = e.detail.value }
+  async function load() {
+    try {
+      const res = await luckyReminder('listRules', { journeyId: journeyState.journeyId } as UTSJSONObject)
+      rules.value = res.getArray<UTSJSONObject>('rules') ?? []
+    } catch (e) { /* 忽略 */ }
+  }
+  async function toggleRule(r: UTSJSONObject, e: UniSwitchChangeEvent) {
+    try {
+      await luckyReminder('updateRule', { journeyId: journeyState.journeyId, ruleId: r.getString('_id') ?? '', enabled: e.detail.value } as UTSJSONObject)
+    } catch (err) { uni.showToast({ title: (err as Error).message, icon: 'none' }) }
+  }
+  async function add() {
+    if (title.value.trim().length == 0) { uni.showToast({ title: '请填写提醒名称', icon: 'none' }); return }
+    const params = { journeyId: journeyState.journeyId, type: type.value, title: title.value } as UTSJSONObject
+    if (type.value == 'absolute') {
+      if (anchorDate.value.length == 0) { uni.showToast({ title: '请选择日期', icon: 'none' }); return }
+      params['anchorDate'] = anchorDate.value
+    } else if (type.value == 'by_week') params['week'] = parseInt(week.value) || 0
+    else if (type.value == 'by_month') params['month'] = parseInt(month.value) || 0
+    else params['intervalDays'] = parseInt(intervalDays.value) || 1
+    saving.value = true
+    try {
+      await luckyReminder('addRule', params)
+      title.value = ''
+      uni.showToast({ title: '已添加 ✓', icon: 'success' })
+      load()
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    } finally { saving.value = false }
+  }
+
+  onLoad(() => { load() })
 </script>
 
 <style>

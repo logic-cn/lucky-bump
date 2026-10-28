@@ -25,86 +25,91 @@
   </view>
 </template>
 
-<script>
+<script setup lang="uts">
+  import { computed, ref } from 'vue'
+  import { onLoad, onUnload } from '@dcloudio/uni-app'
   import { luckyRecord } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
 
   type Row = { time: string, dur: string, startedAt: number }
 
-  export default {
-    data() {
-      return {
-        running: false, startedAt: 0, sessionId: '',
-        now: 0, lastInterval: '', lastDur: '',
-        recent: [] as Row[], advice: ''
-      }
-    },
-    computed: {
-      display(): string {
-        if (this.running) {
-          const s = Math.floor((this.now - this.startedAt) / 1000)
-          return this.fmt(s)
+  let tickTimer = -1
+
+  const running = ref(false)
+  const startedAt = ref(0)
+  const sessionId = ref('')
+  const now = ref(0)
+  const lastInterval = ref('')
+  const lastDur = ref('')
+  const recent = ref<Row[]>([])
+  const advice = ref('')
+
+  function fmt(s: number): string {
+    const m = Math.floor(s / 60), sec = s % 60
+    return `${m < 10 ? '0' + m : m}:${sec < 10 ? '0' + sec : sec}`
+  }
+
+  const display = computed((): string => {
+    if (running.value) {
+      const s = Math.floor((now.value - startedAt.value) / 1000)
+      return fmt(s)
+    }
+    return '00:00'
+  })
+
+  function timeStr(ts: number): string {
+    const d = new Date(ts)
+    const hh = d.getHours() < 10 ? '0' + d.getHours() : '' + d.getHours()
+    const mm = d.getMinutes() < 10 ? '0' + d.getMinutes() : '' + d.getMinutes()
+    return `${hh}:${mm}`
+  }
+
+  async function load() {
+    try {
+      const res = await luckyRecord('listTrackers', { journeyId: journeyState.journeyId, type: 'contraction' } as UTSJSONObject)
+      const arr = res.getArray<UTSJSONObject>('sessions') ?? []
+      const rows: Row[] = []
+      for (let i = 0; i < arr.length && i < 10; i++) {
+        const s = arr[i] as UTSJSONObject
+        const startedAtVal = (s.getNumber('started_at') ?? 0)
+        const endedAt = (s.getNumber('ended_at') ?? 0)
+        if (endedAt <= 0) continue
+        let interval = ''
+        if (i + 1 < arr.length) {
+          const prev = (arr[i + 1] as UTSJSONObject).getNumber('started_at') ?? 0
+          if (prev > 0) interval = `${Math.round((startedAtVal - prev) / 60000)} 分钟`
         }
-        return '00:00'
+        rows.push({ time: timeStr(startedAtVal), dur: fmt(Math.floor((endedAt - startedAtVal) / 1000)) + (interval.length > 0 ? ` · 间隔 ${interval}` : ''), startedAt: startedAtVal })
       }
-    },
-    onLoad() { this.load() },
-    onUnload() { if (this.running) clearInterval(this._timer) },
-    methods: {
-      fmt(s: number): string {
-        const m = Math.floor(s / 60), sec = s % 60
-        return `${m < 10 ? '0' + m : m}:${sec < 10 ? '0' + sec : sec}`
-      },
-      async load() {
-        try {
-          const res = await luckyRecord('listTrackers', { journeyId: journeyState.journeyId, type: 'contraction' } as UTSJSONObject)
-          const arr = res.getArray('sessions') ?? []
-          const rows: Row[] = []
-          for (let i = 0; i < arr.length && i < 10; i++) {
-            const s = arr[i] as UTSJSONObject
-            const startedAt = (s.getNumber('started_at') ?? 0)
-            const endedAt = (s.getNumber('ended_at') ?? 0)
-            if (endedAt <= 0) continue
-            let interval = ''
-            if (i + 1 < arr.length) {
-              const prev = (arr[i + 1] as UTSJSONObject).getNumber('started_at') ?? 0
-              if (prev > 0) interval = `${Math.round((startedAt - prev) / 60000)} 分钟`
-            }
-            rows.push({ time: this.timeStr(startedAt), dur: this.fmt(Math.floor((endedAt - startedAt) / 1000)) + (interval.length > 0 ? ` · 间隔 ${interval}` : ''), startedAt })
-          }
-          this.recent = rows
-        } catch (e) { /* 忽略 */ }
-      },
-      timeStr(ts: number): string {
-        const d = new Date(ts)
-        const hh = d.getHours() < 10 ? '0' + d.getHours() : '' + d.getHours()
-        const mm = d.getMinutes() < 10 ? '0' + d.getMinutes() : '' + d.getMinutes()
-        return `${hh}:${mm}`
-      },
-      async toggle() {
-        if (!this.running) {
-          try {
-            const res = await luckyRecord('startTracker', { journeyId: journeyState.journeyId, type: 'contraction' } as UTSJSONObject)
-            this.sessionId = res.getString('sessionId') ?? ''
-            this.startedAt = (res.getNumber('startedAt') ?? Date.now())
-            this.running = true
-            this._timer = setInterval(() => { this.now = Date.now() }, 500)
-          } catch (e) { uni.showToast({ title: (e as Error).message, icon: 'none' }) }
-        } else {
-          clearInterval(this._timer)
-          this.running = false
-          try {
-            await luckyRecord('stopTracker', { journeyId: journeyState.journeyId, sessionId: this.sessionId } as UTSJSONObject)
-            this.lastDur = this.fmt(Math.floor((Date.now() - this.startedAt) / 1000))
-            this.lastInterval = this.recent.length > 0 ? `${Math.round((this.startedAt - this.recent[0].startedAt) / 60000)} 分钟` : ''
-            const adv = await luckyRecord('contractionAdvice', { journeyId: journeyState.journeyId } as UTSJSONObject)
-            this.advice = adv.getBoolean('qualified') == true ? (adv.getString('message') ?? '') : ''
-            this.load()
-          } catch (e) { uni.showToast({ title: (e as Error).message, icon: 'none' }) }
-        }
-      }
+      recent.value = rows
+    } catch (e) { /* 忽略 */ }
+  }
+
+  async function toggle() {
+    if (!running.value) {
+      try {
+        const res = await luckyRecord('startTracker', { journeyId: journeyState.journeyId, type: 'contraction' } as UTSJSONObject)
+        sessionId.value = res.getString('sessionId') ?? ''
+        startedAt.value = (res.getNumber('startedAt') ?? Date.now())
+        running.value = true
+        tickTimer = setInterval(() => { now.value = Date.now() }, 500)
+      } catch (e) { uni.showToast({ title: (e as Error).message, icon: 'none' }) }
+    } else {
+      clearInterval(tickTimer)
+      running.value = false
+      try {
+        await luckyRecord('stopTracker', { journeyId: journeyState.journeyId, sessionId: sessionId.value } as UTSJSONObject)
+        lastDur.value = fmt(Math.floor((Date.now() - startedAt.value) / 1000))
+        lastInterval.value = recent.value.length > 0 ? `${Math.round((startedAt.value - recent.value[0].startedAt) / 60000)} 分钟` : ''
+        const adv = await luckyRecord('contractionAdvice', { journeyId: journeyState.journeyId } as UTSJSONObject)
+        advice.value = adv.getBoolean('qualified') == true ? (adv.getString('message') ?? '') : ''
+        load()
+      } catch (e) { uni.showToast({ title: (e as Error).message, icon: 'none' }) }
     }
   }
+
+  onLoad(() => { load() })
+  onUnload(() => { if (running.value) clearInterval(tickTimer) })
 </script>
 
 <style>

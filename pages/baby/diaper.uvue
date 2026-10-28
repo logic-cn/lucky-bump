@@ -36,63 +36,65 @@
   </view>
 </template>
 
-<script>
+<script setup lang="uts">
+  import { computed, ref } from 'vue'
+  import { onLoad } from '@dcloudio/uni-app'
   import { luckyBaby } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
 
   type KOpt = { value: string, label: string }
 
-  export default {
-    data() {
-      return {
-        kind: 'both', texture: 'paste', color: 'yellow', saving: false,
-        babyId: '', summary: null, redlineMsg: '', redlineAction: '', redlineCritical: false,
-        kinds: [{ value: 'pee', label: '🚹 尿' }, { value: 'poop', label: '🚼 便' }, { value: 'both', label: 'Both 都有' }] as KOpt[],
-        textures: [{ value: 'paste', label: '糊状' }, { value: 'formed', label: '成形' }, { value: 'watery', label: '水样' }, { value: 'hard', label: '干硬' }] as KOpt[],
-        colors: [{ value: 'yellow', label: '金黄' }, { value: 'green', label: '绿' }, { value: 'brown', label: '棕' }, { value: 'black', label: '黑' }, { value: 'white', label: '陶土白' }, { value: 'blood_streak', label: '带血丝' }] as KOpt[]
-      }
-    },
-    computed: {
-      diaperCount(): number { return ((this.summary as UTSJSONObject | null)?.getJSON('diaper') as UTSJSONObject | null)?.getNumber('count')?.toInt() ?? 0 },
-      poopCount(): number { return ((this.summary as UTSJSONObject | null)?.getJSON('diaper') as UTSJSONObject | null)?.getNumber('poopCount')?.toInt() ?? 0 }
-    },
-    onLoad() {
-      const stored = uni.getStorageSync('current_baby_id') as string
-      this.babyId = stored ?? ''
-      if (this.babyId.length == 0) {
-        uni.showToast({ title: '请先在宝宝页选择宝宝', icon: 'none' })
-        setTimeout(() => { uni.reLaunch({ url: '/pages/baby/baby-home' }) }, 800)
-        return
-      }
-      this.load()
-    },
-    methods: {
-      async load() {
-        try { this.summary = await luckyBaby('dailySummary', { journeyId: journeyState.journeyId, babyId: this.babyId } as UTSJSONObject) } catch (e) { /* 忽略 */ }
-      },
-      async save() {
-        this.saving = true
-        try {
-          const res = await luckyBaby('addDiaper', {
-            journeyId: journeyState.journeyId, babyId: this.babyId, kind: this.kind,
-            texture: this.kind == 'pee' ? '' : this.texture, color: this.kind == 'pee' ? '' : this.color
-          } as UTSJSONObject)
-          const rl = res.getJSON('redline')
-          if (rl != null) {
-            const r = rl as UTSJSONObject
-            this.redlineMsg = r.getString('message') ?? ''
-            this.redlineAction = r.getString('action') ?? ''
-            this.redlineCritical = (r.getString('level') ?? '') == 'critical'
-          } else {
-            uni.showToast({ title: '已记录 ✓', icon: 'success' })
-            this.load()
-          }
-        } catch (e) {
-          uni.showToast({ title: (e as Error).message, icon: 'none' })
-        } finally { this.saving = false }
-      }
-    }
+  const kind = ref<string>('both')
+  const texture = ref<string>('paste')
+  const color = ref<string>('yellow')
+  const saving = ref<boolean>(false)
+  const babyId = ref<string>('')
+  const summary = ref<UTSJSONObject | null>(null)
+  const redlineMsg = ref<string>('')
+  const redlineAction = ref<string>('')
+  const redlineCritical = ref<boolean>(false)
+  const kinds = ref<KOpt[]>([{ value: 'pee', label: '🚹 尿' }, { value: 'poop', label: '🚼 便' }, { value: 'both', label: 'Both 都有' }])
+  const textures = ref<KOpt[]>([{ value: 'paste', label: '糊状' }, { value: 'formed', label: '成形' }, { value: 'watery', label: '水样' }, { value: 'hard', label: '干硬' }])
+  const colors = ref<KOpt[]>([{ value: 'yellow', label: '金黄' }, { value: 'green', label: '绿' }, { value: 'brown', label: '棕' }, { value: 'black', label: '黑' }, { value: 'white', label: '陶土白' }, { value: 'blood_streak', label: '带血丝' }])
+
+  const diaperCount = computed((): number => ((summary.value as UTSJSONObject | null)?.getJSON('diaper') as UTSJSONObject | null)?.getNumber('count')?.toInt() ?? 0)
+  const poopCount = computed((): number => ((summary.value as UTSJSONObject | null)?.getJSON('diaper') as UTSJSONObject | null)?.getNumber('poopCount')?.toInt() ?? 0)
+
+  async function load() {
+    try { summary.value = await luckyBaby('dailySummary', { journeyId: journeyState.journeyId, babyId: babyId.value } as UTSJSONObject) } catch (e) { /* 忽略 */ }
   }
+  async function save() {
+    saving.value = true
+    try {
+      const res = await luckyBaby('addDiaper', {
+        journeyId: journeyState.journeyId, babyId: babyId.value, kind: kind.value,
+        texture: kind.value == 'pee' ? '' : texture.value, color: kind.value == 'pee' ? '' : color.value
+      } as UTSJSONObject)
+      const rl = res.getJSON('redline')
+      if (rl != null) {
+        const r = rl as UTSJSONObject
+        redlineMsg.value = r.getString('message') ?? ''
+        redlineAction.value = r.getString('action') ?? ''
+        redlineCritical.value = (r.getString('level') ?? '') == 'critical'
+      } else {
+        uni.showToast({ title: '已记录 ✓', icon: 'success' })
+        load()
+      }
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    } finally { saving.value = false }
+  }
+
+  onLoad(() => {
+    const stored = uni.getStorageSync('current_baby_id') as string
+    babyId.value = stored ?? ''
+    if (babyId.value.length == 0) {
+      uni.showToast({ title: '请先在宝宝页选择宝宝', icon: 'none' })
+      setTimeout(() => { uni.reLaunch({ url: '/pages/baby/baby-home' }) }, 800)
+      return
+    }
+    load()
+  })
 </script>
 
 <style>

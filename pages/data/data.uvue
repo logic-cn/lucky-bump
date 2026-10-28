@@ -22,22 +22,18 @@
   </view>
 </template>
 
-<script>
+<script setup lang="uts">
   import { luckyData } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
 
-  export default {
-    data() { return {} },
-    methods: {
-      go(url: string) { uni.navigateTo({ url }) },
-      async goExport() {
-        try {
-          await luckyData('exportAll', { journeyId: journeyState.journeyId } as UTSJSONObject)
-          uni.showModal({ title: '导出成功', content: '数据包已生成。V1.1 将支持打包下载到本机与网盘（当前可在云函数控制台获取）。', showCancel: false })
-        } catch (e) {
-          uni.showToast({ title: (e as Error).message, icon: 'none' })
-        }
-      }
+  function go(url: string) { uni.navigateTo({ url }) }
+
+  async function goExport() {
+    try {
+      await luckyData('exportAll', { journeyId: journeyState.journeyId } as UTSJSONObject)
+      uni.showModal({ title: '导出成功', content: '数据包已生成。V1.1 将支持打包下载到本机与网盘（当前可在云函数控制台获取）。', showCancel: false })
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
     }
   }
 </script>

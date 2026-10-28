@@ -37,83 +37,86 @@
   </view>
 </template>
 
-<script>
+<script setup lang="uts">
+  import { computed, ref } from 'vue'
+  import { onLoad } from '@dcloudio/uni-app'
   import { luckyBaby } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
 
-  export default {
-    data() {
-      return {
-        babyId: '', saving: false, result: null,
-        measureDate: '', weightKg: '', heightCm: '', headCm: '',
-        resultMonthAge: 0, alerts: [] as string[], samples: [] as SRow[]
-      }
-    },
-    computed: {
-      pctWeight(): string { return this.pctStr('weightPct') },
-      pctHeight(): string { return this.pctStr('heightPct') },
-      pctHead(): string { return this.pctStr('headPct') }
-    },
-    onLoad() {
-      const stored = uni.getStorageSync('current_baby_id') as string
-      this.babyId = stored ?? ''
-      if (this.babyId.length == 0) {
-        uni.showToast({ title: '请先在宝宝页选择宝宝', icon: 'none' })
-        setTimeout(() => { uni.reLaunch({ url: '/pages/baby/baby-home' }) }, 800)
-        return
-      }
-      const now = new Date()
-      this.measureDate = `${now.getFullYear()}-${now.getMonth() + 1 < 10 ? '0' + (now.getMonth() + 1) : '' + (now.getMonth() + 1)}-${now.getDate() < 10 ? '0' + now.getDate() : '' + now.getDate()}`
-      this.load()
-    },
-    methods: {
-      pctStr(key: string): string {
-        const p = (this.result as UTSJSONObject | null)?.getJSON('percentiles') as UTSJSONObject | null
-        const v = p?.getNumber(key)
-        return v == null ? '' : `P${Math.round(v as number)}`
-      },
-      onDateChange(e: UniPickerChangeEvent) { this.measureDate = (e.detail.value as string) ?? this.measureDate },
-      async load() {
-        try {
-          const res = await luckyBaby('getGrowthSeries', { journeyId: journeyState.journeyId, babyId: this.babyId } as UTSJSONObject)
-          const arr = res.getArray('samples') ?? []
-          const rows: SRow[] = []
-          for (let i = arr.length - 1; i >= 0 && i >= arr.length - 8; i--) {
-            const s = arr[i] as UTSJSONObject
-            const w = s.getNumber('weight_kg') ?? 0
-            const h = s.getNumber('height_cm') ?? 0
-            rows.push({
-              date: new Date(s.getNumber('measure_date') ?? 0).toISOString().slice(0, 10),
-              val: `${w > 0 ? w + 'kg ' : ''}${h > 0 ? h + 'cm' : ''}`
-            })
-          }
-          this.samples = rows
-        } catch (e) { /* 忽略 */ }
-      },
-      async save() {
-        const w = parseFloat(this.weightKg)
-        const h = parseFloat(this.heightCm)
-        const head = parseFloat(this.headCm)
-        if (!(w > 0) && !(h > 0) && !(head > 0)) { uni.showToast({ title: '至少填写一项测量值', icon: 'none' }); return }
-        this.saving = true
-        try {
-          this.result = await luckyBaby('addGrowth', {
-            journeyId: journeyState.journeyId, babyId: this.babyId, measureDate: this.measureDate,
-            weightKg: w > 0 ? w : 0, heightCm: h > 0 ? h : 0, headCm: head > 0 ? head : 0
-          } as UTSJSONObject)
-          this.resultMonthAge = (this.result as UTSJSONObject).getNumber('monthAge')?.toInt() ?? 0
-          const rawAlerts = (this.result as UTSJSONObject).getArray('alerts') ?? []
-          this.alerts = rawAlerts.map(a => a as string)
-          uni.showToast({ title: '已记录 ✓', icon: 'success' })
-          this.load()
-        } catch (e) {
-          uni.showToast({ title: (e as Error).message, icon: 'none' })
-        } finally { this.saving = false }
-      }
-    }
+  type SRow = { date: string, val: string }
+
+  const babyId = ref<string>('')
+  const saving = ref<boolean>(false)
+  const result = ref<UTSJSONObject | null>(null)
+  const measureDate = ref<string>('')
+  const weightKg = ref<string>('')
+  const heightCm = ref<string>('')
+  const headCm = ref<string>('')
+  const resultMonthAge = ref<number>(0)
+  const alerts = ref<string[]>([])
+  const samples = ref<SRow[]>([])
+
+  function pctStr(key: string): string {
+    const p = (result.value as UTSJSONObject | null)?.getJSON('percentiles') as UTSJSONObject | null
+    const v = p?.getNumber(key)
+    return v == null ? '' : `P${Math.round(v as number)}`
   }
 
-  type SRow = { date: string, val: string }
+  const pctWeight = computed((): string => pctStr('weightPct'))
+  const pctHeight = computed((): string => pctStr('heightPct'))
+  const pctHead = computed((): string => pctStr('headPct'))
+
+  function onDateChange(e: UniPickerChangeEvent) { measureDate.value = (e.detail.value as string) ?? measureDate.value }
+  async function load() {
+    try {
+      const res = await luckyBaby('getGrowthSeries', { journeyId: journeyState.journeyId, babyId: babyId.value } as UTSJSONObject)
+      const arr = res.getArray('samples') ?? []
+      const rows: SRow[] = []
+      for (let i = arr.length - 1; i >= 0 && i >= arr.length - 8; i--) {
+        const s = arr[i] as UTSJSONObject
+        const w = s.getNumber('weight_kg') ?? 0
+        const h = s.getNumber('height_cm') ?? 0
+        rows.push({
+          date: new Date(s.getNumber('measure_date') ?? 0).toISOString().slice(0, 10),
+          val: `${w > 0 ? w + 'kg ' : ''}${h > 0 ? h + 'cm' : ''}`
+        })
+      }
+      samples.value = rows
+    } catch (e) { /* 忽略 */ }
+  }
+  async function save() {
+    const w = parseFloat(weightKg.value)
+    const h = parseFloat(heightCm.value)
+    const head = parseFloat(headCm.value)
+    if (!(w > 0) && !(h > 0) && !(head > 0)) { uni.showToast({ title: '至少填写一项测量值', icon: 'none' }); return }
+    saving.value = true
+    try {
+      result.value = await luckyBaby('addGrowth', {
+        journeyId: journeyState.journeyId, babyId: babyId.value, measureDate: measureDate.value,
+        weightKg: w > 0 ? w : 0, heightCm: h > 0 ? h : 0, headCm: head > 0 ? head : 0
+      } as UTSJSONObject)
+      resultMonthAge.value = (result.value as UTSJSONObject).getNumber('monthAge')?.toInt() ?? 0
+      const rawAlerts = (result.value as UTSJSONObject).getArray('alerts') ?? []
+      alerts.value = rawAlerts.map(a => a as string)
+      uni.showToast({ title: '已记录 ✓', icon: 'success' })
+      load()
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    } finally { saving.value = false }
+  }
+
+  onLoad(() => {
+    const stored = uni.getStorageSync('current_baby_id') as string
+    babyId.value = stored ?? ''
+    if (babyId.value.length == 0) {
+      uni.showToast({ title: '请先在宝宝页选择宝宝', icon: 'none' })
+      setTimeout(() => { uni.reLaunch({ url: '/pages/baby/baby-home' }) }, 800)
+      return
+    }
+    const now = new Date()
+    measureDate.value = `${now.getFullYear()}-${now.getMonth() + 1 < 10 ? '0' + (now.getMonth() + 1) : '' + (now.getMonth() + 1)}-${now.getDate() < 10 ? '0' + now.getDate() : '' + now.getDate()}`
+    load()
+  })
 </script>
 
 <style>

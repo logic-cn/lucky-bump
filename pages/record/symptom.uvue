@@ -28,63 +28,60 @@
   </view>
 </template>
 
-<script>
+<script setup lang="uts">
+  import { ref } from 'vue'
   import { luckyRecord } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
 
   type Sym = { code: string, label: string, redline: boolean }
 
-  export default {
-    data() {
-      return {
-        symptoms: [
-          { code: 'nausea', label: '孕吐', redline: false },
-          { code: 'fatigue', label: '乏力', redline: false },
-          { code: 'edema', label: '水肿', redline: false },
-          { code: 'insomnia', label: '失眠', redline: false },
-          { code: 'backache', label: '腰痛', redline: false },
-          { code: 'cramp', label: '腿抽筋', redline: false },
-          { code: 'constipation', label: '便秘', redline: false },
-          { code: 'heartburn', label: '烧心', redline: false },
-          { code: 'dizzy', label: '头晕', redline: false },
-          { code: 'low_mood', label: '情绪低落', redline: false },
-          { code: 'bleeding', label: '出血', redline: true },
-          { code: 'severe_pain', label: '剧烈腹痛', redline: true },
-          { code: 'reduced_fm', label: '胎动明显减少', redline: true },
-          { code: 'water_broke', label: '破水', redline: true },
-          { code: 'severe_vomiting', label: '孕吐严重无法进食', redline: true }
-        ] as Sym[],
-        selected: [] as string[],
-        severity: 1,
-        note: '', saving: false, redlineMsg: ''
+  const symptoms = ref<Sym[]>([
+    { code: 'nausea', label: '孕吐', redline: false },
+    { code: 'fatigue', label: '乏力', redline: false },
+    { code: 'edema', label: '水肿', redline: false },
+    { code: 'insomnia', label: '失眠', redline: false },
+    { code: 'backache', label: '腰痛', redline: false },
+    { code: 'cramp', label: '腿抽筋', redline: false },
+    { code: 'constipation', label: '便秘', redline: false },
+    { code: 'heartburn', label: '烧心', redline: false },
+    { code: 'dizzy', label: '头晕', redline: false },
+    { code: 'low_mood', label: '情绪低落', redline: false },
+    { code: 'bleeding', label: '出血', redline: true },
+    { code: 'severe_pain', label: '剧烈腹痛', redline: true },
+    { code: 'reduced_fm', label: '胎动明显减少', redline: true },
+    { code: 'water_broke', label: '破水', redline: true },
+    { code: 'severe_vomiting', label: '孕吐严重无法进食', redline: true }
+  ] as Sym[])
+  const selected = ref<string[]>([])
+  const severity = ref<number>(1)
+  const note = ref<string>('')
+  const saving = ref<boolean>(false)
+  const redlineMsg = ref<string>('')
+
+  function toggle(code: string) {
+    const idx = selected.value.indexOf(code)
+    if (idx >= 0) selected.value.splice(idx, 1)
+    else selected.value.push(code)
+  }
+
+  async function save() {
+    if (selected.value.length == 0) { uni.showToast({ title: '至少选择一项', icon: 'none' }); return }
+    saving.value = true
+    try {
+      const res = await luckyRecord('addMetric', {
+        journeyId: journeyState.journeyId, code: 'symptom',
+        value: { codes: selected.value, severity: severity.value, note: note.value } as UTSJSONObject
+      } as UTSJSONObject)
+      const rl = res.getJSON('redline')
+      if (rl != null) {
+        redlineMsg.value = (rl as UTSJSONObject).getString('message') ?? ''
+      } else {
+        uni.showToast({ title: '已记录 ✓', icon: 'success' })
+        setTimeout(() => { uni.navigateBack() }, 600)
       }
-    },
-    methods: {
-      toggle(code: string) {
-        const idx = this.selected.indexOf(code)
-        if (idx >= 0) this.selected.splice(idx, 1)
-        else this.selected.push(code)
-      },
-      async save() {
-        if (this.selected.length == 0) { uni.showToast({ title: '至少选择一项', icon: 'none' }); return }
-        this.saving = true
-        try {
-          const res = await luckyRecord('addMetric', {
-            journeyId: journeyState.journeyId, code: 'symptom',
-            value: { codes: this.selected, severity: this.severity, note: this.note } as UTSJSONObject
-          } as UTSJSONObject)
-          const rl = res.getJSON('redline')
-          if (rl != null) {
-            this.redlineMsg = (rl as UTSJSONObject).getString('message') ?? ''
-          } else {
-            uni.showToast({ title: '已记录 ✓', icon: 'success' })
-            setTimeout(() => { uni.navigateBack() }, 600)
-          }
-        } catch (e) {
-          uni.showToast({ title: (e as Error).message, icon: 'none' })
-        } finally { this.saving = false }
-      }
-    }
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    } finally { saving.value = false }
   }
 </script>
 

@@ -20,45 +20,44 @@
   </view>
 </template>
 
-<script>
+<script setup lang="uts">
+  import { computed } from 'vue'
+  import { onLoad } from '@dcloudio/uni-app'
   import { appState, clearToken } from '../../store/appStore.uts'
-  import { journeyState, stageText } from '../../store/journeyStore.uts'
+  import { journeyState, stageText as journeyStageText } from '../../store/journeyStore.uts'
   import { luckyId } from '../../utils/request.uts'
 
-  export default {
-    data() { return {} },
-    computed: {
-      nickname(): string { return appState.nickname.length > 0 ? appState.nickname : '未设置昵称' },
-      avatarText(): string { return appState.nickname.length > 0 ? appState.nickname.slice(0, 1) : '?' },
-      stageText(): string { return stageText(journeyState.stage) }
-    },
-    onLoad() { this.loadProfile() },
-    methods: {
-      go(url: string) { uni.navigateTo({ url }) },
-      async loadProfile() {
-        try {
-          const res = await luckyId('getProfile', {} as UTSJSONObject)
-          const u = res.getJSON('userInfo')
-          if (u != null) {
-            appState.nickname = (u as UTSJSONObject).getString('nickname') ?? ''
-          }
-        } catch (e) { /* 已登录态校验由请求层兜底 */ }
-      },
-      logout() {
-        uni.showModal({
-          title: '退出登录',
-          content: '你的记录会安全保存在云端，随时可以回来。',
-          success: async (r) => {
-            if (r.confirm) {
-              try { await luckyId('logout', {} as UTSJSONObject) } catch (e) { /* 忽略 */ }
-              clearToken()
-              uni.reLaunch({ url: '/pages/account/login' })
-            }
-          }
-        })
+  const nickname = computed((): string => appState.nickname.length > 0 ? appState.nickname : '未设置昵称')
+  const avatarText = computed((): string => appState.nickname.length > 0 ? appState.nickname.slice(0, 1) : '?')
+  const stageText = computed((): string => journeyStageText(journeyState.stage))
+
+  function go(url: string) { uni.navigateTo({ url }) }
+
+  async function loadProfile() {
+    try {
+      const res = await luckyId('getProfile', {} as UTSJSONObject)
+      const u = res.getJSON('userInfo')
+      if (u != null) {
+        appState.nickname = (u as UTSJSONObject).getString('nickname') ?? ''
       }
-    }
+    } catch (e) { /* 已登录态校验由请求层兜底 */ }
   }
+
+  function logout() {
+    uni.showModal({
+      title: '退出登录',
+      content: '你的记录会安全保存在云端，随时可以回来。',
+      success: async (r) => {
+        if (r.confirm) {
+          try { await luckyId('logout', {} as UTSJSONObject) } catch (e) { /* 忽略 */ }
+          clearToken()
+          uni.reLaunch({ url: '/pages/account/login' })
+        }
+      }
+    })
+  }
+
+  onLoad(() => { loadProfile() })
 </script>
 
 <style>

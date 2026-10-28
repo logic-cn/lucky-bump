@@ -34,54 +34,53 @@
   </view>
 </template>
 
-<script>
+<script setup lang="uts">
+  import { ref } from 'vue'
   import { luckyRecord } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
 
-  export default {
-    data() {
-      return {
-        color: 'dark_red', amount: 'medium', clots: false, odor: false,
-        saving: false, redlineMsg: '', redlineAction: '',
-        colors: [
-          { value: 'bright_red', label: '鲜红', dot: '#E5484D' },
-          { value: 'dark_red', label: '暗红', dot: '#A93A3E' },
-          { value: 'pink', label: '粉', dot: '#F0B9B4' },
-          { value: 'white_brown', label: '白/褐', dot: '#D8CFC4' }
-        ] as COpt[],
-        amounts: [
-          { value: 'light', label: '少' }, { value: 'medium', label: '中' }, { value: 'heavy', label: '多' }
-        ] as AOpt[]
-      }
-    },
-    methods: {
-      onClotsChange(e: UniSwitchChangeEvent) { this.clots = e.detail.value },
-      onOdorChange(e: UniSwitchChangeEvent) { this.odor = e.detail.value },
-      async save() {
-        this.saving = true
-        try {
-          const res = await luckyRecord('addMetric', {
-            journeyId: journeyState.journeyId, code: 'lochia',
-            value: { color: this.color, amount: this.amount, clots: this.clots, odor: this.odor } as UTSJSONObject
-          } as UTSJSONObject)
-          const rl = res.getJSON('redline')
-          if (rl != null) {
-            const r = rl as UTSJSONObject
-            this.redlineMsg = r.getString('message') ?? ''
-            this.redlineAction = r.getString('action') ?? ''
-          } else {
-            uni.showToast({ title: '已记录 ✓', icon: 'success' })
-            setTimeout(() => { uni.navigateBack() }, 600)
-          }
-        } catch (e) {
-          uni.showToast({ title: (e as Error).message, icon: 'none' })
-        } finally { this.saving = false }
-      }
-    }
-  }
-
   type COpt = { value: string, label: string, dot: string }
   type AOpt = { value: string, label: string }
+
+  const color = ref<string>('dark_red')
+  const amount = ref<string>('medium')
+  const clots = ref<boolean>(false)
+  const odor = ref<boolean>(false)
+  const saving = ref<boolean>(false)
+  const redlineMsg = ref<string>('')
+  const redlineAction = ref<string>('')
+  const colors = ref<COpt[]>([
+    { value: 'bright_red', label: '鲜红', dot: '#E5484D' },
+    { value: 'dark_red', label: '暗红', dot: '#A93A3E' },
+    { value: 'pink', label: '粉', dot: '#F0B9B4' },
+    { value: 'white_brown', label: '白/褐', dot: '#D8CFC4' }
+  ])
+  const amounts = ref<AOpt[]>([
+    { value: 'light', label: '少' }, { value: 'medium', label: '中' }, { value: 'heavy', label: '多' }
+  ])
+
+  function onClotsChange(e: UniSwitchChangeEvent) { clots.value = e.detail.value }
+  function onOdorChange(e: UniSwitchChangeEvent) { odor.value = e.detail.value }
+  async function save() {
+    saving.value = true
+    try {
+      const res = await luckyRecord('addMetric', {
+        journeyId: journeyState.journeyId, code: 'lochia',
+        value: { color: color.value, amount: amount.value, clots: clots.value, odor: odor.value } as UTSJSONObject
+      } as UTSJSONObject)
+      const rl = res.getJSON('redline')
+      if (rl != null) {
+        const r = rl as UTSJSONObject
+        redlineMsg.value = r.getString('message') ?? ''
+        redlineAction.value = r.getString('action') ?? ''
+      } else {
+        uni.showToast({ title: '已记录 ✓', icon: 'success' })
+        setTimeout(() => { uni.navigateBack() }, 600)
+      }
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    } finally { saving.value = false }
+  }
 </script>
 
 <style>

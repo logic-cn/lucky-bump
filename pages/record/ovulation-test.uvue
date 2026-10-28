@@ -15,37 +15,31 @@
   </view>
 </template>
 
-<script>
+<script setup lang="uts">
+  import { ref } from 'vue'
   import { luckyRecord } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
 
-  export default {
-    data() {
-      return {
-        result: '',
-        opts: [
-          { value: 'negative', label: '阴性', emoji: '⚪' },
-          { value: 'weak_positive', label: '弱阳', emoji: '🌥' },
-          { value: 'strong_positive', label: '强阳', emoji: '🔥' }
-        ] as Opt[],
-        saving: false
-      }
-    },
-    methods: {
-      async save() {
-        this.saving = true
-        try {
-          await luckyRecord('addCycleEvent', { journeyId: journeyState.journeyId, type: 'ovulation_test', value: { result: this.result } } as UTSJSONObject)
-          uni.showToast({ title: '已记录 ✓', icon: 'success' })
-          setTimeout(() => { uni.navigateBack() }, 600)
-        } catch (e) {
-          uni.showToast({ title: (e as Error).message, icon: 'none' })
-        } finally { this.saving = false }
-      }
-    }
-  }
-
   type Opt = { value: string, label: string, emoji: string }
+
+  const result = ref('')
+  const opts = ref<Opt[]>([
+    { value: 'negative', label: '阴性', emoji: '⚪' },
+    { value: 'weak_positive', label: '弱阳', emoji: '🌥' },
+    { value: 'strong_positive', label: '强阳', emoji: '🔥' }
+  ])
+  const saving = ref(false)
+
+  async function save() {
+    saving.value = true
+    try {
+      await luckyRecord('addCycleEvent', { journeyId: journeyState.journeyId, type: 'ovulation_test', value: { result: result.value } } as UTSJSONObject)
+      uni.showToast({ title: '已记录 ✓', icon: 'success' })
+      setTimeout(() => { uni.navigateBack() }, 600)
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    } finally { saving.value = false }
+  }
 </script>
 
 <style>

@@ -24,47 +24,44 @@
   </view>
 </template>
 
-<script>
+<script setup lang="uts">
+  import { ref } from 'vue'
   import { luckyRecord } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
 
-  export default {
-    data() {
-      return {
-        slot: 'fasting',
-        slots: [
-          { value: 'fasting', label: '空腹' },
-          { value: '1h', label: '餐后 1h' },
-          { value: '2h', label: '餐后 2h' },
-          { value: 'random', label: '随机' }
-        ] as Slot[],
-        mmol: '', saving: false, redlineMsg: '', redlineAction: ''
-      }
-    },
-    methods: {
-      async save() {
-        const mmol = parseFloat(this.mmol)
-        if (!(mmol >= 1 && mmol <= 35)) { uni.showToast({ title: '请输入有效血糖值', icon: 'none' }); return }
-        this.saving = true
-        try {
-          const res = await luckyRecord('addMetric', { journeyId: journeyState.journeyId, code: 'blood_glucose', value: { slot: this.slot, mmol } } as UTSJSONObject)
-          const rl = res.getJSON('redline')
-          if (rl != null) {
-            const r = rl as UTSJSONObject
-            this.redlineMsg = r.getString('message') ?? ''
-            this.redlineAction = r.getString('action') ?? ''
-          } else {
-            uni.showToast({ title: '已记录 ✓', icon: 'success' })
-            setTimeout(() => { uni.navigateBack() }, 600)
-          }
-        } catch (e) {
-          uni.showToast({ title: (e as Error).message, icon: 'none' })
-        } finally { this.saving = false }
-      }
-    }
-  }
-
   type Slot = { value: string, label: string }
+
+  const slot = ref<string>('fasting')
+  const slots = ref<Slot[]>([
+    { value: 'fasting', label: '空腹' },
+    { value: '1h', label: '餐后 1h' },
+    { value: '2h', label: '餐后 2h' },
+    { value: 'random', label: '随机' }
+  ] as Slot[])
+  const mmol = ref<string>('')
+  const saving = ref<boolean>(false)
+  const redlineMsg = ref<string>('')
+  const redlineAction = ref<string>('')
+
+  async function save() {
+    const mmolVal = parseFloat(mmol.value)
+    if (!(mmolVal >= 1 && mmolVal <= 35)) { uni.showToast({ title: '请输入有效血糖值', icon: 'none' }); return }
+    saving.value = true
+    try {
+      const res = await luckyRecord('addMetric', { journeyId: journeyState.journeyId, code: 'blood_glucose', value: { slot: slot.value, mmol: mmolVal } } as UTSJSONObject)
+      const rl = res.getJSON('redline')
+      if (rl != null) {
+        const r = rl as UTSJSONObject
+        redlineMsg.value = r.getString('message') ?? ''
+        redlineAction.value = r.getString('action') ?? ''
+      } else {
+        uni.showToast({ title: '已记录 ✓', icon: 'success' })
+        setTimeout(() => { uni.navigateBack() }, 600)
+      }
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    } finally { saving.value = false }
+  }
 </script>
 
 <style>

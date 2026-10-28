@@ -20,49 +20,49 @@
   </view>
 </template>
 
-<script>
+<script setup lang="uts">
+  import { ref } from 'vue'
+  import { onLoad } from '@dcloudio/uni-app'
   import { luckyRecord } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
 
-  export default {
-    data() {
-      return {
-        text: '', mood: 'normal', saving: false,
-        diaries: [] as UTSJSONObject[],
-        moods: [
-          { value: 'great', emoji: '🥰' }, { value: 'good', emoji: '😊' },
-          { value: 'normal', emoji: '🙂' }, { value: 'low', emoji: '😔' }, { value: 'bad', emoji: '😢' }
-        ] as Mood[]
-      }
-    },
-    onLoad() { this.load() },
-    methods: {
-      moodEmoji(m: string): string {
-        for (let i = 0; i < this.moods.length; i++) { if (this.moods[i].value == m) return this.moods[i].emoji }
-        return '🙂'
-      },
-      async load() {
-        try {
-          const res = await luckyRecord('listDiaries', { journeyId: journeyState.journeyId } as UTSJSONObject)
-          this.diaries = res.getArray('diaries') ?? []
-        } catch (e) { /* 首次无数据 */ }
-      },
-      async save() {
-        if (this.text.trim().length == 0) { uni.showToast({ title: '写点什么吧', icon: 'none' }); return }
-        this.saving = true
-        try {
-          await luckyRecord('addDiary', { journeyId: journeyState.journeyId, text: this.text, mood: this.mood } as UTSJSONObject)
-          this.text = ''
-          uni.showToast({ title: '已保存 ✓', icon: 'success' })
-          this.load()
-        } catch (e) {
-          uni.showToast({ title: (e as Error).message, icon: 'none' })
-        } finally { this.saving = false }
-      }
-    }
+  type Mood = { value: string, emoji: string }
+
+  const text = ref<string>('')
+  const mood = ref<string>('normal')
+  const saving = ref<boolean>(false)
+  const diaries = ref<UTSJSONObject[]>([])
+  const moods = ref<Mood[]>([
+    { value: 'great', emoji: '🥰' }, { value: 'good', emoji: '😊' },
+    { value: 'normal', emoji: '🙂' }, { value: 'low', emoji: '😔' }, { value: 'bad', emoji: '😢' }
+  ] as Mood[])
+
+  function moodEmoji(m: string): string {
+    for (let i = 0; i < moods.value.length; i++) { if (moods.value[i].value == m) return moods.value[i].emoji }
+    return '🙂'
   }
 
-  type Mood = { value: string, emoji: string }
+  async function load() {
+    try {
+      const res = await luckyRecord('listDiaries', { journeyId: journeyState.journeyId } as UTSJSONObject)
+      diaries.value = res.getArray<UTSJSONObject>('diaries') ?? []
+    } catch (e) { /* 首次无数据 */ }
+  }
+
+  async function save() {
+    if (text.value.trim().length == 0) { uni.showToast({ title: '写点什么吧', icon: 'none' }); return }
+    saving.value = true
+    try {
+      await luckyRecord('addDiary', { journeyId: journeyState.journeyId, text: text.value, mood: mood.value } as UTSJSONObject)
+      text.value = ''
+      uni.showToast({ title: '已保存 ✓', icon: 'success' })
+      load()
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    } finally { saving.value = false }
+  }
+
+  onLoad(() => { load() })
 </script>
 
 <style>

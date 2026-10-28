@@ -13,32 +13,33 @@
   </view>
 </template>
 
-<script>
+<script setup lang="uts">
+  import { ref } from 'vue'
+  import { onLoad } from '@dcloudio/uni-app'
   import { luckyRecord } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
 
-  export default {
-    data() {
-      return { kg: '', saving: false, saved: false, gainRange: [] as string[] }
-    },
-    onLoad() {
-      // 孕前 BMI 待接入用户档案，暂以正常 BMI 口径展示推荐区间（docs/03 M2.2）
-      this.gainRange = ['11.5', '16']
-    },
-    methods: {
-      async save() {
-        const kg = parseFloat(this.kg)
-        if (!(kg >= 30 && kg <= 300)) { uni.showToast({ title: '请输入有效体重（30-300kg）', icon: 'none' }); return }
-        this.saving = true
-        try {
-          await luckyRecord('addMetric', { journeyId: journeyState.journeyId, code: 'weight', value: { kg } } as UTSJSONObject)
-          this.saved = true
-          setTimeout(() => { uni.navigateBack() }, 600)
-        } catch (e) {
-          uni.showToast({ title: (e as Error).message, icon: 'none' })
-        } finally { this.saving = false }
-      }
-    }
+  const kg = ref<string>('')
+  const saving = ref<boolean>(false)
+  const saved = ref<boolean>(false)
+  const gainRange = ref<string[]>([])
+
+  onLoad(() => {
+    // 孕前 BMI 待接入用户档案，暂以正常 BMI 口径展示推荐区间（docs/03 M2.2）
+    gainRange.value = ['11.5', '16']
+  })
+
+  async function save() {
+    const kgVal = parseFloat(kg.value)
+    if (!(kgVal >= 30 && kgVal <= 300)) { uni.showToast({ title: '请输入有效体重（30-300kg）', icon: 'none' }); return }
+    saving.value = true
+    try {
+      await luckyRecord('addMetric', { journeyId: journeyState.journeyId, code: 'weight', value: { kg: kgVal } } as UTSJSONObject)
+      saved.value = true
+      setTimeout(() => { uni.navigateBack() }, 600)
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    } finally { saving.value = false }
   }
 </script>
 

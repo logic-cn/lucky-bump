@@ -34,66 +34,65 @@
   </view>
 </template>
 
-<script>
+<script setup lang="uts">
+  import { computed, ref } from 'vue'
+  import { onLoad } from '@dcloudio/uni-app'
   import { luckyBaby } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
 
   function pad(n: number): string { return n < 10 ? '0' + n : '' + n }
 
-  export default {
-    data() {
-      const now = new Date()
-      return {
-        kind: 'nap', wakings: 0, saving: false, babyId: '', summary: null,
-        startDate: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`,
-        startTime: '13:00',
-        endDate: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`,
-        endTime: '14:30'
-      }
-    },
-    computed: {
-      sleepTotalMin(): number { return ((this.summary as UTSJSONObject | null)?.getJSON('sleep') as UTSJSONObject | null)?.getNumber('totalMin')?.toInt() ?? 0 },
-      nightWakings(): number { return ((this.summary as UTSJSONObject | null)?.getJSON('sleep') as UTSJSONObject | null)?.getNumber('nightWakings')?.toInt() ?? 0 }
-    },
-    onLoad() {
-      const stored = uni.getStorageSync('current_baby_id') as string
-      this.babyId = stored ?? ''
-      if (this.babyId.length == 0) {
-        uni.showToast({ title: '请先在宝宝页选择宝宝', icon: 'none' })
-        setTimeout(() => { uni.reLaunch({ url: '/pages/baby/baby-home' }) }, 800)
-        return
-      }
-      this.load()
-    },
-    methods: {
-      onStartDateChange(e: UniPickerChangeEvent) { this.startDate = (e.detail.value as string) ?? this.startDate },
-      onStartTimeChange(e: UniPickerChangeEvent) { this.startTime = (e.detail.value as string) ?? this.startTime },
-      onEndDateChange(e: UniPickerChangeEvent) { this.endDate = (e.detail.value as string) ?? this.endDate },
-      onEndTimeChange(e: UniPickerChangeEvent) { this.endTime = (e.detail.value as string) ?? this.endTime },
-      async load() {
-        try { this.summary = await luckyBaby('dailySummary', { journeyId: journeyState.journeyId, babyId: this.babyId } as UTSJSONObject) } catch (e) { /* 忽略 */ }
-      },
-      tsOf(dateStr: string, timeStr: string): number {
-        const p = timeStr.indexOf(':')
-        const hh = parseInt(timeStr.slice(0, p)) || 0
-        const mm = parseInt(timeStr.slice(p + 1)) || 0
-        return Date.parse(`${dateStr}T${pad(hh)}:${pad(mm)}:00+08:00`)
-      },
-      async save() {
-        const startTs = this.tsOf(this.startDate, this.startTime)
-        const endTs = this.tsOf(this.endDate, this.endTime)
-        if (!(startTs > 0 && endTs > startTs)) { uni.showToast({ title: '醒来时间需晚于入睡时间', icon: 'none' }); return }
-        this.saving = true
-        try {
-          await luckyBaby('addSleep', { journeyId: journeyState.journeyId, babyId: this.babyId, kind: this.kind, startTs, endTs, nightWakings: this.kind == 'night' ? this.wakings : 0 } as UTSJSONObject)
-          uni.showToast({ title: '已记录 ✓', icon: 'success' })
-          this.load()
-        } catch (e) {
-          uni.showToast({ title: (e as Error).message, icon: 'none' })
-        } finally { this.saving = false }
-      }
-    }
+  const now = new Date()
+  const kind = ref<string>('nap')
+  const wakings = ref<number>(0)
+  const saving = ref<boolean>(false)
+  const babyId = ref<string>('')
+  const summary = ref<UTSJSONObject | null>(null)
+  const startDate = ref<string>(`${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`)
+  const startTime = ref<string>('13:00')
+  const endDate = ref<string>(`${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`)
+  const endTime = ref<string>('14:30')
+
+  const sleepTotalMin = computed((): number => ((summary.value as UTSJSONObject | null)?.getJSON('sleep') as UTSJSONObject | null)?.getNumber('totalMin')?.toInt() ?? 0)
+  const nightWakings = computed((): number => ((summary.value as UTSJSONObject | null)?.getJSON('sleep') as UTSJSONObject | null)?.getNumber('nightWakings')?.toInt() ?? 0)
+
+  function onStartDateChange(e: UniPickerChangeEvent) { startDate.value = (e.detail.value as string) ?? startDate.value }
+  function onStartTimeChange(e: UniPickerChangeEvent) { startTime.value = (e.detail.value as string) ?? startTime.value }
+  function onEndDateChange(e: UniPickerChangeEvent) { endDate.value = (e.detail.value as string) ?? endDate.value }
+  function onEndTimeChange(e: UniPickerChangeEvent) { endTime.value = (e.detail.value as string) ?? endTime.value }
+  async function load() {
+    try { summary.value = await luckyBaby('dailySummary', { journeyId: journeyState.journeyId, babyId: babyId.value } as UTSJSONObject) } catch (e) { /* 忽略 */ }
   }
+  function tsOf(dateStr: string, timeStr: string): number {
+    const p = timeStr.indexOf(':')
+    const hh = parseInt(timeStr.slice(0, p)) || 0
+    const mm = parseInt(timeStr.slice(p + 1)) || 0
+    return Date.parse(`${dateStr}T${pad(hh)}:${pad(mm)}:00+08:00`)
+  }
+  async function save() {
+    const startTs = tsOf(startDate.value, startTime.value)
+    const endTs = tsOf(endDate.value, endTime.value)
+    if (!(startTs > 0 && endTs > startTs)) { uni.showToast({ title: '醒来时间需晚于入睡时间', icon: 'none' }); return }
+    saving.value = true
+    try {
+      await luckyBaby('addSleep', { journeyId: journeyState.journeyId, babyId: babyId.value, kind: kind.value, startTs, endTs, nightWakings: kind.value == 'night' ? wakings.value : 0 } as UTSJSONObject)
+      uni.showToast({ title: '已记录 ✓', icon: 'success' })
+      load()
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    } finally { saving.value = false }
+  }
+
+  onLoad(() => {
+    const stored = uni.getStorageSync('current_baby_id') as string
+    babyId.value = stored ?? ''
+    if (babyId.value.length == 0) {
+      uni.showToast({ title: '请先在宝宝页选择宝宝', icon: 'none' })
+      setTimeout(() => { uni.reLaunch({ url: '/pages/baby/baby-home' }) }, 800)
+      return
+    }
+    load()
+  })
 </script>
 
 <style>

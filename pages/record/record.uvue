@@ -12,16 +12,14 @@
   </view>
 </template>
 
-<script>
+<script setup lang="uts">
+  import { computed } from 'vue'
   import { journeyState } from '../../store/journeyStore.uts'
 
   type RItem = { icon: string, label: string, url: string }
   type RGroup = { title: string, items: RItem[] }
 
-  export default {
-    data() { return {} },
-    computed: {
-      groups(): RGroup[] {
+  const groups = computed((): RGroup[] => {
         const s = journeyState.stage
         const groups: RGroup[] = []
         const ttc: RItem[] = [
@@ -60,12 +58,9 @@
         }
         groups.push({ title: '产检', items: [{ icon: '🏥', label: '产检中心', url: '/pages/care/schedule' }] })
         return groups
-      }
-    },
-    methods: {
-      go(url: string) { uni.navigateTo({ url }) }
-    }
-  }
+  })
+
+  function go(url: string) { uni.navigateTo({ url }) }
 </script>
 
 <style>

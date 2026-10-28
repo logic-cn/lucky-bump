@@ -24,50 +24,48 @@
   </view>
 </template>
 
-<script>
+<script setup lang="uts">
+  import { ref } from 'vue'
   import { luckyRecord } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
 
-  export default {
-    data() {
-      return {
-        step: 0, saving: false, score: 0, selfHarm: false, action: '',
-        answers: [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1] as number[],
-        questions: [
-          '我能够笑并看到事情有趣的一面',
-          '我期待着享受快乐的事物',
-          '当事情出错时，我会不必要地责备自己',
-          '我无缘无故感到焦虑或担心',
-          '我无缘无故感到害怕或惊慌',
-          '事情发展到我无法应付的地步',
-          '我因心情不好而影响睡眠',
-          '我感到悲伤或痛苦',
-          '我很不快乐，我哭泣',
-          '我曾想过伤害自己'
-        ] as string[],
-        options: ['一直', '经常', '偶尔', '从不'] as string[]
-      }
-    },
-    methods: {
-      pick(qi: number, oi: number) { this.answers[qi] = oi },
-      async submit() {
-        for (let i = 0; i < 10; i++) {
-          if (this.answers[i] < 0) { uni.showToast({ title: `第 ${i + 1} 题还没选`, icon: 'none' }); return }
-        }
-        this.saving = true
-        try {
-          const res = await luckyRecord('submitEpds', { journeyId: journeyState.journeyId, answers: this.answers } as UTSJSONObject)
-          this.score = (res.getNumber('score') ?? 0).toInt()
-          this.selfHarm = res.getBoolean('selfHarm') ?? false
-          this.action = res.getString('action') ?? ''
-          this.step = 1
-        } catch (e) {
-          uni.showToast({ title: (e as Error).message, icon: 'none' })
-        } finally { this.saving = false }
-      },
-      goHome() { uni.navigateBack() }
+  const step = ref<number>(0)
+  const saving = ref<boolean>(false)
+  const score = ref<number>(0)
+  const selfHarm = ref<boolean>(false)
+  const action = ref<string>('')
+  const answers = ref<number[]>([-1, -1, -1, -1, -1, -1, -1, -1, -1, -1])
+  const questions = ref<string[]>([
+    '我能够笑并看到事情有趣的一面',
+    '我期待着享受快乐的事物',
+    '当事情出错时，我会不必要地责备自己',
+    '我无缘无故感到焦虑或担心',
+    '我无缘无故感到害怕或惊慌',
+    '事情发展到我无法应付的地步',
+    '我因心情不好而影响睡眠',
+    '我感到悲伤或痛苦',
+    '我很不快乐，我哭泣',
+    '我曾想过伤害自己'
+  ])
+  const options = ref<string[]>(['一直', '经常', '偶尔', '从不'])
+
+  function pick(qi: number, oi: number) { answers.value[qi] = oi }
+  async function submit() {
+    for (let i = 0; i < 10; i++) {
+      if (answers.value[i] < 0) { uni.showToast({ title: `第 ${i + 1} 题还没选`, icon: 'none' }); return }
     }
+    saving.value = true
+    try {
+      const res = await luckyRecord('submitEpds', { journeyId: journeyState.journeyId, answers: answers.value } as UTSJSONObject)
+      score.value = (res.getNumber('score') ?? 0).toInt()
+      selfHarm.value = res.getBoolean('selfHarm') ?? false
+      action.value = res.getString('action') ?? ''
+      step.value = 1
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    } finally { saving.value = false }
   }
+  function goHome() { uni.navigateBack() }
 </script>
 
 <style>

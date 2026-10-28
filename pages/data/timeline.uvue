@@ -18,7 +18,9 @@
   </view>
 </template>
 
-<script>
+<script setup lang="uts">
+  import { ref } from 'vue'
+  import { onLoad } from '@dcloudio/uni-app'
   import { luckyData } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
 
@@ -31,38 +33,34 @@
     ['visit', '🏥 产检'], ['prenatal_visit', '🏥 产检'], ['head_up', '👶 学会了抬头'], ['roll_over', '👶 学会了翻身']
   ])
 
-  export default {
-    data() {
-      return { events: [] as UTSJSONObject[] }
-    },
-    onLoad() { this.load() },
-    methods: {
-      async load() {
-        try {
-          const res = await luckyData('timeline', { journeyId: journeyState.journeyId, limit: 80 } as UTSJSONObject)
-          // strict 敏感记录（同房/量表）在非 owner 视角由服务端过滤；owner 视角本地脱敏显示
-          this.events = res.getArray('events') ?? []
-        } catch (e) { /* 忽略 */ }
-      },
-      timeText(e: UTSJSONObject): string {
-        const ts = e.getNumber('ts') ?? 0
-        const d = new Date(ts)
-        const hh = d.getHours() < 10 ? '0' + d.getHours() : '' + d.getHours()
-        const mm = d.getMinutes() < 10 ? '0' + d.getMinutes() : '' + d.getMinutes()
-        return `${hh}:${mm}`
-      },
-      dateText(e: UTSJSONObject): string {
-        const ts = e.getNumber('ts') ?? 0
-        return new Date(ts).toISOString().slice(5, 10)
-      },
-      contentText(e: UTSJSONObject): string {
-        const code = e.getString('code') ?? ''
-        const base = CODE_TEXT.get(code) ?? code
-        if (base.indexOf('🌸') >= 0 || base.indexOf('🤰') >= 0 || base.indexOf('👶') >= 0 || base.indexOf('🏥') >= 0) return base
-        return base
-      }
-    }
+  const events = ref<UTSJSONObject[]>([])
+
+  async function load() {
+    try {
+      const res = await luckyData('timeline', { journeyId: journeyState.journeyId, limit: 80 } as UTSJSONObject)
+      // strict 敏感记录（同房/量表）在非 owner 视角由服务端过滤；owner 视角本地脱敏显示
+      events.value = res.getArray<UTSJSONObject>('events') ?? []
+    } catch (e) { /* 忽略 */ }
   }
+  function timeText(e: UTSJSONObject): string {
+    const ts = e.getNumber('ts') ?? 0
+    const d = new Date(ts)
+    const hh = d.getHours() < 10 ? '0' + d.getHours() : '' + d.getHours()
+    const mm = d.getMinutes() < 10 ? '0' + d.getMinutes() : '' + d.getMinutes()
+    return `${hh}:${mm}`
+  }
+  function dateText(e: UTSJSONObject): string {
+    const ts = e.getNumber('ts') ?? 0
+    return new Date(ts).toISOString().slice(5, 10)
+  }
+  function contentText(e: UTSJSONObject): string {
+    const code = e.getString('code') ?? ''
+    const base = CODE_TEXT.get(code) ?? code
+    if (base.indexOf('🌸') >= 0 || base.indexOf('🤰') >= 0 || base.indexOf('👶') >= 0 || base.indexOf('🏥') >= 0) return base
+    return base
+  }
+
+  onLoad(() => { load() })
 </script>
 
 <style>
