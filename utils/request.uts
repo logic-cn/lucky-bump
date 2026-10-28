@@ -6,6 +6,23 @@
  */
 import { clearToken, saveToken } from '../store/appStore.uts'
 
+// #ifdef WEB
+/** web 端响应可能是普通对象（编译器仅对纯字面量请求参数启用 UTS 包装），统一深转为 UTSJSONObject 树，保证 getNumber/getString/getJSON/getArray 可用 */
+function deepToUts(v: any | null): any | null {
+  if (v instanceof Array) {
+    return v.map((item: any): any => deepToUts(item))
+  }
+  if (v != null && typeof v == 'object') {
+    const o = new UTSJSONObject({})
+    for (const key in v) {
+      o[key] = deepToUts(v[key])
+    }
+    return o
+  }
+  return v
+}
+// #endif
+
 export function callCloud(objName: string, method: string, params: UTSJSONObject): Promise<UTSJSONObject> {
   return new Promise<UTSJSONObject>((resolve, reject) => {
     uniCloud.callFunction({
@@ -14,7 +31,16 @@ export function callCloud(objName: string, method: string, params: UTSJSONObject
       // 平台按 method(...params) 展开；单参数对象需包一层 [params]。
       data: { method: method, params: [params] } as UTSJSONObject,
       success: (res) => {
+        // #ifdef WEB
+        const result = deepToUts(res.result) as UTSJSONObject
+        // #endif
+        // #ifndef WEB
         const result = res.result as UTSJSONObject
+        // #endif
+        if (result == null) {
+          reject(new Error('响应为空'))
+          return
+        }
         const errNum = result.getNumber('errCode') ?? -1
         if (errNum == 0) {
           resolve(result)
