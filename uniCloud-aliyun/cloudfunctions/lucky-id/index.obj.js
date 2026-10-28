@@ -47,7 +47,7 @@ module.exports = {
       last_login_date: now
     })
     const uid = addRes.id
-    const t = await this._issueToken(uid)
+    const t = await _issueToken(uid)
     return auth.ok(t)
   },
 
@@ -66,7 +66,7 @@ module.exports = {
     if (user.status !== 'active') return auth.fail('ACCOUNT_DISABLED', '账号不可用')
     if (!auth.verifyPassword(password, user.password)) return auth.fail('PASSWORD_ERROR', '用户名或密码错误')
     await db.call(this).collection(usersCol).doc(user._id).update({ last_login_date: Date.now() })
-    const issued = await this._issueToken(user._id)
+    const issued = await _issueToken(user._id)
     return auth.ok(Object.assign(issued, {
       userInfo: { id: user._id, username: user.username, nickname: user.nickname, avatar: user.avatar || '' }
     }))
@@ -117,12 +117,12 @@ module.exports = {
     if (np.length < 8 || np.length > 32) return auth.fail('PARAM_ERROR', '新密码长度需 8-32 位')
     await db.call(this).collection(usersCol).doc(g.uid).update({ password: auth.hashPassword(np) })
     return auth.ok()
-  },
-
-  /** 内部：签发并落库 token（可吊销） */
-  async _issueToken(uid) {
-    const t = auth.createToken(uid, TOKEN_TTL_DAYS)
-    await db.call(this).collection(tokenCol).add({ jti: t.jti, uid, tokenExpired: t.tokenExpired, revoked: false, created_at: Date.now() })
-    return { token: t.token, tokenExpired: t.tokenExpired }
   }
+}
+
+/** 内部：签发并落库 token（可吊销）。真实运行时 this 原型链无模块方法，内部调用一律走模块级函数。 */
+async function _issueToken(uid) {
+  const t = auth.createToken(uid, TOKEN_TTL_DAYS)
+  await uniCloud.database().collection(tokenCol).add({ jti: t.jti, uid, tokenExpired: t.tokenExpired, revoked: false, created_at: Date.now() })
+  return { token: t.token, tokenExpired: t.tokenExpired }
 }
