@@ -3,7 +3,7 @@ import { createSSRApp } from 'vue'
 
 // #ifdef WEB
 // uni-app x web 编译器把"页面内仅使用一次的 <input>"编译为运行时解析的 asset 组件（v-uni-input），
-// 而内置组件不会全局注册，运行时解析失败会渲染成无功能的空元素（多 input 页面无此问题）。
+// 而内置组件不会全局注册，运行时解析失败会渲染成无功能的空元素（多 input 页面由编译器内联，无此问题）。
 // 此处在应用上下文显式注册，保证所有页面的单 input 均可输入。
 import { Input as UniInput } from '@dcloudio/uni-h5'
 // #endif
