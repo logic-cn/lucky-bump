@@ -95,6 +95,24 @@
 - [x] 云端修复：公共模块 vendor 进云对象（CLI 不解析 file: 依赖）+ `scripts/sync_commons.sh`；callFunction 云对象 params 数组约定；云端 this 语义对齐（全局 uniCloud、模块级内部函数）
 - [x] 全部 36 页 + App.uvue 编译通过（vapor 管线）；浏览器端到端全链路验证通过（docs/08 §9）；`npm test` 17/17
 
+### 安全加固轮（2026-10-29）✅
+
+- [x] C5 token 吊销全局生效：鉴权下沉 `auth.requireUser`，9 个云对象统一校验 `lb-token.revoked`
+- [x] C1/C4 strict 红线：`timeline`/`exportAll` 按 `record.user_id === 调用者 uid` 过滤；`role` 与 `dataScope` 拆分，`admin` 不再借用 owner 的数据可见性
+- [x] C2/C3/H2/H3/H4 越权：`listMetrics`/`latestMetrics`/`listCycleEvents`/`listTrackers`/`contractionAdvice`/`reminder.listRules`/`updateRule` 全部收敛到 `accessibleJourney`
+- [x] H6 哀伤门禁：`listDue`/`today` 在 `MOURNING` 下返回空待办
+- [x] H5 密钥 fail-closed：配置中心存在但缺 `tokenSecret` 时抛错
+- [x] 静态回归网：`auth.verifyToken` 禁止直调（logout 白名单）、journeyId 读方法必须做归属校验（test/unit/static.test.js）
+
+### 功能补齐轮（2026-10-30）✅
+
+- [x] 注销账号：`requestDeletion` 密码二次确认 → `pending_deletion` + 30 天冷静期 + 立即吊销全部 token + 登录拦截（返回 daysLeft）；`cancelDeletion` 凭密码撤回；privacy 页入口 + 自绘密码弹窗，login 页识别冷静期并给撤回入口；**未做**定时 purge（见 docs/08 §8.10）
+- [x] 计时器后台恢复：宫缩/亲喂页 onShow 拉取 `activeOnly` 未结束会话，以服务端 `started_at` 接续；超 24h 遗留会话不自动接续，自绘提示条交用户「结束并保存/放弃」（docs/03 M5）
+- [x] 暗色模式：`theme.scss`（.t-light/.t-dark 的 --lb-* 变量，t-light 与 uni.scss 令牌同源）+ `themeStore`（持久化 light/dark）+ 38 页全部令牌化（根节点 themeClass 绑定 + 样式 var() 化）+ settings 真实开关；渐变/图表数据色/按钮白字保留字面量（两主题通用）
+- [x] 应用锁：`pages/account/lock` 启动遮罩页 + `App.uvue` onShow 检测（`isLockRequired`：开关开启且会话未解锁）+ privacy 页真实能力提示；生物识别 Soter 调用待 HBuilderX 验证后接入（biometric.uts 预留接口，当前降级为解锁按钮直进，见 docs/08 §8.9）
+- [x] UI 全面重设计收尾（与守护任务协同）：批次 D/E 审计、全仓旧色一致性扫描、record 页芯片宫格补齐；详见 docs/UI-REDESIGN-PROGRESS.md
+- [x] 回归：`npm test` 52/52（新增 account/tracker/ui 三套测试 + 静态鉴权网 2 条）
+
 ## 中断恢复指引
 
 Web 端已可用。后续运行只涉及：1) `npm test` 保持 17/17；2) 上传云函数前先跑 `scripts/sync_commons.sh`；3) 真机运行/云打包按 docs/08 §5（需 HBuilderX 用户操作）；4) 如用户提出功能修改，按 docs/03 规范实现并回归测试（web 端限制见 docs/08 §8）。
