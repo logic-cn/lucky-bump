@@ -1,9 +1,9 @@
 <template>
-  <view class="page">
-    <view class="card" v-if="step == 0">
+  <view class="page" :class="themeClass()">
+    <view class="card lb-rise" v-if="step == 0">
       <text class="label">今天的验孕结果</text>
       <view class="opts">
-        <view class="opt" v-for="(o, i) in opts" :key="i" :class="result == o.value ? 'opt-active' : ''" @click="result = o.value">
+        <view class="opt" v-for="(o, i) in opts" :key="i" :class="result == o.value ? 'opt-active' : ''" hover-class="lb-press" hover-stay-time="120" @click="result = o.value">
           <text class="opt-emoji">{{ o.emoji }}</text>
           <text class="opt-text" :class="result == o.value ? 'opt-text-active' : ''">{{ o.label }}</text>
         </view>
@@ -13,7 +13,7 @@
     </view>
 
     <!-- 好孕确认仪式（docs/02 §4.4 / docs/03 M1.7） -->
-    <view class="card" v-if="step == 1">
+    <view class="card lb-rise-1" v-if="step == 1">
       <text class="celebrate">🎉</text>
       <text class="celebrate-title">恭喜！要先确认好孕吗？</text>
       <text class="hint">确认后你的备孕记录会无缝带孕展示，还能邀请宝宝爸爸一起记录</text>
@@ -22,10 +22,10 @@
         <view class="date-box"><text class="date-text">{{ lmp == '' ? '选择日期' : lmp }}</text></view>
       </picker>
       <button class="btn-save" :disabled="saving" @click="confirmPregnancy">{{ saving ? '确认中…' : '确认好孕，开始孕期模式' }}</button>
-      <text class="link" @click="uni.navigateBack()">稍后再说</text>
+      <view class="link-wrap" hover-class="lb-press" hover-stay-time="120"><text class="link" @click="uni.navigateBack()">稍后再说</text></view>
     </view>
 
-    <view class="card" v-if="step == 2">
+    <view class="card lb-rise-2" v-if="step == 2">
       <text class="celebrate-title">已进入孕期模式 🌸</text>
       <text class="hint">现在你处于 {{ stageLabel }}，去首页看看宝宝本周有多大吧</text>
       <button class="btn-save" @click="goHome">回到首页</button>
@@ -37,6 +37,7 @@
   import { computed, ref } from 'vue'
   import { luckyRecord, luckyJourney } from '../../utils/request.uts'
   import { journeyState, applyJourney, stageText } from '../../store/journeyStore.uts'
+  import { themeClass } from '../../store/themeStore.uts'
 
   type Opt = { value: string, label: string, emoji: string }
 
@@ -86,20 +87,34 @@
 </script>
 
 <style>
-  .page { flex: 1; background-color: #F7F6F4; padding: 24rpx; align-items: center; }
-  .card { width: 700rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 48rpx 40rpx; margin-top: 40rpx; align-items: center; }
-  .label { font-size: 30rpx; color: #1F2329; margin-bottom: 24rpx; }
+  @import '../../theme.scss';
+  .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
+  .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 48rpx 40rpx; margin-top: 40rpx; align-items: center; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
+  .label { font-size: 30rpx; color: var(--lb-text-1); margin-bottom: 24rpx; }
   .opts { flex-direction: row; margin-bottom: 24rpx; }
-  .opt { width: 200rpx; align-items: center; background-color: #F7F6F4; border-radius: 20rpx; padding: 32rpx 0; margin: 0 10rpx; }
-  .opt-active { background-color: #FFEFEA; }
+  .opt { width: 200rpx; align-items: center; background-color: var(--lb-fill); border-radius: 24rpx; padding: 32rpx 0; margin: 0 10rpx; transition: all 160ms ease-out; }
+  .opt-active { background-color: var(--lb-primary-soft); }
   .opt-emoji { font-size: 44rpx; }
-  .opt-text { font-size: 26rpx; color: #6B7280; margin-top: 12rpx; }
-  .opt-text-active { color: #FF7A6B; font-weight: bold; }
-  .hint { font-size: 22rpx; color: #A3AAB5; margin: 8rpx 0 24rpx 0; text-align: center; }
-  .btn-save { width: 620rpx; height: 96rpx; line-height: 96rpx; background-color: #FF7A6B; color: #FFFFFF; font-size: 32rpx; border-radius: 44rpx; margin-top: 16rpx; }
+  .opt-text { font-size: 26rpx; color: var(--lb-text-1); margin-top: 12rpx; }
+  .opt-text-active { color: var(--lb-primary-deep); font-weight: bold; }
+  .hint { font-size: 22rpx; color: var(--lb-text-3); margin: 8rpx 0 24rpx 0; text-align: center; }
+  .btn-save { width: 620rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 16rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
   .celebrate { font-size: 80rpx; }
-  .celebrate-title { font-size: 36rpx; font-weight: bold; color: #1F2329; margin: 16rpx 0; }
-  .date-box { width: 620rpx; height: 96rpx; background-color: #F7F6F4; border-radius: 16rpx; align-items: center; justify-content: center; margin-bottom: 24rpx; }
-  .date-text { font-size: 30rpx; color: #1F2329; }
-  .link { color: #A3AAB5; font-size: 26rpx; margin-top: 24rpx; }
+  .celebrate-title { font-size: 36rpx; font-weight: bold; color: var(--lb-text-1); margin: 16rpx 0; }
+  .date-box { width: 620rpx; height: 96rpx; background-color: var(--lb-fill); border-radius: 24rpx; align-items: center; justify-content: center; margin-bottom: 24rpx; }
+  .date-text { font-size: 30rpx; color: var(--lb-text-1); }
+  .link-wrap { transition: all 160ms ease-out; }
+  .link { color: var(--lb-text-3); font-size: 26rpx; margin-top: 24rpx; }
+
+  @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+  @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
+  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms both; }
+  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both; }
+  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms both; }
+  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-fade { animation: lb-fade 200ms ease-out both; }
+  .lb-press { opacity: 0.72; transform: scale(0.98); }
 </style>

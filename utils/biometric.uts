@@ -1,0 +1,17 @@
+/**
+ * 生物识别能力探测与降级。
+ * 设计（docs/superpowers 安全计划 Task 12）：uni-app x 对 startSoterAuthentication 的
+ * 支持未经 HBuilderX 实测，UTS 静态类型下引用不存在的 API 会直接编译失败，
+ * 因此本版以「能力不可用」为唯一返回值，调用方自动降级为解锁按钮直进。
+ * 接入点已留好：确认平台支持后，在 isBiometricAvailable 内补真实探测、
+ * 在 authenticate 内补 startSoterAuthentication 调用即可，页面无需改动。
+ */
+
+export function isBiometricAvailable(): boolean {
+  return false
+}
+
+export function authenticate(reason: string): Promise<boolean> {
+  // 当前无可用生物识别能力；保留 reason 以对齐未来接入 startSoterAuthentication 的签名
+  return new Promise<boolean>((resolve) => { resolve(false) })
+}

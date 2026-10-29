@@ -1,9 +1,9 @@
 <template>
-  <view class="page">
-    <view class="card">
+  <view class="page" :class="themeClass()">
+    <view class="card lb-rise">
       <text class="label">产检日期</text>
       <picker mode="date" :value="visitDate" @change="onDateChange">
-        <view class="date-box"><text class="date-text">{{ visitDate }}</text></view>
+        <view class="date-box" hover-class="lb-press" hover-stay-time="120"><text class="date-text">{{ visitDate }}</text></view>
       </picker>
       <text class="label">孕周（周）</text>
       <input class="input" type="number" v-model="week" placeholder="如 24" placeholder-class="ph" />
@@ -29,17 +29,17 @@
           <image class="photo-img" :src="p" mode="aspectFill" />
           <text class="photo-del" @click="removeReport(i)">✕</text>
         </view>
-        <view class="photo-add" v-if="reportPreviews.length < 9 && !uploading" @click="chooseReport"><text class="photo-add-text">＋ 照片</text></view>
+        <view class="photo-add" hover-class="lb-press" hover-stay-time="120" v-if="reportPreviews.length < 9 && !uploading" @click="chooseReport"><text class="photo-add-text">＋ 照片</text></view>
       </view>
       <text class="hint" v-if="uploading">上传中…</text>
       <text class="label">下次产检时间（医生口径优先）</text>
       <picker mode="date" :value="nextDate" @change="onNextChange">
-        <view class="date-box"><text class="date-text">{{ nextDate == '' ? '选填' : nextDate }}</text></view>
+        <view class="date-box" hover-class="lb-press" hover-stay-time="120"><text class="date-text">{{ nextDate == '' ? '选填' : nextDate }}</text></view>
       </picker>
     </view>
-    <button class="btn-save" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存本次产检' }}</button>
+    <button class="btn-save lb-rise-1" hover-class="lb-press" hover-stay-time="120" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存本次产检' }}</button>
 
-    <view class="list" v-if="visits.length > 0">
+    <view class="list lb-rise-2" v-if="visits.length > 0">
       <text class="list-title">历史产检</text>
       <view class="v-item" v-for="(v, i) in visits" :key="i">
         <view class="v-row1">
@@ -57,6 +57,7 @@
   import { onLoad } from '@dcloudio/uni-app'
   import { luckyCare } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
+  import { themeClass } from '../../store/themeStore.uts'
 
   type Exam = { name: string, result: string, abnormal: boolean }
 
@@ -159,33 +160,46 @@
 </script>
 
 <style>
-  .page { flex: 1; background-color: #F7F6F4; padding: 24rpx; align-items: center; }
-  .card { width: 700rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 40rpx; margin-top: 24rpx; }
-  .label { font-size: 26rpx; color: #1F2329; margin: 20rpx 0 12rpx 0; }
-  .date-box { width: 620rpx; height: 88rpx; background-color: #F7F6F4; border-radius: 16rpx; align-items: center; padding: 0 24rpx; }
-  .date-text { font-size: 28rpx; color: #1F2329; }
-  .input { width: 620rpx; height: 88rpx; background-color: #F7F6F4; border-radius: 16rpx; padding: 0 24rpx; font-size: 28rpx; color: #1F2329; }
+  @import '../../theme.scss';
+  .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
+  .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 40rpx; margin-top: 24rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
+  .label { font-size: 26rpx; color: var(--lb-text-1); margin: 20rpx 0 12rpx 0; }
+  .date-box { width: 620rpx; height: 88rpx; background-color: var(--lb-fill); border-radius: 24rpx; align-items: center; padding: 0 24rpx; transition: all 160ms ease-out; }
+  .date-text { font-size: 28rpx; color: var(--lb-text-1); }
+  .input { width: 620rpx; height: 88rpx; background-color: var(--lb-fill); border-radius: 24rpx; padding: 0 24rpx; font-size: 28rpx; color: var(--lb-text-1); }
   .row2 { flex-direction: row; }
   .half { flex: 1; margin-right: 16rpx; }
   .exam { flex-direction: row; align-items: center; margin-bottom: 12rpx; }
   .exam-name { flex: 1.2; margin-right: 12rpx; }
   .exam-result { flex: 1; margin-right: 12rpx; }
-  .exam-del { font-size: 32rpx; color: #A3AAB5; padding: 8rpx; }
-  .add-exam { font-size: 26rpx; color: #FF7A6B; padding: 8rpx 0; }
-  .ta { width: 620rpx; height: 140rpx; background-color: #F7F6F4; border-radius: 16rpx; padding: 20rpx; font-size: 26rpx; color: #1F2329; }
+  .exam-del { font-size: 32rpx; color: var(--lb-text-3); padding: 8rpx; }
+  .add-exam { font-size: 26rpx; color: var(--lb-primary); padding: 8rpx 0; }
+  .ta { width: 620rpx; height: 140rpx; background-color: var(--lb-fill); border-radius: 24rpx; padding: 20rpx; font-size: 26rpx; color: var(--lb-text-1); }
   .photo-row { flex-direction: row; flex-wrap: wrap; margin-bottom: 8rpx; }
-  .photo { width: 140rpx; height: 140rpx; border-radius: 12rpx; margin: 8rpx; position: relative; }
-  .photo-img { width: 140rpx; height: 140rpx; border-radius: 12rpx; }
-  .photo-del { position: absolute; top: 4rpx; right: 8rpx; font-size: 28rpx; color: #FFFFFF; text-shadow: 0 0 4rpx rgba(0,0,0,0.6); }
-  .photo-add { width: 140rpx; height: 140rpx; border-radius: 12rpx; background-color: #F7F6F4; align-items: center; justify-content: center; margin: 8rpx; }
-  .photo-add-text { font-size: 24rpx; color: #A3AAB5; }
-  .ph { color: #A3AAB5; }
-  .btn-save { width: 700rpx; height: 96rpx; line-height: 96rpx; background-color: #FF7A6B; color: #FFFFFF; font-size: 32rpx; border-radius: 44rpx; margin-top: 32rpx; }
-  .list { width: 700rpx; margin-top: 40rpx; }
-  .list-title { font-size: 28rpx; font-weight: bold; color: #1F2329; margin-bottom: 16rpx; }
-  .v-item { background-color: #FFFFFF; border-radius: 24rpx; padding: 28rpx; margin-bottom: 16rpx; }
+  .photo { width: 140rpx; height: 140rpx; border-radius: 20rpx; margin: 8rpx; position: relative; }
+  .photo-img { width: 140rpx; height: 140rpx; border-radius: 20rpx; }
+  .photo-del { position: absolute; top: 4rpx; right: 8rpx; font-size: 28rpx; color: #FFFFFF; text-shadow: 0 0 4rpx var(--lb-mask); }
+  .photo-add { width: 140rpx; height: 140rpx; border-radius: 20rpx; background-color: var(--lb-fill); align-items: center; justify-content: center; margin: 8rpx; transition: all 160ms ease-out; }
+  .photo-add-text { font-size: 24rpx; color: var(--lb-text-3); }
+  .ph { color: var(--lb-text-3); }
+  .btn-save { width: 702rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 32rpx; transition: all 160ms ease-out; }
+  .list { width: 702rpx; margin-top: 40rpx; }
+  .list-title { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 16rpx; }
+  .v-item { background-color: var(--lb-card); border-radius: 36rpx; padding: 28rpx; margin-bottom: 16rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
   .v-row1 { flex-direction: row; }
-  .v-date { font-size: 26rpx; font-weight: bold; color: #1F2329; flex: 1; }
-  .v-week { font-size: 22rpx; color: #A3AAB5; }
-  .v-conclusion { font-size: 24rpx; color: #6B7280; margin-top: 10rpx; }
+  .v-date { font-size: 26rpx; font-weight: bold; color: var(--lb-text-1); flex: 1; }
+  .v-week { font-size: 22rpx; color: var(--lb-text-3); }
+  .v-conclusion { font-size: 24rpx; color: var(--lb-text-2); margin-top: 10rpx; }
+
+  @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+  @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
+  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms both; }
+  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both; }
+  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms both; }
+  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-fade { animation: lb-fade 200ms ease-out both; }
+  .lb-press { opacity: 0.72; transform: scale(0.98); }
 </style>

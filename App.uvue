@@ -1,18 +1,27 @@
 <script setup>
   import { onLaunch, onShow, onHide } from '@dcloudio/uni-app'
-  import { appInit } from './store/appStore.uts'
+  import { appInit, isLockRequired } from './store/appStore.uts'
+  import { initTheme } from './store/themeStore.uts'
 
   onLaunch(() => {
     appInit()
+    initTheme()
     console.log('幸孕记 App Launch')
   })
-  onShow(() => {})
+  onShow(() => {
+    // 应用锁：开关开启且本次会话未解锁时，回到前台先弹解锁遮罩。
+    // 未登录时开关不可开启（隐私页在登录后可达），逻辑上不会误拦登录页。
+    if (isLockRequired()) {
+      uni.reLaunch({ url: '/pages/account/lock' })
+    }
+  })
   onHide(() => {})
 </script>
 
 <style>
-  /* uni-app-x：app 端样式不继承，页面内显式声明。此处仅放极少全局 reset。 */
+  /* uni-app-x：app 端样式不继承，页面内显式声明。此处仅放极少全局 reset。
+   * 页面底色随主题经根节点 class（theme.scss 变量）切换，此处保持浅色兜底。 */
   page {
-    background-color: #F7F6F4;
+    background-color: #F8F4F5;
   }
 </style>

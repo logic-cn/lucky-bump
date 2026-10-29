@@ -1,6 +1,6 @@
 <template>
-  <view class="page">
-    <view class="card">
+  <view class="page" :class="themeClass()">
+    <view class="card lb-rise">
       <text class="label">月经来了？</text>
       <view class="btn-row">
         <button class="btn-half btn-primary-bg" @click="markPeriod('start')">经期开始</button>
@@ -13,7 +13,7 @@
       </view>
     </view>
 
-    <view class="card" v-if="prediction != null">
+    <view class="card lb-rise-1" v-if="prediction != null">
       <text class="card-title">周期预测</text>
       <text class="pred-text" v-if="predRegular">平均周期 {{ predAvgLen }} 天 · 排卵日约 {{ predOvu }}</text>
       <text class="pred-text" v-else>周期不太规律（波动 > 7 天），建议坚持记录排卵试纸和体温提高准确度</text>
@@ -21,7 +21,7 @@
       <text class="pred-sub">预测下次月经：{{ predNext }}</text>
     </view>
 
-    <view class="card" v-if="events.length > 0">
+    <view class="card lb-rise-2" v-if="events.length > 0">
       <text class="card-title">最近记录</text>
       <view class="ev-row" v-for="(e, i) in events" :key="i">
         <text class="ev-date">{{ e.getString('date') ?? '' }}</text>
@@ -36,6 +36,7 @@
   import { onLoad } from '@dcloudio/uni-app'
   import { luckyRecord } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
+  import { themeClass } from '../../store/themeStore.uts'
 
   const bbt = ref('')
   const saving = ref(false)
@@ -100,21 +101,34 @@
 </script>
 
 <style>
-  .page { flex: 1; background-color: #F7F6F4; padding: 24rpx; align-items: center; }
-  .card { width: 700rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 40rpx; margin-top: 24rpx; }
-  .card-title { font-size: 30rpx; font-weight: bold; color: #1F2329; margin-bottom: 20rpx; }
-  .label { font-size: 28rpx; color: #1F2329; margin: 24rpx 0 16rpx 0; }
+  @import '../../theme.scss';
+  .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
+  .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 40rpx; margin-top: 24rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
+  .card-title { font-size: 30rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 20rpx; }
+  .label { font-size: 28rpx; color: var(--lb-text-1); margin: 24rpx 0 16rpx 0; }
   .btn-row { flex-direction: row; }
-  .btn-half { flex: 1; height: 88rpx; line-height: 88rpx; font-size: 28rpx; border-radius: 44rpx; margin: 0 8rpx; }
-  .btn-primary-bg { background-color: #FF7A6B; color: #FFFFFF; }
-  .btn-gray { background-color: #F7F6F4; color: #6B7280; }
+  .btn-half { flex: 1; height: 88rpx; line-height: 88rpx; font-size: 28rpx; border-radius: 48rpx; margin: 0 8rpx; }
+  .btn-primary-bg { background-color: var(--lb-primary); color: #FFFFFF; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
+  .btn-gray { background-color: var(--lb-fill); color: var(--lb-text-2); }
   .input-row { flex-direction: row; align-items: center; }
-  .num-input { flex: 1; height: 88rpx; background-color: #F7F6F4; border-radius: 16rpx; padding: 0 24rpx; font-size: 30rpx; color: #1F2329; margin-right: 16rpx; }
-  .ph { color: #A3AAB5; }
-  .btn-small { width: 140rpx; height: 88rpx; line-height: 88rpx; background-color: #FFEFEA; color: #FF7A6B; font-size: 26rpx; border-radius: 16rpx; }
-  .pred-text { font-size: 28rpx; color: #1F2329; }
-  .pred-sub { font-size: 24rpx; color: #6B7280; margin-top: 12rpx; }
-  .ev-row { flex-direction: row; padding: 16rpx 0; border-bottom-width: 1px; border-bottom-color: #F2F1EF; }
-  .ev-date { width: 200rpx; font-size: 24rpx; color: #A3AAB5; }
-  .ev-type { font-size: 26rpx; color: #1F2329; }
+  .num-input { flex: 1; height: 88rpx; background-color: var(--lb-fill); border-radius: 24rpx; padding: 0 24rpx; font-size: 30rpx; color: var(--lb-text-1); margin-right: 16rpx; }
+  .ph { color: var(--lb-text-3); }
+  .btn-small { width: 140rpx; height: 88rpx; line-height: 88rpx; background-color: var(--lb-primary-soft); color: var(--lb-primary-deep); font-size: 26rpx; border-radius: 24rpx; }
+  .pred-text { font-size: 28rpx; color: var(--lb-text-1); }
+  .pred-sub { font-size: 24rpx; color: var(--lb-text-2); margin-top: 12rpx; }
+  .ev-row { flex-direction: row; padding: 16rpx 0; border-bottom-width: 1px; border-bottom-color: var(--lb-line); }
+  .ev-date { width: 200rpx; font-size: 24rpx; color: var(--lb-text-3); }
+  .ev-type { font-size: 26rpx; color: var(--lb-text-1); }
+
+  @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+  @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
+  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms both; }
+  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both; }
+  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms both; }
+  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-fade { animation: lb-fade 200ms ease-out both; }
+  .lb-press { opacity: 0.72; transform: scale(0.98); }
 </style>

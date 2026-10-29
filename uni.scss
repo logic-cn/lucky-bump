@@ -1,31 +1,47 @@
-/* 幸孕记 Lucky Bump 设计令牌 —— 详见 docs/07-UI设计系统.md */
+/* 幸孕记 Lucky Bump 设计令牌 v2 ——「温润玫瑰 · iOS 材质」，详见 docs/07-UI设计系统.md
+ * 说明：app 端样式不继承且仅支持 class 选择器，页面内直接使用下列十六进制值
+ *（本文件作为设计规范的唯一事实源；test/unit/ui.test.js 会强制页面与令牌一致）。 */
 
-/* 色彩 */
-$lb-primary: #FF7A6B;
-$lb-primary-deep: #E85D4E;
-$lb-primary-soft: #FFEFEA;
-$lb-secondary: #6BA3FF;
-$lb-secondary-soft: #EAF2FF;
-$lb-success: #4CAF7D;
-$lb-success-soft: #E8F5EE;
-$lb-warning: #F5A623;
-$lb-warning-soft: #FDF3E3;
-$lb-danger: #E5484D;
+/* 色彩 —— 玫瑰主色系 */
+$lb-primary: #E4537F;          /* 蔷薇玫瑰：主按钮/选中态/强调 */
+$lb-primary-deep: #C93A67;     /* 按压态/浅底上的主色文字 */
+$lb-primary-soft: #FBE7EF;     /* 樱粉浅底：芯片、选中底 */
+$lb-grad-1: #F0709D;           /* 英雄卡渐变起点（左上） */
+$lb-grad-2: #DC3D75;           /* 英雄卡渐变终点（右下） */
+$lb-secondary: #8B7BE8;        /* 鸢尾紫：家庭/爸爸端主题 */
+$lb-secondary-soft: #EFECFD;
+$lb-success: #37A884;          /* 薄荷绿：达标/正常 */
+$lb-success-soft: #E1F5EC;
+$lb-warning: #EF9F2F;          /* 琥珀：临界提醒 */
+$lb-warning-soft: #FCF1DC;
+$lb-danger: #E5484D;           /* 红线提示专用（不挪作它用） */
 $lb-danger-soft: #FDECEC;
-$lb-bg: #F7F6F4;
-$lb-card: #FFFFFF;
-$lb-text-1: #1F2329;
-$lb-text-2: #6B7280;
-$lb-text-3: #A3AAB5;
-$lb-line: #EDEBE8;
 
-/* 字号（rpx） */
+/* 色彩 —— 中性系（带玫瑰温度的灰） */
+$lb-bg: #F8F4F5;               /* 页面底：腮红白 */
+$lb-card: #FFFFFF;
+$lb-fill: #F6EFF2;             /* 次级浅底：禁用/对话框次按钮 */
+$lb-text-1: #322430;           /* 梅墨：标题 */
+$lb-text-2: #7D7183;           /* 正文辅助 */
+$lb-text-3: #B6AABB;           /* 弱提示/未选中 tab */
+$lb-line: #F2E9ED;             /* 分隔发丝线 */
+$lb-arrow: #C6B8C6;            /* 列表箭头 */
+$lb-mask: rgba(50, 36, 48, 0.5); /* 弹窗遮罩（梅子色半透明） */
+
+/* 芯片浅底（iOS 设置页式图标芯片，按序轮换） */
+$lb-chip-1: #FBE7EF;           /* 樱粉 */
+$lb-chip-2: #EFECFD;           /* 鸢尾 */
+$lb-chip-3: #E1F5EC;           /* 薄荷 */
+$lb-chip-4: #FCF1DC;           /* 琥珀 */
+$lb-chip-5: #FFEBE1;           /* 蜜桃 */
+
+/* 字号（rpx）：标题/正文/辅助/标签/说明；数字大卡另计 */
 $lb-fs-title: 32rpx;
 $lb-fs-body: 28rpx;
 $lb-fs-sub: 24rpx;
 $lb-fs-tag: 22rpx;
 $lb-fs-caption: 20rpx;
-$lb-fs-hero: 64rpx;
+$lb-fs-hero: 88rpx;
 
 /* 间距 */
 $lb-space-xs: 8rpx;
@@ -34,10 +50,19 @@ $lb-space-md: 24rpx;
 $lb-space-lg: 32rpx;
 $lb-space-xl: 48rpx;
 
-/* 圆角 */
-$lb-radius-card: 24rpx;
-$lb-radius-btn: 44rpx;
-$lb-radius-tag: 12rpx;
+/* 圆角 —— 大圆角连续曲面 */
+$lb-radius-hero: 40rpx;        /* 阶段英雄卡 */
+$lb-radius-card: 36rpx;        /* 通用卡片 */
+$lb-radius-chip: 24rpx;        /* 图标芯片/输入内块 */
+$lb-radius-tag: 20rpx;         /* 小标签内芯 */
+$lb-radius-pill: 48rpx;        /* 胶囊按钮（高度 96rpx 即全圆） */
 
-/* 阴影 */
-$lb-shadow: 0 4rpx 16rpx rgba(31, 35, 41, 0.06);
+/* 阴影 —— 梅子色极浅投影，重投影只给英雄卡与悬浮层 */
+$lb-shadow: 0 6rpx 24rpx rgba(50, 36, 48, 0.04);
+$lb-shadow-hero: 0 12rpx 32rpx rgba(228, 83, 127, 0.28);
+$lb-shadow-float: 0 16rpx 48rpx rgba(50, 36, 48, 0.18);
+
+/* 动效 —— 只回答动作：按压缩放、进场一次性 rise、计时脉冲 */
+$lb-ease: cubic-bezier(0.22, 1, 0.36, 1);
+$lb-dur: 160ms;                /* 按压/状态切换 */
+$lb-dur-enter: 520ms;          /* 页面进场 */

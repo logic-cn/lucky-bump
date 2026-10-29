@@ -1,10 +1,12 @@
 <template>
-  <view class="page">
-    <view class="group" v-for="(g, gi) in groups" :key="gi">
+  <view class="page" :class="themeClass()">
+    <view class="group lb-rise" v-for="(g, gi) in groups" :key="gi">
       <text class="group-title">{{ g.title }}</text>
       <view class="grid">
-        <view class="grid-item" v-for="(item, i) in g.items" :key="i" @click="go(item.url)">
-          <text class="grid-icon">{{ item.icon }}</text>
+        <view class="grid-item" v-for="(item, i) in g.items" :key="i" hover-class="lb-press" hover-stay-time="120" @click="go(item.url)">
+          <view class="grid-chip" :class="'grid-chip-' + (i % 5)">
+            <text class="grid-icon">{{ item.icon }}</text>
+          </view>
           <text class="grid-label">{{ item.label }}</text>
         </view>
       </view>
@@ -15,6 +17,7 @@
 <script setup lang="ts">
   import { computed } from 'vue'
   import { journeyState } from '../../store/journeyStore.uts'
+  import { themeClass } from '../../store/themeStore.uts'
 
   type RItem = { icon: string, label: string, url: string }
   type RGroup = { title: string, items: RItem[] }
@@ -64,11 +67,30 @@
 </script>
 
 <style>
-  .page { flex: 1; background-color: #F7F6F4; padding: 24rpx; }
-  .group { background-color: #FFFFFF; border-radius: 24rpx; padding: 32rpx; margin-bottom: 24rpx; }
-  .group-title { font-size: 30rpx; font-weight: bold; color: #1F2329; margin-bottom: 24rpx; }
+  @import '../../theme.scss';
+  .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; }
+  .group { background-color: var(--lb-card); border-radius: 36rpx; padding: 36rpx; margin-bottom: 24rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
+  .group-title { font-size: 32rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 24rpx; }
   .grid { flex-direction: row; flex-wrap: wrap; }
-  .grid-item { width: 25%; align-items: center; padding: 20rpx 0; }
-  .grid-icon { font-size: 44rpx; }
-  .grid-label { font-size: 22rpx; color: #6B7280; margin-top: 8rpx; }
+  .grid-item { width: 25%; align-items: center; padding: 16rpx 0; border-radius: 24rpx; transition: all 160ms ease-out; }
+  .grid-chip { width: 84rpx; height: 84rpx; border-radius: 24rpx; align-items: center; justify-content: center; }
+  .grid-chip-0 { background-color: var(--lb-primary-soft); }
+  .grid-chip-1 { background-color: var(--lb-secondary-soft); }
+  .grid-chip-2 { background-color: var(--lb-success-soft); }
+  .grid-chip-3 { background-color: var(--lb-warning-soft); }
+  .grid-chip-4 { background-color: var(--lb-chip-5); }
+  .grid-icon { font-size: 40rpx; }
+  .grid-label { font-size: 22rpx; color: var(--lb-text-2); margin-top: 12rpx; }
+
+  @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+  @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
+  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms both; }
+  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both; }
+  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms both; }
+  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-fade { animation: lb-fade 200ms ease-out both; }
+  .lb-press { opacity: 0.72; transform: scale(0.98); }
 </style>

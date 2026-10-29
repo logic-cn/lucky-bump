@@ -1,9 +1,9 @@
 <template>
-  <view class="page">
-    <view class="card">
+  <view class="page" :class="themeClass()">
+    <view class="card lb-rise">
       <text class="label">测量日期</text>
       <picker mode="date" :value="measureDate" @change="onDateChange">
-        <view class="pick-box wide"><text class="pick-text">{{ measureDate }}</text></view>
+        <view class="pick-box wide" hover-class="lb-press" hover-stay-time="120"><text class="pick-text">{{ measureDate }}</text></view>
       </picker>
       <text class="label">体重（kg）</text>
       <input class="input" type="number" v-model="weightKg" placeholder="如 6.8" placeholder-class="ph" />
@@ -12,9 +12,9 @@
       <text class="label">头围（cm，选填）</text>
       <input class="input" type="number" v-model="headCm" placeholder="如 41.0" placeholder-class="ph" />
     </view>
-    <button class="btn-save" :disabled="saving" @click="save">{{ saving ? '计算中…' : '保存并看百分位' }}</button>
+    <button class="btn-save lb-rise-1" :disabled="saving" @click="save">{{ saving ? '计算中…' : '保存并看百分位' }}</button>
 
-    <view class="card" v-if="result != null">
+    <view class="card lb-rise-2" v-if="result != null">
       <text class="card-title">本次结果（{{ resultMonthAge }} 月龄，参照 WHO 标准）</text>
       <view class="pct-row">
         <view class="pct-col" v-if="pctWeight.length > 0"><text class="pct-num">{{ pctWeight }}</text><text class="pct-cap">体重百分位</text></view>
@@ -27,7 +27,7 @@
       <text class="hint">百分位为参考趋势，不构成诊断；早产宝宝请按矫正月龄与医生沟通</text>
     </view>
 
-    <view class="card" v-if="samples.length > 0">
+    <view class="card lb-rise-3" v-if="samples.length > 0">
       <text class="card-title">历史测量</text>
       <view class="s-row" v-for="(s, i) in samples" :key="i">
         <text class="s-date">{{ s.date }}</text>
@@ -42,6 +42,7 @@
   import { onLoad } from '@dcloudio/uni-app'
   import { luckyBaby } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
+  import { themeClass } from '../../store/themeStore.uts'
 
   type SRow = { date: string, val: string }
 
@@ -120,24 +121,37 @@
 </script>
 
 <style>
-  .page { flex: 1; background-color: #F7F6F4; padding: 24rpx; align-items: center; }
-  .card { width: 700rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 40rpx; margin-top: 24rpx; align-items: center; }
-  .label { font-size: 26rpx; color: #1F2329; margin: 16rpx 0 12rpx 0; }
-  .pick-box { height: 88rpx; background-color: #F7F6F4; border-radius: 16rpx; align-items: center; justify-content: center; }
+  @import '../../theme.scss';
+  .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
+  .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 40rpx; margin-top: 24rpx; align-items: center; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
+  .label { font-size: 26rpx; color: var(--lb-text-1); margin: 16rpx 0 12rpx 0; }
+  .pick-box { height: 88rpx; background-color: var(--lb-fill); border-radius: 24rpx; align-items: center; justify-content: center; transition: all 160ms ease-out; }
   .pick-box.wide { width: 620rpx; }
-  .pick-text { font-size: 28rpx; color: #1F2329; }
-  .input { width: 620rpx; height: 88rpx; background-color: #F7F6F4; border-radius: 16rpx; padding: 0 24rpx; font-size: 28rpx; color: #1F2329; }
-  .ph { color: #A3AAB5; }
-  .btn-save { width: 700rpx; height: 96rpx; line-height: 96rpx; background-color: #FF7A6B; color: #FFFFFF; font-size: 32rpx; border-radius: 44rpx; margin-top: 32rpx; }
-  .card-title { font-size: 28rpx; font-weight: bold; color: #1F2329; margin-bottom: 20rpx; }
+  .pick-text { font-size: 28rpx; color: var(--lb-text-1); }
+  .input { width: 620rpx; height: 88rpx; background-color: var(--lb-fill); border-radius: 24rpx; padding: 0 24rpx; font-size: 28rpx; color: var(--lb-text-1); }
+  .ph { color: var(--lb-text-3); }
+  .btn-save { width: 702rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 32rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
+  .card-title { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 20rpx; }
   .pct-row { flex-direction: row; }
   .pct-col { align-items: center; margin: 0 24rpx; }
-  .pct-num { font-size: 44rpx; font-weight: bold; color: #FF7A6B; }
-  .pct-cap { font-size: 22rpx; color: #A3AAB5; margin-top: 8rpx; }
-  .alert { width: 620rpx; background-color: #FDF3E3; border-radius: 16rpx; padding: 20rpx; margin-top: 20rpx; }
-  .alert-text { font-size: 24rpx; color: #1F2329; }
-  .hint { font-size: 20rpx; color: #A3AAB5; margin-top: 20rpx; }
+  .pct-num { font-size: 44rpx; font-weight: bold; color: var(--lb-primary); }
+  .pct-cap { font-size: 22rpx; color: var(--lb-text-3); margin-top: 8rpx; }
+  .alert { width: 620rpx; background-color: var(--lb-warning-soft); border-radius: 24rpx; padding: 20rpx; margin-top: 20rpx; }
+  .alert-text { font-size: 24rpx; color: var(--lb-warning); }
+  .hint { font-size: 20rpx; color: var(--lb-text-3); margin-top: 20rpx; }
   .s-row { flex-direction: row; padding: 10rpx 0; }
-  .s-date { width: 220rpx; font-size: 24rpx; color: #A3AAB5; }
-  .s-val { font-size: 26rpx; color: #1F2329; }
+  .s-date { width: 220rpx; font-size: 24rpx; color: var(--lb-text-3); }
+  .s-val { font-size: 26rpx; color: var(--lb-text-1); }
+
+  @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+  @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
+  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms both; }
+  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both; }
+  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms both; }
+  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-fade { animation: lb-fade 200ms ease-out both; }
+  .lb-press { opacity: 0.72; transform: scale(0.98); }
 </style>

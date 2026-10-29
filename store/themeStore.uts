@@ -1,0 +1,37 @@
+import { reactive } from 'vue'
+
+/**
+ * 主题状态：light / dark（持久化到本地存储）。
+ * 「跟随系统」待 manifest darkmode + theme.json 在 HBuilderX 验证后开放（见 docs/08 §8）。
+ * 颜色变量定义见 theme.scss（.t-light/.t-dark），页面根节点经 themeClass() 绑定。
+ */
+export type ThemeMode = 'light' | 'dark'
+
+export const themeState = reactive({
+  mode: 'light' as ThemeMode,
+  resolved: 'light' as 'light' | 'dark'
+})
+
+const THEME_KEY = 'lb_theme'
+
+function applyResolved(): void {
+  themeState.resolved = themeState.mode == 'dark' ? 'dark' : 'light'
+}
+
+export function setThemeMode(mode: ThemeMode): void {
+  themeState.mode = mode
+  uni.setStorageSync(THEME_KEY, mode)
+  applyResolved()
+}
+
+export function initTheme(): void {
+  const raw = uni.getStorageSync(THEME_KEY)
+  const s = raw == null ? '' : (raw as string)
+  themeState.mode = s == 'dark' ? 'dark' : 'light'
+  applyResolved()
+}
+
+/** 页面根节点绑定用：'t-dark' | 't-light'（响应式，切主题时已渲染页面即时生效） */
+export function themeClass(): string {
+  return themeState.resolved == 'dark' ? 't-dark' : 't-light'
+}

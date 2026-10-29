@@ -1,6 +1,6 @@
 <template>
-  <view class="page">
-    <view class="card">
+  <view class="page" :class="themeClass()">
+    <view class="card lb-rise">
       <text class="card-title">家庭成员（{{ members.length }}）</text>
       <view class="m-row" v-for="(m, i) in members" :key="i">
         <view class="m-avatar"><text class="m-avatar-text">{{ (m.getString('nickname') ?? '?').slice(0, 1) }}</text></view>
@@ -8,44 +8,48 @@
           <text class="m-name">{{ m.getString('nickname') ?? '' }}{{ m.getBoolean('isMe') == true ? '（我）' : '' }}</text>
           <text class="m-role">{{ roleText(m.getString('role') ?? '') }}</text>
         </view>
-        <text class="m-action" v-if="isOwner && !(m.getBoolean('isMe') == true)" @click="remove(m)">移除</text>
+        <view class="m-action-wrap" hover-class="lb-press" hover-stay-time="120" v-if="isOwner && !(m.getBoolean('isMe') == true)">
+          <text class="m-action" @click="remove(m)">移除</text>
+        </view>
       </view>
     </view>
 
-    <view class="card" v-if="isOwner">
+    <view class="card lb-rise-1" v-if="isOwner">
       <text class="card-title">邀请家人</text>
       <text class="hint">爸爸成为"记录者"后可共同记录喂养、夜奶与产检；长辈默认只读。</text>
       <view class="btn-row">
-        <button class="btn-half" @click="invite('recorder')">邀请爸爸（可记录）</button>
-        <button class="btn-half btn-gray" @click="invite('viewer')">邀请长辈（只读）</button>
+        <button class="btn-half" hover-class="lb-press" hover-stay-time="120" @click="invite('recorder')">邀请爸爸（可记录）</button>
+        <button class="btn-half btn-gray" hover-class="lb-press" hover-stay-time="120" @click="invite('viewer')">邀请长辈（只读）</button>
       </view>
       <view class="code-box" v-if="inviteCode.length > 0">
         <text class="code-text">邀请码：{{ inviteCode }}（3 天内有效）</text>
       </view>
     </view>
 
-    <view class="card" v-if="!isOwner && joinCodeMode">
+    <view class="card lb-rise-2" v-if="!isOwner && joinCodeMode">
       <text class="card-title">加入家庭</text>
       <input class="input" v-model="joinCode" placeholder="输入邀请码" placeholder-class="ph" />
-      <button class="btn-save" @click="join">加入</button>
+      <button class="btn-save" hover-class="lb-press" hover-stay-time="120" @click="join">加入</button>
     </view>
-    <view class="card" v-if="!isOwner && !joinCodeMode">
+    <view class="card lb-rise-2" v-if="!isOwner && !joinCodeMode">
       <text class="hint">你是受邀加入的成员，感谢一起记录宝宝的成长 🌟</text>
-      <text class="link" @click="joinCodeMode = true">我要用邀请码加入其他家庭</text>
+      <view class="link-wrap" hover-class="lb-press" hover-stay-time="120">
+        <text class="link" @click="joinCodeMode = true">我要用邀请码加入其他家庭</text>
+      </view>
     </view>
 
-    <view class="card" v-if="isOwner">
+    <view class="card lb-rise-3" v-if="isOwner">
       <text class="card-title">数据组授权（记录者）</text>
       <view class="p-row" v-for="(g, i) in groups" :key="i">
         <text class="p-label">{{ g.label }}</text>
-        <switch :checked="g.allow" @change="(e: UniSwitchChangeEvent) => togglePerm(g.value, e)" color="#FF7A6B" />
+        <switch :checked="g.allow" @change="(e: UniSwitchChangeEvent) => togglePerm(g.value, e)" color="#E4537F" />
       </view>
       <text class="hint">同房记录与情绪自评永远仅本人可见，产品级不可授权。</text>
     </view>
 
     <!-- 自绘确认弹窗（web 端 uni.showModal 回调不触发） -->
-    <view class="mask" v-if="confirmVisible">
-      <view class="dialog">
+    <view class="mask lb-fade" v-if="confirmVisible">
+      <view class="dialog lb-pop">
         <text class="dlg-title">{{ confirmTitle }}</text>
         <text class="dlg-content">{{ confirmContent }}</text>
         <view class="dlg-actions">
@@ -62,6 +66,7 @@
   import { onLoad } from '@dcloudio/uni-app'
   import { luckyFamily } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
+  import { themeClass } from '../../store/themeStore.uts'
 
   type GOpt = { value: string, label: string, allow: boolean }
 
@@ -145,34 +150,49 @@
 </script>
 
 <style>
-  .page { flex: 1; background-color: #F7F6F4; padding: 24rpx; align-items: center; }
-  .card { width: 700rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 32rpx; margin-top: 24rpx; }
-  .card-title { font-size: 28rpx; font-weight: bold; color: #1F2329; margin-bottom: 20rpx; }
+  @import '../../theme.scss';
+  .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
+  .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 32rpx; margin-top: 24rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
+  .card-title { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 20rpx; }
   .m-row { flex-direction: row; align-items: center; padding: 16rpx 0; }
-  .m-avatar { width: 72rpx; height: 72rpx; border-radius: 36rpx; background-color: #6BA3FF; align-items: center; justify-content: center; }
+  .m-avatar { width: 72rpx; height: 72rpx; border-radius: 36rpx; background-color: var(--lb-secondary); align-items: center; justify-content: center; }
   .m-avatar-text { font-size: 30rpx; color: #FFFFFF; }
   .m-body { flex: 1; margin-left: 20rpx; }
-  .m-name { font-size: 28rpx; color: #1F2329; }
-  .m-role { font-size: 22rpx; color: #A3AAB5; margin-top: 4rpx; }
-  .m-action { font-size: 24rpx; color: #E5484D; padding: 8rpx; }
-  .hint { font-size: 22rpx; color: #A3AAB5; margin: 8rpx 0 16rpx 0; }
+  .m-name { font-size: 28rpx; color: var(--lb-text-1); }
+  .m-role { font-size: 22rpx; color: var(--lb-text-3); margin-top: 4rpx; }
+  .m-action-wrap { transition: all 160ms ease-out; }
+  .m-action { font-size: 24rpx; color: var(--lb-danger); padding: 8rpx; }
+  .hint { font-size: 22rpx; color: var(--lb-text-3); margin: 8rpx 0 16rpx 0; }
   .btn-row { flex-direction: row; }
-  .btn-half { flex: 1; height: 88rpx; line-height: 88rpx; background-color: #FF7A6B; color: #FFFFFF; font-size: 24rpx; border-radius: 20rpx; margin: 0 8rpx; }
-  .btn-gray { background-color: #F7F6F4; color: #6B7280; }
-  .code-box { background-color: #EAF2FF; border-radius: 16rpx; padding: 20rpx; margin-top: 20rpx; align-items: center; }
-  .code-text { font-size: 30rpx; font-weight: bold; color: #3B72D8; }
-  .input { width: 636rpx; height: 88rpx; background-color: #F7F6F4; border-radius: 16rpx; padding: 0 24rpx; font-size: 28rpx; color: #1F2329; margin-bottom: 16rpx; }
-  .ph { color: #A3AAB5; }
-  .btn-save { width: 636rpx; height: 88rpx; line-height: 88rpx; background-color: #FF7A6B; color: #FFFFFF; font-size: 28rpx; border-radius: 20rpx; }
+  .btn-half { flex: 1; height: 88rpx; line-height: 88rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 24rpx; border-radius: 24rpx; margin: 0 8rpx; transition: all 160ms ease-out; }
+  .btn-gray { background-color: var(--lb-fill); color: var(--lb-text-2); }
+  .code-box { background-color: var(--lb-secondary-soft); border-radius: 24rpx; padding: 20rpx; margin-top: 20rpx; align-items: center; }
+  .code-text { font-size: 30rpx; font-weight: bold; color: var(--lb-secondary-deep); }
+  .input { width: 636rpx; height: 88rpx; background-color: var(--lb-fill); border-radius: 24rpx; padding: 0 24rpx; font-size: 28rpx; color: var(--lb-text-1); margin-bottom: 16rpx; }
+  .ph { color: var(--lb-text-3); }
+  .btn-save { width: 636rpx; height: 88rpx; line-height: 88rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 28rpx; border-radius: 24rpx; transition: all 160ms ease-out; }
   .p-row { flex-direction: row; align-items: center; justify-content: space-between; padding: 14rpx 0; }
-  .p-label { font-size: 26rpx; color: #1F2329; }
-  .link { font-size: 24rpx; color: #FF7A6B; margin-top: 12rpx; }
+  .p-label { font-size: 26rpx; color: var(--lb-text-1); }
+  .link-wrap { margin-top: 12rpx; padding: 8rpx 0; transition: all 160ms ease-out; }
+  .link { font-size: 24rpx; color: var(--lb-primary); }
 
-  .mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.45); justify-content: center; align-items: center; }
-  .dialog { width: 560rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 40rpx 32rpx 24rpx 32rpx; }
-  .dlg-title { font-size: 32rpx; font-weight: bold; color: #1F2329; text-align: center; }
-  .dlg-content { font-size: 27rpx; color: #6B7280; margin-top: 20rpx; text-align: center; line-height: 40rpx; }
+  .mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--lb-mask); justify-content: center; align-items: center; }
+  .dialog { width: 560rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 40rpx 32rpx 24rpx 32rpx; }
+  .dlg-title { font-size: 32rpx; font-weight: bold; color: var(--lb-text-1); text-align: center; }
+  .dlg-content { font-size: 27rpx; color: var(--lb-text-2); margin-top: 20rpx; text-align: center; line-height: 40rpx; }
   .dlg-actions { flex-direction: row; justify-content: space-between; margin-top: 36rpx; }
-  .dlg-btn { width: 230rpx; height: 80rpx; line-height: 80rpx; text-align: center; font-size: 29rpx; color: #6B7280; background-color: #F5F4F2; border-radius: 40rpx; }
-  .dlg-btn-ok { color: #FFFFFF; background-color: #FF7A6B; }
+  .dlg-btn { width: 230rpx; height: 80rpx; line-height: 80rpx; text-align: center; font-size: 29rpx; color: var(--lb-text-2); background-color: var(--lb-fill); border-radius: 40rpx; }
+  .dlg-btn-ok { color: #FFFFFF; background-image: linear-gradient(135deg, #F0709D, #DC3D75); }
+
+  @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+  @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
+  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms both; }
+  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both; }
+  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms both; }
+  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-fade { animation: lb-fade 200ms ease-out both; }
+  .lb-press { opacity: 0.72; transform: scale(0.98); }
 </style>

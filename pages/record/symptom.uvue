@@ -1,26 +1,26 @@
 <template>
-  <view class="page">
-    <view class="card">
+  <view class="page" :class="themeClass()">
+    <view class="card lb-rise">
       <text class="label">身体信号（可多选）</text>
       <view class="chips">
         <view class="chip" v-for="(s, i) in symptoms" :key="i"
           :class="selected.indexOf(s.code) >= 0 ? (s.redline ? 'chip-danger-active' : 'chip-active') : ''"
-          @click="toggle(s.code)">
+          hover-class="lb-press" hover-stay-time="120" @click="toggle(s.code)">
           <text class="chip-text" :class="selected.indexOf(s.code) >= 0 ? 'chip-text-active' : ''">{{ s.label }}</text>
         </view>
       </view>
       <text class="label">严重程度</text>
       <view class="sev-row">
-        <view class="sev" v-for="(s, i) in ['轻', '中', '重']" :key="i" :class="severity == i + 1 ? 'sev-active' : ''" @click="severity = i + 1">
+        <view class="sev" v-for="(s, i) in ['轻', '中', '重']" :key="i" :class="severity == i + 1 ? 'sev-active' : ''" hover-class="lb-press" hover-stay-time="120" @click="severity = i + 1">
           <text class="sev-text">{{ s }}</text>
         </view>
       </view>
       <text class="label">备注（选填）</text>
       <textarea class="note" v-model="note" placeholder="什么时候明显、有没有缓解的办法…" placeholder-class="ph" :maxlength="200" />
     </view>
-    <button class="btn-save" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</button>
+    <button class="btn-save lb-rise-1" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</button>
 
-    <view class="redline" v-if="redlineMsg.length > 0">
+    <view class="redline lb-rise-2" v-if="redlineMsg.length > 0">
       <text class="redline-title">⚠️ 请注意</text>
       <text class="redline-msg">{{ redlineMsg }}</text>
       <text class="redline-note">本提示仅描述现象与常规建议，不构成诊断</text>
@@ -32,6 +32,7 @@
   import { ref } from 'vue'
   import { luckyRecord } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
+  import { themeClass } from '../../store/themeStore.uts'
 
   type Sym = { code: string, label: string, redline: boolean }
 
@@ -86,24 +87,37 @@
 </script>
 
 <style>
-  .page { flex: 1; background-color: #F7F6F4; padding: 24rpx; align-items: center; }
-  .card { width: 700rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 40rpx; margin-top: 40rpx; }
-  .label { font-size: 28rpx; color: #1F2329; margin: 24rpx 0 16rpx 0; }
+  @import '../../theme.scss';
+  .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
+  .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 40rpx; margin-top: 40rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
+  .label { font-size: 28rpx; color: var(--lb-text-1); margin: 24rpx 0 16rpx 0; }
   .chips { flex-direction: row; flex-wrap: wrap; }
-  .chip { background-color: #F7F6F4; border-radius: 32rpx; padding: 14rpx 28rpx; margin: 8rpx; }
-  .chip-active { background-color: #FFEFEA; }
-  .chip-danger-active { background-color: #FDECEC; }
-  .chip-text { font-size: 26rpx; color: #6B7280; }
-  .chip-text-active { color: #E5484D; font-weight: bold; }
+  .chip { background-color: var(--lb-fill); border-radius: 36rpx; padding: 14rpx 28rpx; margin: 8rpx; transition: all 160ms ease-out; }
+  .chip-active { background-color: var(--lb-primary-soft); }
+  .chip-danger-active { background-color: var(--lb-danger-soft); }
+  .chip-text { font-size: 26rpx; color: var(--lb-text-2); }
+  .chip-text-active { color: var(--lb-danger); font-weight: bold; }
   .sev-row { flex-direction: row; margin-bottom: 16rpx; }
-  .sev { width: 120rpx; height: 72rpx; background-color: #F7F6F4; border-radius: 16rpx; align-items: center; justify-content: center; margin-right: 16rpx; }
-  .sev-active { background-color: #FFEFEA; }
-  .sev-text { font-size: 26rpx; color: #6B7280; }
-  .note { width: 620rpx; height: 160rpx; background-color: #F7F6F4; border-radius: 16rpx; padding: 20rpx; font-size: 26rpx; color: #1F2329; }
-  .ph { color: #A3AAB5; }
-  .btn-save { width: 700rpx; height: 96rpx; line-height: 96rpx; background-color: #FF7A6B; color: #FFFFFF; font-size: 32rpx; border-radius: 44rpx; margin-top: 48rpx; }
-  .redline { width: 700rpx; background-color: #FDECEC; border-radius: 24rpx; padding: 40rpx; margin-top: 32rpx; }
-  .redline-title { font-size: 34rpx; font-weight: bold; color: #E5484D; }
-  .redline-msg { font-size: 28rpx; color: #1F2329; margin-top: 16rpx; }
-  .redline-note { font-size: 20rpx; color: #A3AAB5; margin-top: 24rpx; }
+  .sev { width: 120rpx; height: 72rpx; background-color: var(--lb-fill); border-radius: 24rpx; align-items: center; justify-content: center; margin-right: 16rpx; transition: all 160ms ease-out; }
+  .sev-active { background-color: var(--lb-primary-soft); }
+  .sev-text { font-size: 26rpx; color: var(--lb-text-2); }
+  .note { width: 620rpx; height: 160rpx; background-color: var(--lb-fill); border-radius: 24rpx; padding: 20rpx; font-size: 26rpx; color: var(--lb-text-1); }
+  .ph { color: var(--lb-text-3); }
+  .btn-save { width: 702rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 48rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
+  .redline { width: 702rpx; background-color: var(--lb-danger-soft); border-radius: 36rpx; padding: 40rpx; margin-top: 32rpx; }
+  .redline-title { font-size: 34rpx; font-weight: bold; color: var(--lb-danger); }
+  .redline-msg { font-size: 28rpx; color: var(--lb-text-1); margin-top: 16rpx; }
+  .redline-note { font-size: 20rpx; color: var(--lb-text-3); margin-top: 24rpx; }
+
+  @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+  @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
+  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms both; }
+  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both; }
+  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms both; }
+  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-fade { animation: lb-fade 200ms ease-out both; }
+  .lb-press { opacity: 0.72; transform: scale(0.98); }
 </style>

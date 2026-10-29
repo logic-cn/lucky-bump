@@ -1,16 +1,18 @@
 <template>
-  <view class="page">
-    <view class="card">
+  <view class="page" :class="themeClass()">
+    <view class="card lb-rise">
       <text class="label">今天想记录点什么</text>
       <textarea class="ta" v-model="text" placeholder="今天宝宝胎动很活跃…（支持纯文字，照片能力随 V1.1 上线）" placeholder-class="ph" :maxlength="2000" />
       <text class="label">此刻心情</text>
       <view class="mood-row">
-        <text class="mood" v-for="(m, i) in moods" :key="i" :class="mood == m.value ? 'mood-active' : ''" @click="mood = m.value">{{ m.emoji }}</text>
+        <view class="mood-item" v-for="(m, i) in moods" :key="i" hover-class="lb-press" hover-stay-time="120">
+          <text class="mood" :class="mood == m.value ? 'mood-active' : ''" @click="mood = m.value">{{ m.emoji }}</text>
+        </view>
       </view>
     </view>
-    <button class="btn-save" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存这条日记' }}</button>
+    <button class="btn-save lb-rise-1" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存这条日记' }}</button>
 
-    <view class="list" v-if="diaries.length > 0">
+    <view class="list lb-rise-2" v-if="diaries.length > 0">
       <text class="list-title">过去的记录</text>
       <view class="diary" v-for="(d, i) in diaries" :key="i">
         <text class="diary-date">{{ d.getString('date') ?? '' }} · {{ moodEmoji(d.getString('mood') ?? 'normal') }}</text>
@@ -25,6 +27,7 @@
   import { onLoad } from '@dcloudio/uni-app'
   import { luckyRecord } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
+  import { themeClass } from '../../store/themeStore.uts'
 
   type Mood = { value: string, emoji: string }
 
@@ -66,18 +69,32 @@
 </script>
 
 <style>
-  .page { flex: 1; background-color: #F7F6F4; padding: 24rpx; align-items: center; }
-  .card { width: 700rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 40rpx; margin-top: 40rpx; }
-  .label { font-size: 28rpx; color: #1F2329; margin: 16rpx 0 16rpx 0; }
-  .ta { width: 620rpx; height: 240rpx; background-color: #F7F6F4; border-radius: 16rpx; padding: 24rpx; font-size: 28rpx; color: #1F2329; }
-  .ph { color: #A3AAB5; }
+  @import '../../theme.scss';
+  .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
+  .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 40rpx; margin-top: 40rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
+  .label { font-size: 28rpx; color: var(--lb-text-1); margin: 16rpx 0 16rpx 0; }
+  .ta { width: 620rpx; height: 240rpx; background-color: var(--lb-fill); border-radius: 24rpx; padding: 24rpx; font-size: 28rpx; color: var(--lb-text-1); }
+  .ph { color: var(--lb-text-3); }
   .mood-row { flex-direction: row; justify-content: space-between; }
-  .mood { font-size: 48rpx; padding: 8rpx; }
-  .mood-active { background-color: #FFEFEA; border-radius: 16rpx; }
-  .btn-save { width: 700rpx; height: 96rpx; line-height: 96rpx; background-color: #FF7A6B; color: #FFFFFF; font-size: 32rpx; border-radius: 44rpx; margin-top: 32rpx; }
-  .list { width: 700rpx; margin-top: 40rpx; }
-  .list-title { font-size: 28rpx; font-weight: bold; color: #1F2329; margin-bottom: 16rpx; }
-  .diary { background-color: #FFFFFF; border-radius: 24rpx; padding: 32rpx; margin-bottom: 16rpx; }
-  .diary-date { font-size: 22rpx; color: #A3AAB5; }
-  .diary-text { font-size: 28rpx; color: #1F2329; margin-top: 12rpx; }
+  .mood-item { transition: all 160ms ease-out; }
+  .mood { font-size: 48rpx; padding: 8rpx; transition: all 160ms ease-out; }
+  .mood-active { background-color: var(--lb-primary-soft); border-radius: 24rpx; }
+  .btn-save { width: 702rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 32rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
+  .list { width: 702rpx; margin-top: 40rpx; }
+  .list-title { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 16rpx; }
+  .diary { background-color: var(--lb-card); border-radius: 36rpx; padding: 32rpx; margin-bottom: 16rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
+  .diary-date { font-size: 22rpx; color: var(--lb-text-3); }
+  .diary-text { font-size: 28rpx; color: var(--lb-text-1); margin-top: 12rpx; }
+
+  @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+  @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
+  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms both; }
+  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both; }
+  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms both; }
+  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-fade { animation: lb-fade 200ms ease-out both; }
+  .lb-press { opacity: 0.72; transform: scale(0.98); }
 </style>

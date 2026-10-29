@@ -35,3 +35,21 @@ export function appInit() {
   appState.token = loadTokenFromStorage()
   appState.booted = true
 }
+
+/* ---------------- 应用锁（隐私页开关 + 启动遮罩，见 pages/account/lock.uvue） ---------------- */
+
+/** 会话内解锁标记（仅内存，冷启动重置） */
+export const lockState = {
+  unlocked: false
+}
+
+export function markUnlocked(): void {
+  lockState.unlocked = true
+}
+
+/** 需要弹锁：开关已开启且本次会话未解锁。开关只在登录后的隐私页可开，未登录场景天然不触发。 */
+export function isLockRequired(): boolean {
+  const raw = uni.getStorageSync('lb_app_lock')
+  const enabled = raw != null && (raw == true || (raw as string) == 'true')
+  return enabled && !lockState.unlocked
+}

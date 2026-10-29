@@ -6,6 +6,7 @@
     { "path": "pages/learn/learn", "style": { "navigationBarTitleText": "知识" } },
     { "path": "pages/me/me", "style": { "navigationBarTitleText": "我的" } },
     { "path": "pages/onboarding/onboarding", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/account/lock", "style": { "navigationBarTitleText": "解锁" } },
     { "path": "pages/account/login", "style": { "navigationBarTitleText": "登录" } },
     { "path": "pages/account/register", "style": { "navigationBarTitleText": "注册" } },
     { "path": "pages/record/weight", "style": { "navigationBarTitleText": "体重" } },
@@ -40,14 +41,14 @@
   "globalStyle": {
     "navigationBarTextStyle": "black",
     "navigationBarTitleText": "幸孕记",
-    "navigationBarBackgroundColor": "#F7F6F4",
-    "backgroundColor": "#F7F6F4"
+    "navigationBarBackgroundColor": "#F8F4F5",
+    "backgroundColor": "#F8F4F5"
   },
   "tabBar": {
-    "color": "#A3AAB5",
-    "selectedColor": "#FF7A6B",
+    "color": "#B6AABB",
+    "selectedColor": "#E4537F",
     "backgroundColor": "#FFFFFF",
-    "borderStyle": "black",
+    "borderStyle": "white",
     "list": [
       { "pagePath": "pages/index/index", "text": "今天", "iconPath": "static/tab/today.png", "selectedIconPath": "static/tab/today-active.png" },
       { "pagePath": "pages/record/record", "text": "记录", "iconPath": "static/tab/record.png", "selectedIconPath": "static/tab/record-active.png" },

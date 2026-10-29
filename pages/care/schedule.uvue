@@ -1,13 +1,13 @@
 <template>
-  <view class="page">
-    <view class="card" v-if="items.length == 0">
+  <view class="page" :class="themeClass()">
+    <view class="card lb-rise" v-if="items.length == 0">
       <text class="empty">还没有产检排程</text>
       <text class="hint">按国内常规产检指南自动生成（28 周前每 4 周、28-35 周每 2 周、36 周起每周）</text>
-      <button class="btn-save" :disabled="generating" @click="generate">{{ generating ? '生成中…' : '一键生成产检排程' }}</button>
+      <button class="btn-save" hover-class="lb-press" hover-stay-time="120" :disabled="generating" @click="generate">{{ generating ? '生成中…' : '一键生成产检排程' }}</button>
       <text class="hint" v-if="highRiskNote.length > 0">{{ highRiskNote }}</text>
     </view>
 
-    <view class="item" v-for="(it, i) in items" :key="i" @click="openVisit(it)">
+    <view class="item lb-rise-1" v-for="(it, i) in items" :key="i" hover-class="lb-press" hover-stay-time="120" @click="openVisit(it)">
       <view class="dot-col">
         <view class="dot" :class="dotClass(it)" />
         <view class="dot-line" v-if="i < items.length - 1" />
@@ -29,6 +29,7 @@
   import { onLoad, onShow } from '@dcloudio/uni-app'
   import { luckyCare } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
+  import { themeClass } from '../../store/themeStore.uts'
 
   const items = ref<UTSJSONObject[]>([])
   const generating = ref<boolean>(false)
@@ -74,26 +75,39 @@
 </script>
 
 <style>
-  .page { flex: 1; background-color: #F7F6F4; padding: 24rpx; align-items: center; }
-  .card { width: 700rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 40rpx; margin-top: 40rpx; align-items: center; }
-  .empty { font-size: 32rpx; font-weight: bold; color: #1F2329; }
-  .hint { font-size: 22rpx; color: #A3AAB5; margin: 16rpx 0; text-align: center; }
-  .btn-save { width: 620rpx; height: 96rpx; line-height: 96rpx; background-color: #FF7A6B; color: #FFFFFF; font-size: 32rpx; border-radius: 44rpx; margin-top: 24rpx; }
-  .item { width: 700rpx; flex-direction: row; background-color: #FFFFFF; border-radius: 24rpx; padding: 28rpx; margin-bottom: 16rpx; }
+  @import '../../theme.scss';
+  .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
+  .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 40rpx; margin-top: 40rpx; align-items: center; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
+  .empty { font-size: 32rpx; font-weight: bold; color: var(--lb-text-1); }
+  .hint { font-size: 22rpx; color: var(--lb-text-3); margin: 16rpx 0; text-align: center; }
+  .btn-save { width: 620rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 24rpx; transition: all 160ms ease-out; }
+  .item { width: 702rpx; flex-direction: row; background-color: var(--lb-card); border-radius: 36rpx; padding: 28rpx; margin-bottom: 16rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); transition: all 160ms ease-out; }
   .dot-col { align-items: center; margin-right: 20rpx; }
   .dot { width: 20rpx; height: 20rpx; border-radius: 10rpx; margin-top: 10rpx; }
-  .dot-done { background-color: #4CAF7D; }
-  .dot-due { background-color: #E5484D; }
-  .dot-upcoming { background-color: #D8DCE1; }
-  .dot-line { width: 2px; flex: 1; background-color: #EDEBE8; margin: 8rpx 0; }
+  .dot-done { background-color: var(--lb-success); }
+  .dot-due { background-color: var(--lb-danger); }
+  .dot-upcoming { background-color: var(--lb-line-deep); }
+  .dot-line { width: 2px; flex: 1; background-color: var(--lb-line); margin: 8rpx 0; }
   .item-body { flex: 1; }
   .row1 { flex-direction: row; align-items: center; }
-  .item-title { font-size: 30rpx; font-weight: bold; color: #1F2329; flex: 1; }
-  .status { font-size: 20rpx; border-radius: 10rpx; padding: 4rpx 12rpx; }
-  .status-done { color: #4CAF7D; background-color: #E8F5EE; }
-  .status-due { color: #E5484D; background-color: #FDECEC; }
-  .status-upcoming { color: #A3AAB5; background-color: #F2F1EF; }
-  .status-skipped { color: #A3AAB5; background-color: #F2F1EF; }
-  .item-sub { font-size: 24rpx; color: #A3AAB5; margin-top: 8rpx; }
-  .item-prep { font-size: 22rpx; color: #6B7280; margin-top: 8rpx; }
+  .item-title { font-size: 30rpx; font-weight: bold; color: var(--lb-text-1); flex: 1; }
+  .status { font-size: 20rpx; border-radius: 16rpx; padding: 4rpx 12rpx; }
+  .status-done { color: var(--lb-success); background-color: var(--lb-success-soft); }
+  .status-due { color: var(--lb-danger); background-color: var(--lb-danger-soft); }
+  .status-upcoming { color: var(--lb-text-3); background-color: var(--lb-line); }
+  .status-skipped { color: var(--lb-text-3); background-color: var(--lb-line); }
+  .item-sub { font-size: 24rpx; color: var(--lb-text-3); margin-top: 8rpx; }
+  .item-prep { font-size: 22rpx; color: var(--lb-text-2); margin-top: 8rpx; }
+
+  @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+  @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
+  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms both; }
+  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both; }
+  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms both; }
+  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-fade { animation: lb-fade 200ms ease-out both; }
+  .lb-press { opacity: 0.72; transform: scale(0.98); }
 </style>

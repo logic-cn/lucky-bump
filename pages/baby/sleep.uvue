@@ -1,33 +1,33 @@
 <template>
-  <view class="page">
-    <view class="card">
+  <view class="page" :class="themeClass()">
+    <view class="card lb-rise">
       <text class="label">类型</text>
       <view class="opts">
-        <view class="opt" :class="kind == 'nap' ? 'opt-active' : ''" @click="kind = 'nap'"><text class="opt-text" :class="kind == 'nap' ? 'opt-text-active' : ''">🌞 小睡</text></view>
-        <view class="opt" :class="kind == 'night' ? 'opt-active' : ''" @click="kind = 'night'"><text class="opt-text" :class="kind == 'night' ? 'opt-text-active' : ''">🌙 夜觉</text></view>
+        <view class="opt" :class="kind == 'nap' ? 'opt-active' : ''" hover-class="lb-press" hover-stay-time="120" @click="kind = 'nap'"><text class="opt-text" :class="kind == 'nap' ? 'opt-text-active' : ''">🌞 小睡</text></view>
+        <view class="opt" :class="kind == 'night' ? 'opt-active' : ''" hover-class="lb-press" hover-stay-time="120" @click="kind = 'night'"><text class="opt-text" :class="kind == 'night' ? 'opt-text-active' : ''">🌙 夜觉</text></view>
       </view>
       <text class="label">入睡时间</text>
       <view class="row2">
-        <picker class="half" mode="date" :value="startDate" @change="onStartDateChange"><view class="pick-box"><text class="pick-text">{{ startDate }}</text></view></picker>
-        <picker class="half" mode="time" :value="startTime" @change="onStartTimeChange"><view class="pick-box"><text class="pick-text">{{ startTime }}</text></view></picker>
+        <picker class="half" mode="date" :value="startDate" @change="onStartDateChange"><view class="pick-box" hover-class="lb-press" hover-stay-time="120"><text class="pick-text">{{ startDate }}</text></view></picker>
+        <picker class="half" mode="time" :value="startTime" @change="onStartTimeChange"><view class="pick-box" hover-class="lb-press" hover-stay-time="120"><text class="pick-text">{{ startTime }}</text></view></picker>
       </view>
       <text class="label">醒来时间</text>
       <view class="row2">
-        <picker class="half" mode="date" :value="endDate" @change="onEndDateChange"><view class="pick-box"><text class="pick-text">{{ endDate }}</text></view></picker>
-        <picker class="half" mode="time" :value="endTime" @change="onEndTimeChange"><view class="pick-box"><text class="pick-text">{{ endTime }}</text></view></picker>
+        <picker class="half" mode="date" :value="endDate" @change="onEndDateChange"><view class="pick-box" hover-class="lb-press" hover-stay-time="120"><text class="pick-text">{{ endDate }}</text></view></picker>
+        <picker class="half" mode="time" :value="endTime" @change="onEndTimeChange"><view class="pick-box" hover-class="lb-press" hover-stay-time="120"><text class="pick-text">{{ endTime }}</text></view></picker>
       </view>
       <view class="wak-row" v-if="kind == 'night'">
         <text class="label-inline">夜醒次数</text>
         <view class="stepper">
-          <view class="step-btn" @click="wakings = Math.max(0, wakings - 1)"><text class="step-text">−</text></view>
+          <view class="step-btn" hover-class="lb-press" hover-stay-time="120" @click="wakings = Math.max(0, wakings - 1)"><text class="step-text">−</text></view>
           <text class="step-num">{{ wakings }}</text>
-          <view class="step-btn" @click="wakings = Math.min(20, wakings + 1)"><text class="step-text">＋</text></view>
+          <view class="step-btn" hover-class="lb-press" hover-stay-time="120" @click="wakings = Math.min(20, wakings + 1)"><text class="step-text">＋</text></view>
         </view>
       </view>
     </view>
-    <button class="btn-save" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</button>
+    <button class="btn-save lb-rise-1" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</button>
 
-    <view class="card" v-if="summary != null">
+    <view class="card lb-rise-2" v-if="summary != null">
       <text class="card-title">今天共睡了 {{ sleepTotalMin }} 分钟 · 夜醒 {{ nightWakings }} 次</text>
       <text class="hint">0-3 月参考 14-17 小时/天，个体差异大；我们只记录，不评判</text>
     </view>
@@ -39,6 +39,7 @@
   import { onLoad } from '@dcloudio/uni-app'
   import { luckyBaby } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
+  import { themeClass } from '../../store/themeStore.uts'
 
   function pad(n: number): string { return n < 10 ? '0' + n : '' + n }
 
@@ -96,25 +97,38 @@
 </script>
 
 <style>
-  .page { flex: 1; background-color: #F7F6F4; padding: 24rpx; align-items: center; }
-  .card { width: 700rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 40rpx; margin-top: 24rpx; align-items: center; }
-  .label { font-size: 26rpx; color: #1F2329; margin: 16rpx 0 12rpx 0; }
+  @import '../../theme.scss';
+  .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
+  .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 40rpx; margin-top: 24rpx; align-items: center; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
+  .label { font-size: 26rpx; color: var(--lb-text-1); margin: 16rpx 0 12rpx 0; }
   .opts { flex-direction: row; }
-  .opt { background-color: #F7F6F4; border-radius: 16rpx; padding: 16rpx 32rpx; margin: 8rpx; }
-  .opt-active { background-color: #FFEFEA; }
-  .opt-text { font-size: 26rpx; color: #6B7280; }
-  .opt-text-active { color: #FF7A6B; font-weight: bold; }
+  .opt { background-color: var(--lb-fill); border-radius: 24rpx; padding: 16rpx 32rpx; margin: 8rpx; transition: all 160ms ease-out; }
+  .opt-active { background-color: var(--lb-primary-soft); }
+  .opt-text { font-size: 26rpx; color: var(--lb-text-2); }
+  .opt-text-active { color: var(--lb-primary); font-weight: bold; }
   .row2 { flex-direction: row; }
   .half { flex: 1; margin: 0 8rpx; }
-  .pick-box { width: 300rpx; height: 88rpx; background-color: #F7F6F4; border-radius: 16rpx; align-items: center; justify-content: center; }
-  .pick-text { font-size: 28rpx; color: #1F2329; }
+  .pick-box { width: 300rpx; height: 88rpx; background-color: var(--lb-fill); border-radius: 24rpx; align-items: center; justify-content: center; transition: all 160ms ease-out; }
+  .pick-text { font-size: 28rpx; color: var(--lb-text-1); }
   .wak-row { flex-direction: row; align-items: center; margin-top: 16rpx; }
-  .label-inline { font-size: 26rpx; color: #1F2329; flex: 1; }
+  .label-inline { font-size: 26rpx; color: var(--lb-text-1); flex: 1; }
   .stepper { flex-direction: row; align-items: center; }
-  .step-btn { width: 80rpx; height: 80rpx; border-radius: 20rpx; background-color: #FFEFEA; align-items: center; justify-content: center; }
-  .step-text { font-size: 40rpx; color: #E85D4E; }
-  .step-num { width: 120rpx; text-align: center; font-size: 40rpx; font-weight: bold; color: #1F2329; }
-  .btn-save { width: 700rpx; height: 96rpx; line-height: 96rpx; background-color: #FF7A6B; color: #FFFFFF; font-size: 32rpx; border-radius: 44rpx; margin-top: 32rpx; }
-  .card-title { font-size: 28rpx; font-weight: bold; color: #1F2329; }
-  .hint { font-size: 20rpx; color: #A3AAB5; margin-top: 12rpx; }
+  .step-btn { width: 80rpx; height: 80rpx; border-radius: 24rpx; background-color: var(--lb-primary-soft); align-items: center; justify-content: center; transition: all 160ms ease-out; }
+  .step-text { font-size: 40rpx; color: var(--lb-primary-deep); }
+  .step-num { width: 120rpx; text-align: center; font-size: 40rpx; font-weight: bold; color: var(--lb-text-1); }
+  .btn-save { width: 702rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 32rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
+  .card-title { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); }
+  .hint { font-size: 20rpx; color: var(--lb-text-3); margin-top: 12rpx; }
+
+  @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+  @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
+  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms both; }
+  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both; }
+  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms both; }
+  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-fade { animation: lb-fade 200ms ease-out both; }
+  .lb-press { opacity: 0.72; transform: scale(0.98); }
 </style>

@@ -83,9 +83,11 @@ class Canvas:
             y = y0 + (y1 - y0) * i / steps
             self.circle(x, y, t / 2, rgba)
 
-GRAY = (163, 170, 181, 255)
-CORAL = (255, 122, 107, 255)
+GRAY = (182, 170, 187, 255)      # 未选中：藕灰紫
+ROSE = (228, 83, 127, 255)       # 选中：蔷薇玫瑰
 WHITE = (255, 255, 255, 255)
+GRAD_A = (240, 112, 157, 255)    # 应用图标渐变起点
+GRAD_B = (220, 61, 117, 255)     # 应用图标渐变终点
 
 def tab_icon(name, color, out):
     S = 81
@@ -96,18 +98,18 @@ def tab_icon(name, color, out):
         for k in range(8):
             ang = k * math.pi / 4
             c.line(cx + 20 * math.cos(ang), cy + 20 * math.sin(ang),
-                   cx + 27 * math.cos(ang), cy + 27 * math.sin(ang), 4, color)
-    elif name == "record":    # 加号
-        c.round_rect(cx - 6, 12, cx + 6, 69, 6, color)
-        c.round_rect(12, cy - 6, 69, cy + 6, 6, color)
+                   cx + 27 * math.cos(ang), cy + 27 * math.sin(ang), 5, color)
+    elif name == "record":    # 加号（圆角更饱满）
+        c.round_rect(cx - 6, 14, cx + 6, 67, 6, color)
+        c.round_rect(14, cy - 6, 67, cy + 6, 6, color)
     elif name == "data":      # 柱状图
         for i, hgt in enumerate([22, 34, 46]):
             x = 18 + i * 17
-            c.round_rect(x, cy + 18 - hgt, x + 12, cy + 18, 4, color)
+            c.round_rect(x, cy + 18 - hgt, x + 12, cy + 18, 6, color)
         c.line(16, cy + 18, 65, cy + 18, 3, color)
     elif name == "learn":     # 书本
-        c.round_rect(14, 18, 40, 63, 3, color)
-        c.round_rect(41, 18, 67, 63, 3, color)
+        c.round_rect(14, 18, 40, 63, 5, color)
+        c.round_rect(41, 18, 67, 63, 5, color)
         c.rect(39.5, 18, 41.5, 63, (255, 255, 255, 255))
     elif name == "me":        # 人像
         c.circle(cx, 28, 11, color)
@@ -115,9 +117,21 @@ def tab_icon(name, color, out):
     write_png(out, S, S, c.pix)
 
 def app_icon(out):
+    # 玫瑰渐变圆角方块 + 白色爱心（对角线性插值）
     S = 192
     c = Canvas(S, S)
-    c.round_rect(8, 8, S - 8, S - 8, 40, CORAL)
+    r0, r1 = 48, 48
+    for y in range(8, S - 8):
+        for x in range(8, S - 8):
+            dx = max(8 + r0 - x, x - (S - 8 - r0 - 1), 0)
+            dy = max(8 + r0 - y, y - (S - 8 - r0 - 1), 0)
+            d = math.hypot(dx, dy)
+            a = max(0.0, min(1.0, r0 - d + 0.5))
+            if a <= 0:
+                continue
+            t = (x + y) / (2.0 * S)
+            rgba = tuple(int(GRAD_A[i] + (GRAD_B[i] - GRAD_A[i]) * t) for i in range(3)) + (255,)
+            c.blend(x, y, rgba, a)
     c.heart(S / 2, S / 2 + 8, 42, WHITE)
     write_png(out, S, S, c.pix)
 
@@ -125,6 +139,6 @@ if __name__ == "__main__":
     root = os.path.join(os.path.dirname(__file__), "..", "static")
     for name in ["today", "record", "data", "learn", "me"]:
         tab_icon(name, GRAY, os.path.join(root, "tab", f"{name}.png"))
-        tab_icon(name, CORAL, os.path.join(root, "tab", f"{name}-active.png"))
+        tab_icon(name, ROSE, os.path.join(root, "tab", f"{name}-active.png"))
     app_icon(os.path.join(root, "icon.png"))
     print("icons generated:", sorted(os.listdir(os.path.join(root, "tab"))))

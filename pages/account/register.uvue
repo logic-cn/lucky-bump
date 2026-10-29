@@ -1,23 +1,31 @@
 <template>
-  <view class="page">
-    <text class="title">创建账号</text>
-    <view class="card">
+  <view class="page" :class="themeClass()">
+    <view class="logo-head lb-rise">
+      <view class="logo-mark">
+        <text class="logo-emoji">🤰</text>
+      </view>
+      <text class="title">创建账号</text>
+    </view>
+    <view class="card lb-rise-1">
       <input class="input" v-model="username" placeholder="用户名（4-24 位字母数字）" placeholder-class="ph" />
       <input class="input" v-model="nickname" placeholder="昵称（选填）" placeholder-class="ph" />
       <input class="input" v-model="password" :password="true" placeholder="密码（8-32 位）" placeholder-class="ph" />
       <input class="input" v-model="password2" :password="true" placeholder="再输入一次密码" placeholder-class="ph" />
-      <button class="btn-primary" :disabled="loading" @click="doRegister">{{ loading ? '注册中…' : '注册并开始' }}</button>
+      <button class="btn-primary" hover-class="lb-press" hover-stay-time="120" :disabled="loading" @click="doRegister">{{ loading ? '注册中…' : '注册并开始' }}</button>
       <view class="row-links">
-        <text class="link" @click="goLogin">已有账号？去登录</text>
+        <view class="link-wrap" hover-class="lb-press" hover-stay-time="120">
+          <text class="link" @click="goLogin">已有账号？去登录</text>
+        </view>
       </view>
     </view>
-    <text class="agreement">注册即代表同意《用户协议》与《隐私政策》。你的同房记录、情绪自评等隐私数据永远仅本人可见。</text>
+    <text class="agreement lb-rise-2">注册即代表同意《用户协议》与《隐私政策》。你的同房记录、情绪自评等隐私数据永远仅本人可见。</text>
   </view>
 </template>
 
 <script setup lang="ts">
   import { ref } from 'vue'
   import { luckyId, applyLoginResult } from '../../utils/request.uts'
+  import { themeClass } from '../../store/themeStore.uts'
 
   const username = ref<string>('')
   const nickname = ref<string>('')
@@ -44,13 +52,30 @@
 </script>
 
 <style>
-  .page { flex: 1; background-color: #F7F6F4; align-items: center; padding-top: 100rpx; }
-  .title { font-size: 44rpx; font-weight: bold; color: #1F2329; margin-bottom: 48rpx; }
-  .card { width: 640rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 48rpx 40rpx; }
-  .input { height: 96rpx; border-bottom-width: 1px; border-bottom-color: #EDEBE8; font-size: 28rpx; margin-bottom: 32rpx; padding: 0 8rpx; }
-  .ph { color: #A3AAB5; }
-  .btn-primary { background-color: #FF7A6B; color: #FFFFFF; font-size: 32rpx; height: 96rpx; line-height: 96rpx; border-radius: 44rpx; margin-top: 16rpx; }
+  @import '../../theme.scss';
+  .page { flex: 1; background-color: var(--lb-bg); align-items: center; padding-top: 100rpx; }
+  .logo-head { align-items: center; margin-bottom: 48rpx; }
+  .logo-mark { width: 128rpx; height: 128rpx; border-radius: 36rpx; background-image: linear-gradient(135deg, #F0709D, #DC3D75); box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); align-items: center; justify-content: center; margin-bottom: 28rpx; }
+  .logo-emoji { font-size: 64rpx; }
+  .title { font-size: 56rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 0; }
+  .card { width: 640rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 48rpx 40rpx; }
+  .input { height: 96rpx; border-bottom-width: 1px; border-bottom-color: var(--lb-line); font-size: 28rpx; margin-bottom: 32rpx; padding: 0 8rpx; }
+  .ph { color: var(--lb-text-3); }
+  .btn-primary { background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; height: 96rpx; line-height: 96rpx; border-radius: 48rpx; margin-top: 16rpx; transition: all 160ms ease-out; }
   .row-links { align-items: center; margin-top: 32rpx; }
-  .link { color: #FF7A6B; font-size: 26rpx; }
-  .agreement { font-size: 20rpx; color: #A3AAB5; margin-top: 48rpx; width: 640rpx; text-align: center; }
+  .link-wrap { padding: 8rpx 24rpx; border-radius: 24rpx; transition: all 160ms ease-out; }
+  .link { color: var(--lb-primary); font-size: 26rpx; }
+  .agreement { font-size: 20rpx; color: var(--lb-text-3); margin-top: 48rpx; width: 640rpx; text-align: center; }
+
+  @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+  @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
+  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms both; }
+  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both; }
+  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms both; }
+  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-fade { animation: lb-fade 200ms ease-out both; }
+  .lb-press { opacity: 0.72; transform: scale(0.98); }
 </style>

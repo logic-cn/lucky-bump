@@ -1,18 +1,18 @@
 <template>
-  <view class="page">
-    <view class="metrics">
-      <view class="metric" v-for="(m, i) in metricList" :key="i" :class="code == m.value ? 'metric-active' : ''" @click="select(m.value)">
+  <view class="page" :class="themeClass()">
+    <view class="metrics lb-rise">
+      <view class="metric" v-for="(m, i) in metricList" :key="i" :class="code == m.value ? 'metric-active' : ''" hover-class="lb-press" hover-stay-time="120" @click="select(m.value)">
         <text class="metric-text" :class="code == m.value ? 'metric-text-active' : ''">{{ m.label }}</text>
       </view>
     </view>
 
-    <view class="card" v-if="points.length == 0">
+    <view class="card lb-rise-1" v-if="points.length == 0">
       <text class="empty">还没有 {{ metricLabel }} 记录</text>
       <text class="hint">去"记录"页添加第一条吧</text>
     </view>
 
     <!-- 简易条形趋势图（UTS 自绘，V1.1 换 lbc-chart-line 折线） -->
-    <view class="card" v-if="points.length > 0">
+    <view class="card lb-rise-1" v-if="points.length > 0">
       <text class="card-title">{{ metricLabel }} · 最近 {{ points.length }} 条</text>
       <view class="chart">
         <view class="bar-col" v-for="(p, i) in points" :key="i">
@@ -23,7 +23,7 @@
       </view>
     </view>
 
-    <view class="card" v-if="points.length > 0">
+    <view class="card lb-rise-2" v-if="points.length > 0">
       <text class="card-title">记录明细</text>
       <view class="d-row" v-for="(p, i) in points" :key="i">
         <text class="d-date">{{ p.date }}</text>
@@ -38,6 +38,7 @@
   import { onLoad, onShow } from '@dcloudio/uni-app'
   import { luckyData } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
+  import { themeClass } from '../../store/themeStore.uts'
 
   type MOpt = { value: string, label: string }
   type Pt = { date: string, y: number, display: string }
@@ -89,22 +90,35 @@
 </script>
 
 <style>
-  .page { flex: 1; background-color: #F7F6F4; padding: 24rpx; align-items: center; }
+  @import '../../theme.scss';
+  .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
   .metrics { flex-direction: row; flex-wrap: wrap; margin-bottom: 8rpx; }
-  .metric { background-color: #FFFFFF; border-radius: 32rpx; padding: 14rpx 28rpx; margin: 8rpx; }
-  .metric-active { background-color: #FF7A6B; }
-  .metric-text { font-size: 26rpx; color: #6B7280; }
+  .metric { background-color: var(--lb-card); border-radius: 999rpx; padding: 14rpx 28rpx; margin: 8rpx; transition: all 160ms ease-out; }
+  .metric-active { background-color: var(--lb-primary); }
+  .metric-text { font-size: 26rpx; color: var(--lb-text-2); }
   .metric-text-active { color: #FFFFFF; font-weight: bold; }
-  .card { width: 700rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 32rpx; margin-top: 16rpx; align-items: center; }
-  .card-title { font-size: 28rpx; font-weight: bold; color: #1F2329; margin-bottom: 20rpx; align-self: flex-start; }
-  .empty { font-size: 28rpx; color: #6B7280; margin-top: 16rpx; }
-  .hint { font-size: 22rpx; color: #A3AAB5; margin-top: 12rpx; }
+  .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 32rpx; margin-top: 16rpx; align-items: center; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
+  .card-title { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 20rpx; align-self: flex-start; }
+  .empty { font-size: 28rpx; color: var(--lb-text-2); margin-top: 16rpx; }
+  .hint { font-size: 22rpx; color: var(--lb-text-3); margin-top: 12rpx; }
   .chart { flex-direction: row; align-items: flex-end; justify-content: space-between; width: 636rpx; height: 240rpx; }
   .bar-col { align-items: center; width: 80rpx; }
-  .bar { width: 32rpx; background-color: #FF9C90; border-radius: 8rpx 8rpx 0 0; }
-  .bar-date { font-size: 18rpx; color: #A3AAB5; margin-top: 8rpx; }
-  .bar-val { font-size: 18rpx; color: #E85D4E; font-weight: bold; }
-  .d-row { flex-direction: row; width: 636rpx; padding: 12rpx 0; border-bottom-width: 1px; border-bottom-color: #F2F1EF; }
-  .d-date { flex: 1; font-size: 26rpx; color: #A3AAB5; }
-  .d-val { font-size: 26rpx; color: #1F2329; }
+  .bar { width: 32rpx; background-color: #F5A3C3; border-radius: 8rpx 8rpx 0 0; }
+  .bar-date { font-size: 18rpx; color: var(--lb-text-3); margin-top: 8rpx; }
+  .bar-val { font-size: 18rpx; color: var(--lb-primary-deep); font-weight: bold; }
+  .d-row { flex-direction: row; width: 636rpx; padding: 12rpx 0; border-bottom-width: 1px; border-bottom-color: var(--lb-line); }
+  .d-date { flex: 1; font-size: 26rpx; color: var(--lb-text-3); }
+  .d-val { font-size: 26rpx; color: var(--lb-text-1); }
+
+  @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+  @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
+  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms both; }
+  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both; }
+  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms both; }
+  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-fade { animation: lb-fade 200ms ease-out both; }
+  .lb-press { opacity: 0.72; transform: scale(0.98); }
 </style>

@@ -1,6 +1,6 @@
 <template>
-  <view class="page">
-    <view class="card">
+  <view class="page" :class="themeClass()">
+    <view class="card lb-rise">
       <text class="label">血压（mmHg）</text>
       <view class="bp-row">
         <view class="bp-col">
@@ -15,9 +15,9 @@
       </view>
       <input class="hr-input" type="number" v-model="hr" placeholder="心率（选填），如 72" placeholder-class="ph" />
     </view>
-    <button class="btn-save" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</button>
+    <button class="btn-save lb-rise-1" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</button>
 
-    <view class="redline" v-if="redlineLevel.length > 0" :class="redlineLevel == 'critical' ? 'redline-critical' : 'redline-warn'">
+    <view class="redline lb-rise-2" v-if="redlineLevel.length > 0" :class="redlineLevel == 'critical' ? 'redline-critical' : 'redline-warn'">
       <text class="redline-title">{{ redlineLevel == 'critical' ? '⚠️ 请立即就医' : '⚠️ 需要关注' }}</text>
       <text class="redline-msg">{{ redlineMsg }}</text>
       <text class="redline-action">{{ redlineAction }}</text>
@@ -30,6 +30,7 @@
   import { ref } from 'vue'
   import { luckyRecord } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
+  import { themeClass } from '../../store/themeStore.uts'
 
   const sbp = ref<string>('')
   const dbp = ref<string>('')
@@ -68,22 +69,35 @@
 </script>
 
 <style>
-  .page { flex: 1; background-color: #F7F6F4; padding: 24rpx; align-items: center; }
-  .card { width: 700rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 48rpx 40rpx; align-items: center; margin-top: 40rpx; }
-  .label { font-size: 30rpx; color: #1F2329; margin-bottom: 40rpx; }
+  @import '../../theme.scss';
+  .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
+  .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 48rpx 40rpx; align-items: center; margin-top: 40rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
+  .label { font-size: 30rpx; color: var(--lb-text-1); margin-bottom: 40rpx; }
   .bp-row { flex-direction: row; align-items: flex-end; }
   .bp-col { align-items: center; }
-  .bp-input { width: 200rpx; height: 120rpx; font-size: 64rpx; font-weight: bold; color: #1F2329; text-align: center; border-bottom-width: 2px; border-bottom-color: #FF7A6B; }
-  .bp-cap { font-size: 22rpx; color: #A3AAB5; margin-top: 12rpx; }
-  .bp-slash { font-size: 56rpx; color: #C9CDD4; margin: 0 24rpx 40rpx 24rpx; }
-  .ph { color: #E3E5E8; }
-  .hr-input { width: 500rpx; height: 80rpx; font-size: 28rpx; color: #1F2329; text-align: center; background-color: #F7F6F4; border-radius: 16rpx; margin-top: 40rpx; }
-  .btn-save { width: 700rpx; height: 96rpx; line-height: 96rpx; background-color: #FF7A6B; color: #FFFFFF; font-size: 32rpx; border-radius: 44rpx; margin-top: 48rpx; }
-  .redline { width: 700rpx; border-radius: 24rpx; padding: 40rpx; margin-top: 32rpx; }
-  .redline-critical { background-color: #FDECEC; }
-  .redline-warn { background-color: #FDF3E3; }
-  .redline-title { font-size: 34rpx; font-weight: bold; color: #E5484D; }
-  .redline-msg { font-size: 28rpx; color: #1F2329; margin-top: 16rpx; }
-  .redline-action { font-size: 30rpx; font-weight: bold; color: #E5484D; margin-top: 16rpx; }
-  .redline-note { font-size: 20rpx; color: #A3AAB5; margin-top: 24rpx; }
+  .bp-input { width: 200rpx; height: 140rpx; font-size: 88rpx; font-weight: bold; color: var(--lb-text-1); text-align: center; border-bottom-width: 2px; border-bottom-color: var(--lb-primary); }
+  .bp-cap { font-size: 22rpx; color: var(--lb-text-3); margin-top: 12rpx; }
+  .bp-slash { font-size: 56rpx; color: var(--lb-arrow); margin: 0 24rpx 40rpx 24rpx; }
+  .ph { color: var(--lb-text-3); }
+  .hr-input { width: 500rpx; height: 80rpx; font-size: 28rpx; color: var(--lb-text-1); text-align: center; background-color: var(--lb-fill); border-radius: 24rpx; margin-top: 40rpx; }
+  .btn-save { width: 702rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 48rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
+  .redline { width: 702rpx; border-radius: 36rpx; padding: 40rpx; margin-top: 32rpx; }
+  .redline-critical { background-color: var(--lb-danger-soft); }
+  .redline-warn { background-color: var(--lb-warning-soft); }
+  .redline-title { font-size: 34rpx; font-weight: bold; color: var(--lb-danger); }
+  .redline-msg { font-size: 28rpx; color: var(--lb-text-1); margin-top: 16rpx; }
+  .redline-action { font-size: 30rpx; font-weight: bold; color: var(--lb-danger); margin-top: 16rpx; }
+  .redline-note { font-size: 20rpx; color: var(--lb-text-3); margin-top: 24rpx; }
+
+  @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+  @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
+  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms both; }
+  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both; }
+  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms both; }
+  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-fade { animation: lb-fade 200ms ease-out both; }
+  .lb-press { opacity: 0.72; transform: scale(0.98); }
 </style>
