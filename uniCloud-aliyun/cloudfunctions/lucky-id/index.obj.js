@@ -15,11 +15,9 @@ const tokenCol = 'lb-token'
 /** 从调用上下文取 token 并校验（优先 uni_id_token 通道，兼容测试注入） */
 async function requireUser() {
   const token = (this.__mockToken != null) ? this.__mockToken : this.getUniIdToken()
-  const v = auth.verifyToken(token)
-  if (!v.ok) return auth.fail(v.errCode, v.errMsg)
-  const tr = await db.call(this).collection(tokenCol).where({ jti: v.jti, revoked: false }).get()
-  if (tr.data.length === 0) return auth.fail('TOKEN_INVALID', 'token 已失效')
-  return auth.ok({ uid: v.uid })
+  const r = await auth.requireUser(db.call(this), token)
+  if (!r.ok) return auth.fail(r.errCode, r.errMsg)
+  return auth.ok({ uid: r.uid })
 }
 
 module.exports = {
@@ -63,6 +61,10 @@ module.exports = {
     const res = await db.call(this).collection(usersCol).where({ username }).get()
     if (res.data.length === 0) return auth.fail('ACCOUNT_NOT_EXISTS', '账号不存在')
     const user = res.data[0]
+    if (user.status === 'pending_deletion') {
+      const left = Math.max(0, Math.ceil(((user.purge_at || 0) - Date.now()) / (24 * 3600 * 1000)))
+      return auth.fail('ACCOUNT_PENDING_DELETION', '账号处于注销冷静期，可撤回后继续使用', { daysLeft: left })
+    }
     if (user.status !== 'active') return auth.fail('ACCOUNT_DISABLED', '账号不可用')
     if (!auth.verifyPassword(password, user.password)) return auth.fail('PASSWORD_ERROR', '用户名或密码错误')
     await db.call(this).collection(usersCol).doc(user._id).update({ last_login_date: Date.now() })
@@ -116,6 +118,46 @@ module.exports = {
     const np = String(params.newPassword || '')
     if (np.length < 8 || np.length > 32) return auth.fail('PARAM_ERROR', '新密码长度需 8-32 位')
     await db.call(this).collection(usersCol).doc(g.uid).update({ password: auth.hashPassword(np) })
+    return auth.ok()
+  },
+
+  /**
+   * 申请注销：30 天冷静期后彻底删除（docs/03）。
+   * 立即生效：吊销全部 token、拦截登录；数据保留，供冷静期内撤回。
+   */
+  async requestDeletion(params = {}) {
+    const g = await requireUser.call(this)
+    if (g.errCode !== 0) return g
+    const res = await db.call(this).collection(usersCol).doc(g.uid).get()
+    const user = res.data[0]
+    if (!user) return auth.fail('ACCOUNT_NOT_EXISTS', '用户不存在')
+    if (!auth.verifyPassword(String(params.password || ''), user.password)) {
+      return auth.fail('PASSWORD_ERROR', '密码错误')
+    }
+    const now = Date.now()
+    const purgeAt = now + 30 * 24 * 3600 * 1000
+    await db.call(this).collection(usersCol).doc(g.uid).update({
+      status: 'pending_deletion', deletion_requested_at: now, purge_at: purgeAt
+    })
+    // 立即吊销该用户全部 token
+    await db.call(this).collection(tokenCol).where({ uid: g.uid }).update({ revoked: true })
+    return auth.ok({ purgeAt })
+  },
+
+  /**
+   * 撤回注销：冷静期内的用户可用账号密码撤回（此时无有效 token）。
+   */
+  async cancelDeletion(params = {}) {
+    const username = String(params.username || '').trim()
+    const password = String(params.password || '')
+    const res = await db.call(this).collection(usersCol).where({ username }).get()
+    const user = res.data[0]
+    if (!user) return auth.fail('ACCOUNT_NOT_EXISTS', '账号不存在')
+    if (!auth.verifyPassword(password, user.password)) return auth.fail('PASSWORD_ERROR', '用户名或密码错误')
+    if (user.status !== 'pending_deletion') return auth.fail('STATE_ERROR', '账号未处于注销冷静期')
+    await db.call(this).collection(usersCol).doc(user._id).update({
+      status: 'active', deletion_requested_at: 0, purge_at: 0
+    })
     return auth.ok()
   }
 }

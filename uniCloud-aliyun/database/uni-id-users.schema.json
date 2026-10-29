@@ -40,7 +40,8 @@
       "title": "状态",
       "enum": [
         "active",
-        "disabled"
+        "disabled",
+        "pending_deletion"
       ]
     },
     "register_date": {
@@ -50,6 +51,14 @@
     "last_login_date": {
       "bsonType": "long",
       "title": "最后登录"
+    },
+    "deletion_requested_at": {
+      "bsonType": "long",
+      "title": "申请注销时间"
+    },
+    "purge_at": {
+      "bsonType": "long",
+      "title": "计划物理删除时间"
     }
   },
   "permission": {

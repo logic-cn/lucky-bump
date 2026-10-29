@@ -1,28 +1,48 @@
 <template>
-  <view class="page">
-    <view class="logo-wrap">
+  <view class="page" :class="themeClass()">
+    <view class="logo-wrap lb-rise">
+      <view class="logo-mark">
+        <text class="logo-emoji">🤰</text>
+      </view>
       <text class="logo-title">幸孕记</text>
       <text class="logo-sub">从备孕到育儿，一条不断档的生命记录</text>
     </view>
-    <view class="card">
+    <view class="card lb-rise-1">
       <input class="input" v-model="username" placeholder="用户名（4-24 位字母数字）" placeholder-class="ph" />
       <input class="input" v-model="password" :password="true" placeholder="密码（8-32 位）" placeholder-class="ph" />
-      <button class="btn-primary" :disabled="loading" @click="doLogin">{{ loading ? '登录中…' : '登录' }}</button>
+      <button class="btn-primary" hover-class="lb-press" hover-stay-time="120" :disabled="loading" @click="doLogin">{{ loading ? '登录中…' : '登录' }}</button>
       <view class="row-links">
-        <text class="link" @click="goRegister">没有账号？去注册</text>
+        <view class="link-wrap" hover-class="lb-press" hover-stay-time="120">
+          <text class="link" @click="goRegister">没有账号？去注册</text>
+        </view>
       </view>
     </view>
-    <text class="agreement">登录即代表同意《用户协议》与《隐私政策》；你的健康数据仅用于为你服务。</text>
+    <text class="agreement lb-rise-2">登录即代表同意《用户协议》与《隐私政策》；你的健康数据仅用于为你服务。</text>
+
+    <!-- 注销冷静期提示 + 撤回入口（自绘弹窗，web 端 uni.showModal 回调不触发，见 docs/08 §8） -->
+    <view class="mask lb-fade" v-if="pendingVisible">
+      <view class="dialog lb-pop">
+        <text class="dlg-title">账号处于注销冷静期</text>
+        <text class="dlg-content">该账号申请了注销，冷静期（申请后 30 天）内可随时撤回，期满将彻底删除。撤回后恢复正常使用，全部数据原样保留。</text>
+        <view class="dlg-actions">
+          <text class="dlg-btn" @click="pendingVisible = false">暂不处理</text>
+          <text class="dlg-btn dlg-btn-ok" @click="onCancelDeletion">{{ canceling ? '撤回中…' : '撤回注销并登录' }}</text>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
 <script setup lang="ts">
   import { ref } from 'vue'
   import { luckyId, applyLoginResult } from '../../utils/request.uts'
+  import { themeClass } from '../../store/themeStore.uts'
 
   const username = ref<string>('')
   const password = ref<string>('')
   const loading = ref<boolean>(false)
+  const pendingVisible = ref<boolean>(false)
+  const canceling = ref<boolean>(false)
 
   function goRegister() { uni.navigateTo({ url: '/pages/account/register' }) }
   async function afterLogin() {
@@ -41,23 +61,68 @@
       applyLoginResult(res)
       await afterLogin()
     } catch (e) {
-      uni.showToast({ title: (e as Error).message, icon: 'none' })
+      // 请求层把 errCode 转成了 Error message；ACCOUNT_PENDING_DELETION 的文案含"注销冷静期"，
+      // 据此给出撤回入口（lucky-id login 返回 daysLeft，见云对象实现）
+      const msg = (e as Error).message
+      if (msg.indexOf('注销冷静期') >= 0) {
+        pendingVisible.value = true
+      } else {
+        uni.showToast({ title: msg, icon: 'none' })
+      }
     } finally {
       loading.value = false
+    }
+  }
+  async function onCancelDeletion() {
+    if (canceling.value) return
+    canceling.value = true
+    try {
+      await luckyId('cancelDeletion', { username: username.value, password: password.value } as UTSJSONObject)
+      pendingVisible.value = false
+      canceling.value = false
+      uni.showToast({ title: '已撤回，正在登录…', icon: 'none' })
+      // 撤回成功后重新走登录流程
+      await doLogin()
+    } catch (e) {
+      canceling.value = false
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
     }
   }
 </script>
 
 <style>
-  .page { flex: 1; background-color: #F7F6F4; align-items: center; padding-top: 120rpx; }
+  @import '../../theme.scss';
+  .page { flex: 1; background-color: var(--lb-bg); align-items: center; padding-top: 120rpx; }
   .logo-wrap { align-items: center; margin-bottom: 64rpx; }
-  .logo-title { font-size: 56rpx; font-weight: bold; color: #1F2329; }
-  .logo-sub { font-size: 24rpx; color: #6B7280; margin-top: 16rpx; }
-  .card { width: 640rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 48rpx 40rpx; }
-  .input { height: 96rpx; border-bottom-width: 1px; border-bottom-color: #EDEBE8; font-size: 28rpx; margin-bottom: 32rpx; padding: 0 8rpx; }
-  .ph { color: #A3AAB5; }
-  .btn-primary { background-color: #FF7A6B; color: #FFFFFF; font-size: 32rpx; height: 96rpx; line-height: 96rpx; border-radius: 44rpx; margin-top: 16rpx; }
+  .logo-mark { width: 128rpx; height: 128rpx; border-radius: 36rpx; background-image: linear-gradient(135deg, #F0709D, #DC3D75); box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); align-items: center; justify-content: center; margin-bottom: 28rpx; }
+  .logo-emoji { font-size: 64rpx; }
+  .logo-title { font-size: 56rpx; font-weight: bold; color: var(--lb-text-1); }
+  .logo-sub { font-size: 24rpx; color: var(--lb-text-2); margin-top: 16rpx; }
+  .card { width: 640rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 48rpx 40rpx; }
+  .input { height: 96rpx; border-bottom-width: 1px; border-bottom-color: var(--lb-line); font-size: 28rpx; margin-bottom: 32rpx; padding: 0 8rpx; }
+  .ph { color: var(--lb-text-3); }
+  .btn-primary { background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; height: 96rpx; line-height: 96rpx; border-radius: 48rpx; margin-top: 16rpx; transition: all 160ms ease-out; }
   .row-links { align-items: center; margin-top: 32rpx; }
-  .link { color: #FF7A6B; font-size: 26rpx; }
-  .agreement { font-size: 20rpx; color: #A3AAB5; margin-top: 48rpx; width: 640rpx; text-align: center; }
+  .link-wrap { padding: 8rpx 24rpx; border-radius: 24rpx; transition: all 160ms ease-out; }
+  .link { color: var(--lb-primary); font-size: 26rpx; }
+  .agreement { font-size: 20rpx; color: var(--lb-text-3); margin-top: 48rpx; width: 640rpx; text-align: center; }
+  .mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--lb-mask); justify-content: center; align-items: center; }
+  .dialog { width: 560rpx; background-color: var(--lb-card); border-radius: 24rpx; padding: 40rpx 32rpx 24rpx 32rpx; }
+  .dlg-title { font-size: 32rpx; font-weight: bold; color: var(--lb-text-1); text-align: center; }
+  .dlg-content { font-size: 27rpx; color: var(--lb-text-2); margin-top: 20rpx; text-align: center; line-height: 40rpx; }
+  .dlg-actions { flex-direction: row; justify-content: space-between; margin-top: 36rpx; }
+  .dlg-btn { width: 230rpx; height: 80rpx; line-height: 80rpx; text-align: center; font-size: 27rpx; color: var(--lb-text-2); background-color: var(--lb-fill); border-radius: 40rpx; }
+  .dlg-btn-ok { color: #FFFFFF; background-color: var(--lb-primary); }
+
+  @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+  @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
+  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms both; }
+  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both; }
+  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms both; }
+  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-fade { animation: lb-fade 200ms ease-out both; }
+  .lb-press { opacity: 0.72; transform: scale(0.98); }
 </style>
