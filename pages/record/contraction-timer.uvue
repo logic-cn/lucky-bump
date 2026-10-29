@@ -1,15 +1,23 @@
 <template>
-  <view class="page">
-    <view class="hero">
+  <view class="page" :class="themeClass()">
+    <!-- 遗留会话提示（超 24h 不自动接续，交用户决定） -->
+    <view class="stale lb-pop" v-if="staleVisible">
+      <text class="stale-text">{{ staleInfo }}</text>
+      <view class="stale-actions">
+        <text class="stale-btn" @click="finishStale">结束并保存</text>
+        <text class="stale-btn stale-btn-ghost" @click="discardStale">放弃这条</text>
+      </view>
+    </view>
+    <view class="hero lb-rise">
       <text class="timer-text">{{ display }}</text>
       <text class="hint" v-if="!running && lastInterval.length > 0">上次间隔 {{ lastInterval }} · 上次时长 {{ lastDur }}</text>
       <text class="hint" v-else-if="!running">宫缩开始时按下按钮，结束时再按一次</text>
     </view>
-    <view class="big-btn" :class="running ? 'big-btn-stop' : ''" @click="toggle">
+    <view class="big-btn lb-rise-1" :class="running ? 'big-btn-stop' : ''" hover-class="lb-press" hover-stay-time="120" @click="toggle">
       <text class="big-btn-text">{{ running ? '结束' : (startedAt > 0 ? '继续' : '开始') }}</text>
     </view>
 
-    <view class="card" v-if="recent.length > 0">
+    <view class="card lb-rise-2" v-if="recent.length > 0">
       <text class="card-title">最近宫缩（间隔 / 时长）</text>
       <view class="row" v-for="(r, i) in recent" :key="i">
         <text class="row-time">{{ r.time }}</text>
@@ -17,7 +25,7 @@
       </view>
     </view>
 
-    <view class="redline" v-if="advice.length > 0">
+    <view class="redline lb-rise-3" v-if="advice.length > 0">
       <text class="redline-title">⚠️ 宫缩提示</text>
       <text class="redline-msg">{{ advice }}</text>
       <text class="redline-note">破水时无论有无宫缩：立即平躺并前往医院</text>
@@ -27,9 +35,10 @@
 
 <script setup lang="ts">
   import { computed, ref } from 'vue'
-  import { onLoad, onUnload } from '@dcloudio/uni-app'
+  import { onLoad, onShow, onUnload } from '@dcloudio/uni-app'
   import { luckyRecord } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
+  import { themeClass } from '../../store/themeStore.uts'
 
   type Row = { time: string, dur: string, startedAt: number }
 
@@ -43,6 +52,11 @@
   const lastDur = ref('')
   const recent = ref<Row[]>([])
   const advice = ref('')
+  const staleVisible = ref(false)
+  const staleInfo = ref('')
+  const staleSessionId = ref('')
+
+  const STALE_MS = 24 * 3600 * 1000
 
   function fmt(s: number): string {
     const m = Math.floor(s / 60), sec = s % 60
@@ -108,25 +122,87 @@
     }
   }
 
+  /** 恢复未结束会话：服务端为准，避免锁屏/被杀后计时丢失（docs/03 M5） */
+  async function restoreActive() {
+    if (running.value || staleVisible.value) return
+    try {
+      const res = await luckyRecord('listTrackers', { journeyId: journeyState.journeyId, type: 'contraction', activeOnly: true } as UTSJSONObject)
+      const arr = res.getArray<UTSJSONObject>('sessions') ?? []
+      if (arr.length == 0) return
+      const s = arr[0] as UTSJSONObject
+      const startedAtVal = s.getNumber('started_at') ?? 0
+      const sessionIdVal = s.getString('_id') ?? ''
+      if (startedAtVal <= 0 || sessionIdVal.length == 0) return
+      const elapsed = Date.now() - startedAtVal
+      if (elapsed > STALE_MS) {
+        // 超 24 小时视为遗忘：不自动接续，交由用户决定，避免污染 5-1-1 判定
+        staleSessionId.value = sessionIdVal
+        staleInfo.value = `检测到未结束的计时（${Math.floor(elapsed / 3600000)} 小时前开始）`
+        staleVisible.value = true
+        return
+      }
+      startedAt.value = startedAtVal
+      sessionId.value = sessionIdVal
+      running.value = true
+      now.value = Date.now()
+      clearInterval(tickTimer)
+      tickTimer = setInterval(() => { now.value = Date.now() }, 500)
+    } catch (e) { /* 恢复失败不阻塞页面 */ }
+  }
+
+  async function finishStale() {
+    try {
+      await luckyRecord('stopTracker', { journeyId: journeyState.journeyId, sessionId: staleSessionId.value } as UTSJSONObject)
+    } catch (e) { /* 已结束等情况忽略 */ }
+    staleVisible.value = false
+    load()
+  }
+
+  function discardStale() {
+    staleVisible.value = false
+    if (staleSessionId.value.length > 0) {
+      luckyRecord('stopTracker', { journeyId: journeyState.journeyId, sessionId: staleSessionId.value } as UTSJSONObject).catch(() => {})
+    }
+  }
+
   onLoad(() => { load() })
+  onShow(() => { restoreActive() })
   onUnload(() => { if (running.value) clearInterval(tickTimer) })
 </script>
 
 <style>
-  .page { flex: 1; background-color: #F7F6F4; padding: 24rpx; align-items: center; }
+  @import '../../theme.scss';
+  .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
   .hero { align-items: center; margin-top: 40rpx; }
-  .timer-text { font-size: 96rpx; font-weight: bold; color: #1F2329; }
-  .hint { font-size: 24rpx; color: #A3AAB5; margin-top: 16rpx; }
-  .big-btn { width: 320rpx; height: 320rpx; border-radius: 160rpx; background-color: #FF7A6B; align-items: center; justify-content: center; margin: 40rpx 0; }
-  .big-btn-stop { background-color: #E5484D; }
+  .timer-text { font-size: 96rpx; font-weight: bold; color: var(--lb-text-1); }
+  .hint { font-size: 24rpx; color: var(--lb-text-3); margin-top: 16rpx; }
+  .big-btn { width: 320rpx; height: 320rpx; border-radius: 160rpx; background-image: linear-gradient(135deg, #F0709D, #DC3D75); align-items: center; justify-content: center; margin: 40rpx 0; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); transition: all 160ms ease-out; }
+  .big-btn-stop { background-image: none; background-color: var(--lb-danger); box-shadow: 0 12rpx 32rpx rgba(229,72,77,0.28); }
   .big-btn-text { font-size: 44rpx; font-weight: bold; color: #FFFFFF; }
-  .card { width: 700rpx; background-color: #FFFFFF; border-radius: 24rpx; padding: 32rpx; }
-  .card-title { font-size: 28rpx; font-weight: bold; color: #1F2329; margin-bottom: 16rpx; }
+  .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 32rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
+  .card-title { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 16rpx; }
   .row { flex-direction: row; padding: 12rpx 0; }
-  .row-time { width: 160rpx; font-size: 26rpx; color: #A3AAB5; }
-  .row-dur { font-size: 26rpx; color: #1F2329; }
-  .redline { width: 700rpx; background-color: #FDECEC; border-radius: 24rpx; padding: 40rpx; margin-top: 24rpx; }
-  .redline-title { font-size: 34rpx; font-weight: bold; color: #E5484D; }
-  .redline-msg { font-size: 28rpx; color: #1F2329; margin-top: 16rpx; }
-  .redline-note { font-size: 20rpx; color: #A3AAB5; margin-top: 24rpx; }
+  .row-time { width: 160rpx; font-size: 26rpx; color: var(--lb-text-3); }
+  .row-dur { font-size: 26rpx; color: var(--lb-text-1); }
+  .redline { width: 702rpx; background-color: var(--lb-danger-soft); border-radius: 36rpx; padding: 40rpx; margin-top: 24rpx; }
+  .redline-title { font-size: 34rpx; font-weight: bold; color: var(--lb-danger); }
+  .redline-msg { font-size: 28rpx; color: var(--lb-text-1); margin-top: 16rpx; }
+  .redline-note { font-size: 20rpx; color: var(--lb-text-3); margin-top: 24rpx; }
+  .stale { width: 702rpx; background-color: var(--lb-warning-soft); border-radius: 24rpx; padding: 28rpx 32rpx; margin-bottom: 24rpx; }
+  .stale-text { font-size: 26rpx; color: var(--lb-text-1); }
+  .stale-actions { flex-direction: row; margin-top: 20rpx; }
+  .stale-btn { font-size: 26rpx; color: #FFFFFF; background-color: var(--lb-primary); border-radius: 32rpx; padding: 12rpx 28rpx; margin-right: 20rpx; }
+  .stale-btn-ghost { color: var(--lb-text-2); background-color: var(--lb-fill); }
+
+  @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+  @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
+  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms both; }
+  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both; }
+  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms both; }
+  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-fade { animation: lb-fade 200ms ease-out both; }
+  .lb-press { opacity: 0.72; transform: scale(0.98); }
 </style>
