@@ -104,9 +104,8 @@ function babySizeRef(week) {
 /* ---------------- 权限与查询 ---------------- */
 async function requireUser() {
   const token = (this.__mockToken != null) ? this.__mockToken : this.getUniIdToken()
-  const v = auth.verifyToken(token)
-  if (!v.ok) return null
-  return v.uid
+  const r = await auth.requireUser(uniCloud.database(), token)
+  return r.ok ? r.uid : null
 }
 async function ownedJourney(uid, journeyId) {
   const res = await uniCloud.database().collection(col).where({ _id: journeyId, user_id: uid }).get()

@@ -22,3 +22,6 @@ uniCloud-aliyun/cloudfunctions/common/uni-config-center/uni-id/config.json
 
 # vendor 进云对象的公共模块副本（由 scripts/sync_commons.sh 生成，含真实密钥配置，不入库）
 uniCloud-aliyun/cloudfunctions/*/common/
+
+# 超能力流程 scratch 目录（SDD 台账，不入库）
+.superpowers/

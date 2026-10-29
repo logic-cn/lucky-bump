@@ -11,8 +11,8 @@ const MONTH = 30.4375 * DAY
 function db() { return uniCloud.database() }
 async function requireUser() {
   const token = (this.__mockToken != null) ? this.__mockToken : this.getUniIdToken()
-  const v = auth.verifyToken(token)
-  return v.ok ? v.uid : null
+  const r = await auth.requireUser(db.call(this), token)
+  return r.ok ? r.uid : null
 }
 async function accessibleJourney(uid, journeyId, need = 'read') {
   const { role, journey } = await auth.resolveJourneyAccess(db.call(this), uid, journeyId)
@@ -50,13 +50,20 @@ module.exports = {
   async listRules(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const res = await db.call(this).collection('lb-reminder-rules').where({ journey_id: params.journeyId }).orderBy('created_at', 'desc').get()
+    const j = await accessibleJourney.call(this, uid, params.journeyId)
+    if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
+    const res = await db.call(this).collection('lb-reminder-rules').where({ journey_id: j._id }).orderBy('created_at', 'desc').get()
     return auth.ok({ rules: res.data })
   },
 
   async updateRule(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
+    const r = await db.call(this).collection('lb-reminder-rules').doc(String(params.ruleId)).get()
+    const rule = r.data[0]
+    if (!rule) return auth.fail('NOT_FOUND', '提醒不存在')
+    const j = await accessibleJourney.call(this, uid, rule.journey_id, 'write')
+    if (!j) return auth.fail('NOT_FOUND', '提醒不存在')
     const patch = {}
     if (params.enabled !== undefined) patch.enabled = !!params.enabled
     if (params.title) patch.title = String(params.title).slice(0, 30)
@@ -77,6 +84,10 @@ module.exports = {
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
     const j = await accessibleJourney.call(this, uid, params.journeyId)
     if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
+    // 产品红线：哀伤模式零孕育类待办（docs/03）
+    if (j.stage_code === 'MOURNING') {
+      return auth.ok({ todos: [], serverDate: dateOf(Date.now()) })
+    }
     const now = Date.now()
     const horizon = now + Math.min(60, Math.max(1, +params.days || 14)) * DAY
     const todos = []

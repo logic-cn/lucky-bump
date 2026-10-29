@@ -15,8 +15,8 @@ const ROLES = ['admin', 'recorder', 'viewer']
 function db() { return uniCloud.database() }
 async function requireUser() {
   const token = (this.__mockToken != null) ? this.__mockToken : this.getUniIdToken()
-  const v = auth.verifyToken(token)
-  return v.ok ? v.uid : null
+  const r = await auth.requireUser(db.call(this), token)
+  return r.ok ? r.uid : null
 }
 async function ownedJourney(uid, journeyId) {
   const r = await db.call(this).collection('lb-journeys').where({ _id: journeyId, user_id: uid }).get()

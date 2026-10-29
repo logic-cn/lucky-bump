@@ -19,8 +19,8 @@ function db() { return uniCloud.database() }
 /* ---------------- 权限 ---------------- */
 async function requireUser() {
   const token = (this.__mockToken != null) ? this.__mockToken : this.getUniIdToken()
-  const v = auth.verifyToken(token)
-  return v.ok ? v.uid : null
+  const r = await auth.requireUser(db.call(this), token)
+  return r.ok ? r.uid : null
 }
 async function accessibleJourney(uid, journeyId, need = 'read') {
   const { role, journey } = await auth.resolveJourneyAccess(db.call(this), uid, journeyId)
@@ -206,13 +206,13 @@ module.exports = {
   async listMetrics(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const q = { journey_id: params.journeyId }
+    const j = await accessibleJourney.call(this, uid, params.journeyId)
+    if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
+    const q = { journey_id: j._id }
     if (params.code) q.code = params.code
-    let chain = db.call(this).collection(LOGS).where(q).orderBy('ts', 'desc').limit(Math.min(500, +params.limit || 100))
-    const res = await chain.get()
-    let data = res.data
-    const role = await accessRole.call(this, uid, params.journeyId)
-    if (role !== 'owner') data = data.filter(d => d.sensitivity !== 'strict')
+    const res = await db.call(this).collection(LOGS).where(q).orderBy('ts', 'desc').limit(Math.min(500, +params.limit || 100)).get()
+    // strict 红线：只保留本人（安全审计 C2/C4）
+    let data = auth.visibilityFilter(res.data, uid)
     if (params.from || params.to) {
       const from = params.from ? parseDate(params.from) : 0
       const to = params.to ? parseDate(params.to) + DAY : Infinity
@@ -224,10 +224,13 @@ module.exports = {
   async latestMetrics(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
+    const j = await accessibleJourney.call(this, uid, params.journeyId)
+    if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
     const out = {}
     for (const code of params.codes || []) {
-      const r = await db.call(this).collection(LOGS).where({ journey_id: params.journeyId, code }).orderBy('ts', 'desc').limit(1).get()
-      out[code] = r.data[0] || null
+      // 取 5 条再过滤：strict 记录被剔除后仍能取到下一条可见记录
+      const r = await db.call(this).collection(LOGS).where({ journey_id: j._id, code }).orderBy('ts', 'desc').limit(5).get()
+      out[code] = auth.visibilityFilter(r.data, uid)[0] || null
     }
     return auth.ok({ latest: out })
   },
@@ -263,12 +266,13 @@ module.exports = {
   async listCycleEvents(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const res = await db.call(this).collection(EVENTS).where({ journey_id: params.journeyId }).orderBy('ts', 'desc').limit(200).get()
-    const cycles = await db.call(this).collection(CYCLES).where({ user_id: uid, journey_id: params.journeyId }).orderBy('start_date', 'asc').get()
-    const role = await accessRole.call(this, uid, params.journeyId)
-    const events = role === 'owner' ? res.data : res.data.filter(e => e.sensitivity !== 'strict')
-    const ownCycles = role === 'owner' ? cycles.data : cycles.data
-    return auth.ok({ events, cycles: ownCycles, prediction: predictCycle(cycles.data, events) })
+    const j = await accessibleJourney.call(this, uid, params.journeyId)
+    if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
+    const res = await db.call(this).collection(EVENTS).where({ journey_id: j._id }).orderBy('ts', 'desc').limit(200).get()
+    const cycles = await db.call(this).collection(CYCLES).where({ user_id: uid, journey_id: j._id }).orderBy('start_date', 'asc').get()
+    // strict 红线：只保留本人（安全审计 C3/C4）
+    const events = auth.visibilityFilter(res.data, uid)
+    return auth.ok({ events, cycles: cycles.data, prediction: predictCycle(cycles.data, events) })
   },
 
   /** 计时器开始（宫缩/亲喂/吸奶） */
@@ -309,8 +313,11 @@ module.exports = {
   async listTrackers(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const q = { journey_id: params.journeyId }
+    const j = await accessibleJourney.call(this, uid, params.journeyId)
+    if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
+    const q = { journey_id: j._id }
     if (params.type) q.type = params.type
+    if (params.activeOnly) q.ended_at = 0
     const res = await db.call(this).collection(TRACKERS).where(q).orderBy('started_at', 'desc').limit(200).get()
     return auth.ok({ sessions: res.data })
   },
@@ -319,7 +326,9 @@ module.exports = {
   async contractionAdvice(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const res = await db.call(this).collection(TRACKERS).where({ journey_id: params.journeyId, type: 'contraction' }).orderBy('started_at', 'desc').limit(100).get()
+    const j = await accessibleJourney.call(this, uid, params.journeyId)
+    if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
+    const res = await db.call(this).collection(TRACKERS).where({ journey_id: j._id, type: 'contraction' }).orderBy('started_at', 'desc').limit(100).get()
     return auth.ok(evaluate511(res.data))
   },
 

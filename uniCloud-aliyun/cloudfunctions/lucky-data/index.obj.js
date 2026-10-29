@@ -8,8 +8,8 @@ const DAY = 24 * 3600 * 1000
 function db() { return uniCloud.database() }
 async function requireUser() {
   const token = (this.__mockToken != null) ? this.__mockToken : this.getUniIdToken()
-  const v = auth.verifyToken(token)
-  return v.ok ? v.uid : null
+  const r = await auth.requireUser(db.call(this), token)
+  return r.ok ? r.uid : null
 }
 async function accessibleJourney(uid, journeyId, need = 'read') {
   const { role, journey } = await auth.resolveJourneyAccess(db.call(this), uid, journeyId)
@@ -62,6 +62,17 @@ module.exports = {
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
     const j = await accessibleJourney.call(this, uid, params.journeyId)
     if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
+    // 产品红线：哀伤模式零孕育类待办（docs/03）；保持返回结构完整，前端依赖 journey/latest 字段
+    if (j.stage_code === 'MOURNING') {
+      return auth.ok({
+        journey: {
+          _id: j._id, stage: 'MOURNING', edd: j.edd ? dateOf(j.edd) : '', lmpDate: j.lmp_date ? dateOf(j.lmp_date) : '',
+          deliveryDate: j.delivery_date ? dateOf(j.delivery_date) : '', fetusCount: j.fetus_count || 1,
+          highRisk: !!j.high_risk, title: j.title || ''
+        },
+        todos: [], latest: {}, weightDelta: null, serverDate: dateOf(Date.now())
+      })
+    }
     const now = Date.now()
     const horizon = now + 14 * DAY
     const todos = []
@@ -125,15 +136,19 @@ module.exports = {
     const limit = Math.min(200, +params.limit || 60)
     const events = []
     const metrics = await db.call(this).collection('lb-daily-logs').where({ journey_id: j._id }).orderBy('ts', 'desc').limit(limit).get()
-    for (const m of metrics.data) events.push({ ts: m.ts, type: 'metric', code: m.code, value: m.value, sensitivity: m.sensitivity })
+    for (const m of metrics.data) events.push({ ts: m.ts, type: 'metric', code: m.code, value: m.value, sensitivity: m.sensitivity, _owner: m.user_id })
     const cycle = await db.call(this).collection('lb-cycle-events').where({ journey_id: j._id }).orderBy('ts', 'desc').limit(limit).get()
-    for (const c of cycle.data) events.push({ ts: c.ts, type: 'cycle', code: c.type, value: c.value, sensitivity: c.sensitivity })
+    for (const c of cycle.data) events.push({ ts: c.ts, type: 'cycle', code: c.type, value: c.value, sensitivity: c.sensitivity, _owner: c.user_id })
     const visits = await db.call(this).collection('lb-prenatal-visits').where({ journey_id: j._id }).orderBy('visit_ts', 'desc').limit(limit).get()
-    for (const v of visits.data) events.push({ ts: v.visit_ts, type: 'visit', code: 'prenatal_visit', value: { hospital: v.hospital, week: v.week, conclusion: v.conclusion }, sensitivity: v.sensitivity })
+    for (const v of visits.data) events.push({ ts: v.visit_ts, type: 'visit', code: 'prenatal_visit', value: { hospital: v.hospital, week: v.week, conclusion: v.conclusion }, sensitivity: v.sensitivity, _owner: v.user_id })
     const milestones = await db.call(this).collection('lb-milestones').where({ journey_id: j._id }).orderBy('achieved_date', 'desc').limit(limit).get()
-    for (const m of milestones.data) events.push({ ts: m.achieved_date, type: 'milestone', code: m.code, value: { dim: m.dim }, sensitivity: 'normal' })
-    events.sort((a, b) => b.ts - a.ts)
-    return auth.ok({ events: events.slice(0, limit) })
+    for (const m of milestones.data) events.push({ ts: m.achieved_date, type: 'milestone', code: m.code, value: { dim: m.dim }, sensitivity: 'normal', _owner: m.user_id })
+    // strict 红线：仅本人可见（不用 role 判断，安全审计 C1/C4）
+    const visible = events
+      .filter(e => e.sensitivity !== 'strict' || e._owner === uid)
+      .map(e => ({ ts: e.ts, type: e.type, code: e.code, value: e.value, sensitivity: e.sensitivity }))
+    visible.sort((a, b) => b.ts - a.ts)
+    return auth.ok({ events: visible.slice(0, limit) })
   },
 
   /** 全量导出（数据属于用户）：JSON 结构化包 */
@@ -148,7 +163,8 @@ module.exports = {
     const out = {}
     for (const c of collections) {
       const r = await db.call(this).collection(c).where({ journey_id: j._id }).limit(5000).get()
-      out[c] = r.data
+      // strict 红线：导出同样只含本人数据（安全审计 C4）
+      out[c] = auth.visibilityFilter(r.data, uid)
     }
     return auth.ok({ exportedAt: Date.now(), journeyId: j._id, data: out })
   }

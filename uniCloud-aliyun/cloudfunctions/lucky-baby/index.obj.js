@@ -13,8 +13,8 @@ const MONTH = 30.4375 * DAY
 function db() { return uniCloud.database() }
 async function requireUser() {
   const token = (this.__mockToken != null) ? this.__mockToken : this.getUniIdToken()
-  const v = auth.verifyToken(token)
-  return v.ok ? v.uid : null
+  const r = await auth.requireUser(db.call(this), token)
+  return r.ok ? r.uid : null
 }
 async function accessibleJourney(uid, journeyId, need = 'read') {
   const { role, journey } = await auth.resolveJourneyAccess(db.call(this), uid, journeyId)

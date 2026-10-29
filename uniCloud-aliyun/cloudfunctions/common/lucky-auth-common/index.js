@@ -9,18 +9,40 @@
 'use strict'
 const crypto = require('crypto')
 
+/**
+ * 守卫：配置中心已加载但未配置 tokenSecret → 生产事故，直接抛错。
+ * 修复安全审计 H5：此前静默回落到硬编码开发密钥，漏传配置即可被伪造 token。
+ */
+function assertSecretConfigured(centerLoaded, conf) {
+  if (centerLoaded && !(conf && conf.tokenSecret)) {
+    throw new Error('[lucky-auth-common] 已加载配置中心但缺少 tokenSecret，拒绝使用开发密钥（请检查 uni-config-center/uni-id/config.json）')
+  }
+}
+
 // 优先读 uni-config-center 的 lucky-id 配置（生产），否则使用内置默认密钥（开发/测试）。
 function loadSecret() {
+  let centerLoaded = false
+  const configs = []
   try {
-    // uniCloud 环境下可用；本地 Node 测试环境无此模块则走默认。
+    // uniCloud 环境下可用；本地 Node 测试环境无此模块。
     // 插件目录：优先自研命名空间 lucky-id，回退官方约定 uni-id（两者均指向 uni-config-center/<id>/config.json）
     const createConfigCenter = require('uni-config-center')
+    centerLoaded = true
     for (const pid of ['lucky-id', 'uni-id']) {
-      const conf = createConfigCenter({ pluginId: pid }).config() || {}
-      if (conf.tokenSecret) return String(conf.tokenSecret)
+      configs.push(createConfigCenter({ pluginId: pid }).config() || {})
     }
-  } catch (e) { /* 本地测试环境：忽略 */ }
-  return 'lb-dev-secret-DO-NOT-USE-IN-PRODUCTION'
+  } catch (e) {
+    // 配置中心模块本身不存在 → 本地 Node 测试环境，允许回落
+    if (centerLoaded) throw e
+    return 'lb-dev-secret-DO-NOT-USE-IN-PRODUCTION'
+  }
+  // 先把两个命名空间都收集齐再判定，避免 lucky-id 空配置时误抛
+  for (const conf of configs) {
+    if (conf.tokenSecret) return String(conf.tokenSecret)
+  }
+  // 配置中心存在但都没有密钥 → fail-closed
+  assertSecretConfigured(true, null)
+  return 'lb-dev-secret-DO-NOT-USE-IN-PRODUCTION' // 不可达，仅满足静态分析
 }
 
 function b64url(buf) {
@@ -94,22 +116,62 @@ function rateLimit(key, max, windowMs, now = Date.now()) {
   return true
 }
 
+const TOKEN_COL = 'lb-token'
+
 /**
- * 解析用户对旅程的访问角色：owner(旅程主人/admin) / recorder(可读写) / viewer(只读) / null(无权限)
- * 家庭组模型见 docs/03 M7.1。journey 记录必须存在。
+ * 统一鉴权守卫：校验签名 + 查 lb-token 吊销状态。
+ * 修复安全审计 C5：此前仅 lucky-id 查吊销表，其余云对象只验签名，
+ * 导致用户"退出登录"后旧 token 仍可用满 30 天。
+ * 返回 { ok:true, uid, jti } 或 { ok:false, errCode, errMsg }
  */
-async function resolveJourneyAccess(db, uid, journeyId) {
-  if (!uid || !journeyId) return { role: null }
-  const j = await db.collection('lb-journeys').doc(String(journeyId)).get()
-  const journey = j.data[0]
-  if (!journey) return { role: null }
-  if (journey.user_id === uid) return { role: 'owner', journey }
-  const f = await db.collection('lb-families').where({ journey_id: String(journeyId) }).limit(1).get()
-  if (f.data.length === 0) return { role: null }
-  const m = await db.collection('lb-family-members').where({ family_id: f.data[0]._id, user_id: uid }).limit(1).get()
-  if (m.data.length === 0) return { role: null }
-  const role = m.data[0].role === 'admin' ? 'owner' : m.data[0].role
-  return { role, journey }
+async function requireUser(db, token) {
+  const v = verifyToken(token)
+  if (!v.ok) return { ok: false, errCode: v.errCode, errMsg: v.errMsg }
+  const tr = await db.collection(TOKEN_COL).where({ jti: v.jti, revoked: false }).get()
+  if (tr.data.length === 0) return { ok: false, errCode: 'TOKEN_INVALID', errMsg: 'token 已失效' }
+  return { ok: true, uid: v.uid, jti: v.jti }
 }
 
-module.exports = { createToken, verifyToken, hashPassword, verifyPassword, ok, fail, rateLimit, loadSecret, resolveJourneyAccess }
+/**
+ * 解析用户对旅程的访问权限。
+ * 返回 { role, memberRole, dataScope, matrix, journey }
+ *  role       管理权限：admin 映射为 owner（家庭管理用）
+ *  memberRole 原始角色，矩阵索引必须用它（不能用 role，否则 admin 借用 owner 的可见性）
+ *  dataScope  'journey' 仅旅程主人；'self' 家庭成员——strict 数据永远只认 user_id
+ *
+ * 安全审计 C4：此前 admin 被映射为 owner 后直接参与数据可见性判断，
+ * 导致家庭管理员可读他人 strict 记录。管理权限与数据权限必须分离。
+ */
+async function resolveJourneyAccess(db, uid, journeyId) {
+  const denied = { role: null, memberRole: null, dataScope: 'self', matrix: null }
+  if (!uid || !journeyId) return denied
+  const j = await db.collection('lb-journeys').doc(String(journeyId)).get()
+  const journey = j.data[0]
+  if (!journey) return denied
+  if (journey.user_id === uid) {
+    return { role: 'owner', memberRole: 'owner', dataScope: 'journey', matrix: null, journey }
+  }
+  const f = await db.collection('lb-families').where({ journey_id: String(journeyId) }).limit(1).get()
+  if (f.data.length === 0) return denied
+  const fam = f.data[0]
+  const m = await db.collection('lb-family-members').where({ family_id: fam._id, user_id: uid }).limit(1).get()
+  if (m.data.length === 0) return denied
+  const memberRole = m.data[0].role
+  return {
+    role: memberRole === 'admin' ? 'owner' : memberRole,
+    memberRole,
+    dataScope: 'self',
+    matrix: fam.matrix || {},
+    journey
+  }
+}
+
+/**
+ * strict 记录（同房/验孕/EPDS）仅本人可见，无任何例外。
+ * 产品红线 docs/03：任何授权不可覆盖。
+ */
+function visibilityFilter(records, uid) {
+  return (records || []).filter(r => r.sensitivity !== 'strict' || r.user_id === uid)
+}
+
+module.exports = { createToken, verifyToken, hashPassword, verifyPassword, ok, fail, rateLimit, loadSecret, resolveJourneyAccess, requireUser, visibilityFilter, assertSecretConfigured }
