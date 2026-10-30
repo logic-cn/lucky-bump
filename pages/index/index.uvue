@@ -41,6 +41,38 @@
       </view>
     </view>
 
+    <!-- 首条记录引导：完成任意一条记录后不再出现 -->
+    <view class="card lb-rise-1" v-if="firstGuideVisible">
+      <text class="card-title">开始第一条记录</text>
+      <text class="empty-text" v-if="isTtc">记录一次经期或排卵试纸，周期预测就会开始工作。</text>
+      <text class="empty-text" v-else>记录一次体重，或写一条今天的日记，数据资产从这一条开始。</text>
+      <view class="guide-row" v-if="isTtc">
+        <text class="guide-btn" @click="goRecord('/pages/record/cycle')">记经期</text>
+        <text class="guide-btn guide-btn-ghost" @click="goRecord('/pages/record/ovulation-test')">记排卵试纸</text>
+      </view>
+      <view class="guide-row" v-else>
+        <text class="guide-btn" @click="goRecord('/pages/record/weight')">记体重</text>
+        <text class="guide-btn guide-btn-ghost" @click="goRecord('/pages/record/diary')">写日记</text>
+      </view>
+    </view>
+
+    <!-- 本周小结（周报最小版） -->
+    <view class="card lb-rise-2" v-if="weeklyVisible">
+      <text class="card-title">本周小结</text>
+      <text class="trend-text">最近 7 天记录 {{ weekRecords }} 条{{ weekDeltaText }}</text>
+      <text class="mom-foot">持续记录，趋势才会说话</text>
+    </view>
+
+    <!-- 家庭邀请引导（一次，可关闭） -->
+    <view class="card lb-rise-2" v-if="inviteTipVisible">
+      <text class="card-title">邀请家人一起记录</text>
+      <text class="empty-text">爸爸也能记录喂养与夜奶，长辈可只读围观。数据始终只在你授权的范围内共享。</text>
+      <view class="guide-row">
+        <text class="guide-btn" @click="goRecord('/pages/me/family')">去邀请</text>
+        <text class="guide-btn guide-btn-ghost" @click="dismissInviteTip">暂不邀请</text>
+      </view>
+    </view>
+
     <!-- 产后：妈妈今天 -->
     <view class="card lb-rise-2" v-if="momCardVisible">
       <text class="card-title">妈妈今天</text>
@@ -77,6 +109,7 @@
   import { luckyRecord } from '../../utils/request.uts'
   import { themeClass } from '../../store/themeStore.uts'
   import { isQuietNow } from '../../utils/quiet.uts'
+  import { track } from '../../utils/track.uts'
 
   type QuickItem = { icon: string, label: string, url: string }
 
@@ -87,6 +120,11 @@
   const reminderVisible = ref<boolean>(false)
   const reminderText = ref<string>('')
   const momCardVisible = ref<boolean>(false)
+  const firstGuideVisible = ref<boolean>(false)
+  const weeklyVisible = ref<boolean>(false)
+  const weekRecords = ref<number>(0)
+  const weekDeltaText = ref<string>('')
+  const inviteTipVisible = ref<boolean>(false)
   const momFeedings = ref<number>(0)
   const momDiapers = ref<number>(0)
   const momSleepText = ref<string>('0h')
@@ -124,8 +162,13 @@
   })
 
   function goRecord(url: string) { uni.navigateTo({ url }) }
+  function dismissInviteTip() {
+    inviteTipVisible.value = false
+    uni.setStorageSync('lb_family_tip_dismissed', true)
+  }
   function openTodo(t: UTSJSONObject) {
     const kind = t.getString('kind') ?? ''
+    track('reminder_done', { kind: kind } as UTSJSONObject)
     if (kind.indexOf('prenatal') == 0) uni.navigateTo({ url: '/pages/care/schedule' })
     else if (kind == 'vaccine') uni.navigateTo({ url: '/pages/baby/vaccines' })
   }
@@ -214,6 +257,26 @@
         }
       }
       maybeShowReminder()
+      // 首条记录引导：本地标记，记录成功后置 true（失败不影响主流程）
+      const hasRecord = uni.getStorageSync('lb_has_record')
+      firstGuideVisible.value = hasRecord == null
+      // 本周小结
+      const ws = res.getJSON('weekStats')
+      if (ws != null) {
+        const n = ws.getNumber('records') ?? 0
+        weekRecords.value = n
+        weeklyVisible.value = n > 0
+        const delta = ws.getNumber('weightDelta')
+        if (delta != null) {
+          const sign = delta >= 0 ? '+' : ''
+          weekDeltaText.value = ` · 体重较上次 ${sign}${delta}kg`
+        } else {
+          weekDeltaText.value = ''
+        }
+      }
+      // 家庭邀请引导：首次有记录后出现一次，可关闭
+      const inviteDone = uni.getStorageSync('lb_family_tip_dismissed')
+      inviteTipVisible.value = hasRecord != null && inviteDone == null
     } catch (e) {
       // token 失效已由请求层统一跳登录
     }
@@ -258,6 +321,9 @@
   .mom-num { font-size: 44rpx; font-weight: bold; color: var(--lb-primary-deep); }
   .mom-label { font-size: 22rpx; color: var(--lb-text-3); margin-top: 6rpx; }
   .mom-foot { font-size: 22rpx; color: var(--lb-text-3); margin-top: 16rpx; text-align: center; }
+  .guide-row { flex-direction: row; margin-top: 24rpx; }
+  .guide-btn { font-size: 28rpx; color: #FFFFFF; background-color: var(--lb-primary); border-radius: 40rpx; padding: 14rpx 32rpx; margin-right: 16rpx; text-align: center; }
+  .guide-btn-ghost { color: var(--lb-text-2); background-color: var(--lb-fill); }
 
   .mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--lb-mask); justify-content: center; align-items: center; }
   .dialog { width: 560rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 40rpx 32rpx 24rpx 32rpx; }

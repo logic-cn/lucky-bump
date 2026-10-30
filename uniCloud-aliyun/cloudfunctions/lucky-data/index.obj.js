@@ -122,6 +122,13 @@ module.exports = {
       for (const s of sleeps.data) sleepMinutes += Math.max(0, +s.duration_min || 0)
       momCard = { date: todayStr, feedings: feed.total || 0, diapers: diaper.total || 0, sleepMinutes }
     }
+    // 本周小结（周报的最小可用版）：最近 7 天记录条数 + 体重变化
+    const weekAgo = now - 7 * DAY
+    const recentLogs = await db.call(this).collection('lb-daily-logs').where({ journey_id: j._id }).orderBy('ts', 'desc').limit(200).get()
+    const weekLogs = recentLogs.data.filter(d => d.ts >= weekAgo).length
+    const recentDiaries = await db.call(this).collection('lb-diaries').where({ journey_id: j._id }).orderBy('ts', 'desc').limit(100).get()
+    const weekDiaries = recentDiaries.data.filter(d => d.ts >= weekAgo).length
+    const weekStats = { records: weekLogs + weekDiaries, weightDelta }
     // 留痕：仅家庭成员访问记录，主人本人操作不写（docs/03 M7.2）
     if (access.memberRole && access.memberRole !== 'owner') {
       await logAccess(uid, j._id, 'today', dateOf(now))
@@ -132,7 +139,7 @@ module.exports = {
         lmpDate: j.lmp_date ? dateOf(j.lmp_date) : '', deliveryDate: j.delivery_date ? dateOf(j.delivery_date) : '',
         fetusCount: j.fetus_count || 1, highRisk: !!j.high_risk, title: j.title || ''
       },
-      todos, latest, weightDelta, momCard, serverDate: dateOf(now)
+      todos, latest, weightDelta, momCard, weekStats, serverDate: dateOf(now)
     })
   },
 

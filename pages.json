@@ -36,7 +36,9 @@
     { "path": "pages/me/family", "style": { "navigationBarTitleText": "家庭组" } },
     { "path": "pages/me/privacy", "style": { "navigationBarTitleText": "隐私与安全" } },
     { "path": "pages/me/settings", "style": { "navigationBarTitleText": "设置" } },
-    { "path": "pages/me/about", "style": { "navigationBarTitleText": "关于与免责声明" } }
+    { "path": "pages/me/about", "style": { "navigationBarTitleText": "关于与免责声明" } },
+    { "path": "pages/me/agreement", "style": { "navigationBarTitleText": "用户协议" } },
+    { "path": "pages/me/privacy-policy", "style": { "navigationBarTitleText": "隐私政策" } }
   ],
   "globalStyle": {
     "navigationBarTextStyle": "black",

@@ -17,7 +17,13 @@
         </view>
       </view>
     </view>
-    <text class="agreement lb-rise-2">登录即代表同意《用户协议》与《隐私政策》；你的健康数据仅用于为你服务。</text>
+    <view class="agreement-row lb-rise-2">
+      <text class="agreement">登录即代表同意</text>
+      <text class="agreement-link" @click="goAgreement">《用户协议》</text>
+      <text class="agreement">与</text>
+      <text class="agreement-link" @click="goPrivacy">《隐私政策》</text>
+      <text class="agreement">；健康数据仅用于为你服务。</text>
+    </view>
 
     <!-- 注销冷静期提示 + 撤回入口（自绘弹窗，web 端 uni.showModal 回调不触发，见 docs/08 §8） -->
     <view class="mask lb-fade" v-if="pendingVisible">
@@ -45,6 +51,8 @@
   const canceling = ref<boolean>(false)
 
   function goRegister() { uni.navigateTo({ url: '/pages/account/register' }) }
+  function goAgreement() { uni.navigateTo({ url: '/pages/me/agreement' }) }
+  function goPrivacy() { uni.navigateTo({ url: '/pages/me/privacy-policy' }) }
   async function afterLogin() {
     // 直接进首页：首页 onShow 会经 loadCurrentJourney 加载旅程并处理"无旅程→引导"重定向；
     // 此处若先拉取旅程（写全局响应式）再立即 reLaunch，会触发 web 端渲染竞态（见 docs/08 已知限制）
@@ -105,7 +113,9 @@
   .row-links { align-items: center; margin-top: 32rpx; }
   .link-wrap { padding: 8rpx 24rpx; border-radius: 24rpx; transition: all 160ms ease-out; }
   .link { color: var(--lb-primary); font-size: 26rpx; }
-  .agreement { font-size: 20rpx; color: var(--lb-text-3); margin-top: 48rpx; width: 640rpx; text-align: center; }
+  .agreement-row { flex-direction: row; flex-wrap: wrap; justify-content: center; margin-top: 48rpx; width: 680rpx; }
+  .agreement { font-size: 24rpx; color: var(--lb-text-3); text-align: center; }
+  .agreement-link { font-size: 24rpx; color: var(--lb-primary); }
   .mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--lb-mask); justify-content: center; align-items: center; }
   .dialog { width: 560rpx; background-color: var(--lb-card); border-radius: 24rpx; padding: 40rpx 32rpx 24rpx 32rpx; }
   .dlg-title { font-size: 32rpx; font-weight: bold; color: var(--lb-text-1); text-align: center; }

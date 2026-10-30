@@ -82,6 +82,7 @@
     try {
       await luckyRecord('addCycleEvent', { journeyId: journeyState.journeyId, type: kind == 'start' ? 'period_start' : 'period_end' } as UTSJSONObject)
       track('record_create', { type: 'cycle' } as UTSJSONObject)
+      uni.setStorageSync('lb_has_record', true)
       uni.showToast({ title: '已记录 ✓', icon: 'success' })
       load()
     } catch (e) { uni.showToast({ title: (e as Error).message, icon: 'none' }) }

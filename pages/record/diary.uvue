@@ -107,6 +107,7 @@
     try {
       await luckyRecord('addDiary', { journeyId: journeyState.journeyId, text: text.value, mood: mood.value, mediaIds: mediaIds.value } as UTSJSONObject)
       track('record_create', { type: 'diary' } as UTSJSONObject)
+      uni.setStorageSync('lb_has_record', true)
       text.value = ''
       mediaIds.value = []
       previews.value = []

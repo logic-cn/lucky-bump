@@ -90,6 +90,7 @@
     try {
       await luckyBaby('addFeeding', { journeyId: journeyState.journeyId, babyId: babyId.value, mode: mode.value, ml: ml.value } as UTSJSONObject)
       track('record_create', { type: 'feeding' } as UTSJSONObject)
+      uni.setStorageSync('lb_has_record', true)
       uni.showToast({ title: '已记录 ✓', icon: 'success' })
       load()
     } catch (e) {

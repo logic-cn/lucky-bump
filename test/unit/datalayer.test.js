@@ -231,3 +231,13 @@ test('访问留痕：主人自己看首页不产生记录', async () => {
   const own = await rt.callObject('lucky-data', 'listAuditLogs', { journeyId: jid }, { token: victimToken })
   assert.equal(own.logs.length, 0, '本人访问不应写留痕')
 })
+
+test('本周小结：today 返回最近 7 天记录数与体重变化', async () => {
+  const { rt, jid, victimToken } = await twoUsers()
+  await rt.callObject('lucky-record', 'addDiary', { journeyId: jid, text: '周报测试' }, { token: victimToken })
+  const t = await rt.callObject('lucky-data', 'today', { journeyId: jid }, { token: victimToken })
+  assert.equal(t.errCode, 0, JSON.stringify(t))
+  assert.ok(t.weekStats, '应返回 weekStats')
+  assert.equal(t.weekStats.records, 2, '体重 1 条 + 日记 1 条')
+  assert.equal(t.weekStats.weightDelta, null, '仅一条体重时无变化值')
+})

@@ -14,6 +14,12 @@
       <text class="body">· 健康数据属敏感个人信息，按最小必要原则收集\n· 同房、验孕、情绪自评永远仅本人可见\n· 不卖数据、不做开屏第三方广告、记录功能永远免费\n· 注销账号 30 天冷静期后彻底删除全部数据</text>
     </view>
     <view class="card lb-rise-3">
+      <text class="card-title">协议与政策</text>
+      <view class="nav-row" hover-class="lb-press" hover-stay-time="120" @click="go('/pages/me/agreement')"><text class="nav-text">用户协议</text><text class="nav-arrow">›</text></view>
+      <view class="nav-row" hover-class="lb-press" hover-stay-time="120" @click="go('/pages/me/privacy-policy')"><text class="nav-text">隐私政策</text><text class="nav-arrow">›</text></view>
+    </view>
+
+    <view class="card lb-rise-3">
       <text class="card-title">开源与致谢</text>
       <text class="body">基于 uni-app-x 与 uniCloud 构建；登录体系兼容 uni-id 生态；疫苗程序表依据国家免疫规划（2021 版）；产检排程参考国内孕前和孕期保健指南；成长曲线参照 WHO 儿童生长标准。</text>
     </view>
@@ -23,6 +29,8 @@
 <script setup lang="ts">
   // 纯静态页面，无状态与逻辑；仅接主题 class 用于暗色模式
   import { themeClass } from '../../store/themeStore.uts'
+
+  function go(url: string) { uni.navigateTo({ url }) }
 </script>
 
 <style>
@@ -33,6 +41,9 @@
   .ver { font-size: 22rpx; color: var(--lb-text-3); margin-top: 12rpx; align-self: center; }
   .card-title { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 16rpx; }
   .body { font-size: 24rpx; color: var(--lb-text-2); line-height: 42rpx; }
+  .nav-row { flex-direction: row; align-items: center; padding: 18rpx 0; border-bottom-width: 1px; border-bottom-color: var(--lb-line); }
+  .nav-text { flex: 1; font-size: 26rpx; color: var(--lb-text-1); }
+  .nav-arrow { font-size: 32rpx; color: var(--lb-arrow); }
 
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }

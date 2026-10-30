@@ -18,7 +18,13 @@
         </view>
       </view>
     </view>
-    <text class="agreement lb-rise-2">注册即代表同意《用户协议》与《隐私政策》。你的同房记录、情绪自评等隐私数据永远仅本人可见。</text>
+    <view class="agreement-row lb-rise-2">
+      <text class="agreement">注册即代表同意</text>
+      <text class="agreement-link" @click="goAgreement">《用户协议》</text>
+      <text class="agreement">与</text>
+      <text class="agreement-link" @click="goPrivacy">《隐私政策》</text>
+      <text class="agreement">。同房、验孕、情绪自评永远仅本人可见。</text>
+    </view>
   </view>
 </template>
 
@@ -34,6 +40,8 @@
   const loading = ref<boolean>(false)
 
   function goLogin() { uni.navigateBack() }
+  function goAgreement() { uni.navigateTo({ url: '/pages/me/agreement' }) }
+  function goPrivacy() { uni.navigateTo({ url: '/pages/me/privacy-policy' }) }
   async function doRegister() {
     if (loading.value) return
     if (password.value.length < 8) { uni.showToast({ title: '密码至少 8 位', icon: 'none' }); return }
@@ -65,7 +73,9 @@
   .row-links { align-items: center; margin-top: 32rpx; }
   .link-wrap { padding: 8rpx 24rpx; border-radius: 24rpx; transition: all 160ms ease-out; }
   .link { color: var(--lb-primary); font-size: 26rpx; }
-  .agreement { font-size: 20rpx; color: var(--lb-text-3); margin-top: 48rpx; width: 640rpx; text-align: center; }
+  .agreement-row { flex-direction: row; flex-wrap: wrap; justify-content: center; margin-top: 48rpx; width: 680rpx; }
+  .agreement { font-size: 24rpx; color: var(--lb-text-3); text-align: center; }
+  .agreement-link { font-size: 24rpx; color: var(--lb-primary); }
 
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }

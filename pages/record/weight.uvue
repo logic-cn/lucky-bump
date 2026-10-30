@@ -59,6 +59,7 @@
     try {
       await luckyRecord('addMetric', { journeyId: journeyState.journeyId, code: 'weight', value: { kg: kgVal } } as UTSJSONObject)
       track('record_create', { type: 'weight' } as UTSJSONObject)
+      uni.setStorageSync('lb_has_record', true)
       saved.value = true
       setTimeout(() => { uni.navigateBack() }, 600)
     } catch (e) {
