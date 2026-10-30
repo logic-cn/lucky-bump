@@ -30,6 +30,12 @@
       </view>
     </view>
 
+    <view class="card lb-rise-2" v-if="feedingGuide.length > 0">
+      <text class="card-title">本月龄喂养参考</text>
+      <text class="guide-text">{{ feedingGuide }}</text>
+      <text class="hint">参考范围，不代表处方；按需喂养，儿保时与医生确认。</text>
+    </view>
+
     <view class="card lb-rise-3">
       <text class="card-title">成长与照护</text>
       <view class="nav-row" hover-class="lb-press" hover-stay-time="120" @click="go('/pages/baby/growth')"><text class="nav-text">📏 成长记录与百分位</text><text class="nav-arrow">›</text></view>
@@ -52,6 +58,28 @@
   const currentBabyId = ref<string>('')
   const loadFailed = ref<boolean>(false)
   const errorMsg = ref<string>('')
+
+  const babyMonths = computed((): number => {
+    for (let i = 0; i < babies.value.length; i++) {
+      if ((babies.value[i].getString('_id') ?? '') == currentBabyId.value) {
+        const birth = babies.value[i].getString('birthDate') ?? ''
+        if (birth.length == 0) return -1
+        const days = Math.floor((Date.now() - Date.parse(birth + 'T12:00:00Z')) / 86400000)
+        return Math.floor(days / 30.4375)
+      }
+    }
+    return -1
+  })
+  const feedingGuide = computed((): string => {
+    const m = babyMonths.value
+    if (m < 0) return ''
+    if (m < 1) return '0-1 月：每天约 8-12 次，单次约 60-90ml；按需喂养，不强行灌喂'
+    if (m < 2) return '1-2 月：每天约 7-9 次，单次约 90-120ml'
+    if (m < 4) return '2-4 月：每天约 6-8 次，单次约 120-150ml'
+    if (m < 6) return '4-6 月：每天约 5-6 次，单次约 150-180ml'
+    if (m < 12) return '6-12 月：奶量约 600-800ml/天，配合辅食 2-3 餐'
+    return '12 月以上：以家庭饮食为主，奶量按需'
+  })
 
   const sumFeedCount = computed((): number => ((summary.value as UTSJSONObject | null)?.getJSON('feeding') as UTSJSONObject | null)?.getNumber('count')?.toInt() ?? 0)
   const sumMl = computed((): number => ((summary.value as UTSJSONObject | null)?.getJSON('feeding') as UTSJSONObject | null)?.getNumber('totalMl')?.toInt() ?? 0)
@@ -114,6 +142,8 @@
   .hero-cur { font-size: 24rpx; color: #FFFFFF; background-color: rgba(255,255,255,0.28); border-radius: 16rpx; padding: 4rpx 12rpx; margin-top: 12rpx; align-self: flex-start; }
   .summary { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 32rpx; margin-top: 16rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
   .card-title { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 20rpx; }
+  .guide-text { font-size: 26rpx; color: var(--lb-text-2); line-height: 44rpx; }
+  .hint { font-size: 24rpx; color: var(--lb-text-3); line-height: 38rpx; margin-top: 12rpx; }
   .sum-row { flex-direction: row; justify-content: space-between; }
   .sum-col { align-items: center; flex: 1; }
   .sum-num { font-size: 36rpx; font-weight: bold; color: var(--lb-primary); }

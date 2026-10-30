@@ -72,6 +72,10 @@
       <view class="remind-btn" v-if="predNext != '-'" hover-class="lb-press" hover-stay-time="120" @click="setPeriodReminder">
         <text class="remind-text">{{ periodReminded ? '已设置经期提醒' : '设为下个经期提醒' }}</text>
       </view>
+      <view class="cycle-list" v-if="recentCycleText.length > 0">
+        <text class="cycle-title">最近周期</text>
+        <text class="cycle-item" v-for="(t, i) in recentCycleText" :key="i">{{ t }}</text>
+      </view>
       <view class="abnormal" v-if="abnormalTips.length > 0">
         <text class="abnormal-title">值得关注</text>
         <text class="abnormal-text" v-for="(t, i) in abnormalTips" :key="i">· {{ t }}</text>
@@ -209,6 +213,23 @@
     const lp = lastPeriodLen.value
     if (lp > 7) tips.push(`最近经期持续 ${lp} 天（超过 7 天）`)
     return tips
+  })
+
+  const recentCycleText = computed((): string[] => {
+    const out: string[] = []
+    for (let i = cycles.value.length - 1; i >= 0 && out.length < 4; i--) {
+      const start = cycles.value[i].getNumber('start_date') ?? 0
+      const end = cycles.value[i].getNumber('end_date') ?? 0
+      if (start <= 0) continue
+      const parts: string[] = []
+      if (i > 0) {
+        const prev = cycles.value[i - 1].getNumber('start_date') ?? 0
+        if (prev > 0) parts.push(`周期 ${Math.round((start - prev) / DAY)} 天`)
+      }
+      if (end > start) parts.push(`经期 ${Math.round((end - start) / DAY) + 1} 天`)
+      out.push(`${dateOfTs(start)}${parts.length > 0 ? ' · ' + parts.join(' · ') : ''}`)
+    }
+    return out
   })
 
   const cells = computed((): Cell[] => {
@@ -444,6 +465,9 @@
   .stat-row { flex-direction: row; margin-top: 8rpx; }
   .remind-btn { margin-top: 20rpx; padding: 14rpx 0; border-radius: 999rpx; background-color: var(--lb-primary-soft); align-items: center; transition: all 160ms ease-out; }
   .remind-text { font-size: 24rpx; color: var(--lb-primary-deep); font-weight: bold; }
+  .cycle-list { margin-top: 20rpx; padding-top: 16rpx; border-top-width: 1px; border-top-color: var(--lb-line); }
+  .cycle-title { font-size: 24rpx; color: var(--lb-text-3); margin-bottom: 8rpx; }
+  .cycle-item { font-size: 24rpx; color: var(--lb-text-1); line-height: 40rpx; }
   .stat { flex: 1; align-items: center; }
   .stat-num { font-size: 40rpx; font-weight: bold; color: var(--lb-primary-deep); }
   .stat-cap { font-size: 24rpx; color: var(--lb-text-3); margin-top: 8rpx; }

@@ -362,6 +362,10 @@ test('生长曲线与经期提醒：页面能力已接入', () => {
   const cycle = fs.readFileSync(path.join(ROOT, 'pages/record/cycle.uvue'), 'utf-8')
   assert.ok(cycle.includes('setPeriodReminder'), '经期页缺少一键提醒')
   assert.ok(cycle.includes("luckyReminder('addRule'"), '未调用提醒创建接口')
+  assert.ok(cycle.includes('recentCycleText'), '缺少最近周期长度明细')
+  const babyHome = fs.readFileSync(path.join(ROOT, 'pages/baby/baby-home.uvue'), 'utf-8')
+  assert.ok(babyHome.includes('feedingGuide'), '宝宝首页缺少月龄喂养参考')
+  assert.ok(babyHome.includes('按需喂养'), '喂养参考缺少按需喂养提示')
 })
 
 test('Web 可安装：PWA manifest 与主屏幕图标', () => {
