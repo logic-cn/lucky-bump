@@ -1,7 +1,10 @@
 <template>
   <view class="page" :class="themeClass()">
     <view class="card lb-rise">
-      <text class="label">今天想记录点什么</text>
+      <view class="label-row">
+        <text class="label">今天想记录点什么</text>
+        <text class="voice-btn" v-if="voiceSupported" hover-class="lb-press" hover-stay-time="120" @click="toggleVoice">{{ listening ? '停止语音' : '语音输入' }}</text>
+      </view>
       <textarea class="ta" v-model="text" placeholder="今天宝宝胎动很活跃…" placeholder-class="ph" :maxlength="2000" />
       <text class="label">照片（最多 9 张）</text>
       <view class="photo-row">
@@ -50,6 +53,46 @@
   const mediaIds = ref<string[]>([])
   const previews = ref<string[]>([])
   const uploading = ref<boolean>(false)
+  const voiceSupported = ref<boolean>(false)
+  const listening = ref<boolean>(false)
+
+  // #ifdef WEB
+  let recog: any = null
+  // #endif
+
+  function initVoice() {
+    // #ifdef WEB
+    const g: any = globalThis as any
+    const SR: any = (g.SpeechRecognition != null) ? g.SpeechRecognition : g.webkitSpeechRecognition
+    voiceSupported.value = SR != null
+    // #endif
+  }
+  function toggleVoice() {
+    // #ifdef WEB
+    if (listening.value) {
+      if (recog != null) recog.stop()
+      listening.value = false
+      return
+    }
+    const g: any = globalThis as any
+    const SR: any = (g.SpeechRecognition != null) ? g.SpeechRecognition : g.webkitSpeechRecognition
+    if (SR == null) return
+    recog = new SR()
+    recog.lang = 'zh-CN'
+    recog.continuous = false
+    recog.interimResults = false
+    recog.onresult = (ev: any): void => {
+      let spoken = ''
+      for (let i = ev.resultIndex; i < ev.results.length; i++) spoken += ev.results[i][0].transcript
+      text.value = text.value + spoken
+    }
+    recog.onend = (): void => { listening.value = false }
+    recog.onerror = (): void => { listening.value = false }
+    recog.start()
+    listening.value = true
+    // #endif
+  }
+  initVoice()
   const moods = ref<Mood[]>([
     { value: 'great', emoji: '🥰' }, { value: 'good', emoji: '😊' },
     { value: 'normal', emoji: '🙂' }, { value: 'low', emoji: '😔' }, { value: 'bad', emoji: '😢' }
@@ -140,6 +183,8 @@
   .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
   .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 40rpx; margin-top: 40rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
   .label { font-size: 28rpx; color: var(--lb-text-1); margin: 16rpx 0 16rpx 0; }
+  .label-row { flex-direction: row; align-items: center; justify-content: space-between; }
+  .voice-btn { font-size: 24rpx; color: var(--lb-primary); padding: 10rpx 16rpx; border-radius: 24rpx; background-color: var(--lb-primary-soft); }
   .ta { width: 620rpx; height: 240rpx; background-color: var(--lb-fill); border-radius: 24rpx; padding: 24rpx; font-size: 28rpx; color: var(--lb-text-1); }
   .ph { color: var(--lb-text-3); }
   .mood-row { flex-direction: row; justify-content: space-between; }

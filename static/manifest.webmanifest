@@ -16,5 +16,25 @@
       "type": "image/png",
       "purpose": "any"
     }
+  ],
+  "shortcuts": [
+    {
+      "name": "记录体重",
+      "short_name": "体重",
+      "url": "/#/pages/record/weight",
+      "icons": [{ "src": "/static/icon.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "写日记",
+      "short_name": "日记",
+      "url": "/#/pages/record/diary",
+      "icons": [{ "src": "/static/icon.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "经期日历",
+      "short_name": "经期",
+      "url": "/#/pages/record/cycle",
+      "icons": [{ "src": "/static/icon.png", "sizes": "192x192" }]
+    }
   ]
 }

@@ -361,8 +361,16 @@ test('Web 可安装：PWA manifest 与主屏幕图标', () => {
     const p = path.join(ROOT, icon.src.replace(/^\//, ''))
     assert.ok(fs.existsSync(p), `manifest 图标不存在: ${icon.src}`)
   }
+  assert.ok(Array.isArray(m.shortcuts) && m.shortcuts.length >= 3, '缺少桌面快捷入口')
   const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf-8')
   assert.ok(html.includes('rel="manifest"'), 'index.html 未引用 manifest')
+})
+
+test('语音输入：日记页支持浏览器语音转文字', () => {
+  const src = fs.readFileSync(path.join(ROOT, 'pages/record/diary.uvue'), 'utf-8')
+  assert.ok(src.includes('SpeechRecognition'), '缺少语音识别接入')
+  assert.ok(src.includes('toggleVoice'), '缺少语音开关')
+  assert.ok(src.includes('voice-btn'), '缺少语音按钮')
 })
 
 /* ---------------- 可读性下限（小字号不得回流） ---------------- */
