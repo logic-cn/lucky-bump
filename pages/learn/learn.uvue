@@ -15,7 +15,32 @@
       <text class="red">产后：突然大量出血、恶露异味伴发热、伤口红肿渗液</text>
       <text class="red">宝宝：血便、陶土色大便、精神差拒奶、发热（3 月内）或持续高热、呼吸急促</text>
     </view>
+    <view class="card lb-rise-1">
+      <text class="card-title">产检关键节点</text>
+      <text class="guide" v-if="stage == 'PRECONCEPTION'">备孕检查：血常规、甲状腺功能、优生四项按医生建议；口腔检查别省；提前 3 个月每天叶酸 0.4mg。男方同步调整作息与烟酒。</text>
+      <text class="guide" v-else-if="stage == 'T1'">6-8 周确认宫内孕与胎心；11-13+6 周 NT 超声；早期唐筛或无创 DNA 按医生建议选择。建档后按医院节奏复查。</text>
+      <text class="guide" v-else-if="stage == 'T2'">20-24 周大排畸；24-28 周糖耐（前空腹 8-12 小时，喝糖水后按时抽血）；常规每 4 周一次产检。</text>
+      <text class="guide" v-else-if="stage == 'T3'">28-36 周每 2 周一次，36 周后每周一次；35-37 周 GBS 筛查；每天数胎动，记住 5-1-1 就医法则。</text>
+      <text class="guide" v-else-if="stage == 'POSTPARTUM'">产后 42 天妈妈与宝宝同时复查；伤口、恶露、盆底与情绪都值得主动说；EPDS 2/4/6 周各做一次。</text>
+      <text class="guide" v-else>按国家免疫规划程序接种；满月、3、6、8、12 月龄儿保；6 月龄起强化铁辅食，新食物观察 3 天。</text>
+    </view>
     <view class="card lb-rise-2">
+      <text class="card-title">营养与作息</text>
+      <text class="guide" v-if="stage == 'PRECONCEPTION'">规律三餐、优质蛋白与深色蔬菜；每周 150 分钟中等强度运动；BMI 偏高或偏低都建议先与医生聊一聊。</text>
+      <text class="guide" v-else-if="stage == 'T1' || stage == 'T2' || stage == 'T3'">叶酸吃到孕 3 月；孕中期起注意钙与铁；孕吐期少量多餐、避免空腹；不喝酒不吸烟，用药先问医生。</text>
+      <text class="guide" v-else-if="stage == 'POSTPARTUM'">哺乳期每天多约 500kcal 与足量饮水；可以洗头洗澡、房间要通风；能睡就睡，别硬扛。</text>
+      <text class="guide" v-else>母乳或配方奶按需喂养；6 月龄前不加盐糖蜂蜜；辅食由稀到稠、由细到粗，一次只加一种新食物。</text>
+    </view>
+    <view class="card lb-rise-3">
+      <text class="card-title">情绪与支持</text>
+      <text class="guide">情绪起伏不是矫情。持续两周以上低落、失眠、对一切失去兴趣，或出现伤害自己的念头，请立刻联系信任的人或拨打心理援助热线（全国 12356，以当地公布号码为准）。</text>
+      <text class="guide">家人可以做的：多接手一件具体的事，少说"你想多了"。</text>
+    </view>
+    <view class="card lb-rise-3">
+      <text class="card-title">内容来源与边界</text>
+      <text class="gray">产检排程参考《孕前和孕期保健指南（2018）》；疫苗程序依据国家免疫规划（2021 版）；增重区间参考 IOM 孕期增重指南；成长曲线参照 WHO 儿童生长标准。以上均为通用科普，具体方案以你的医生意见为准。</text>
+    </view>
+    <view class="card lb-rise-3">
       <text class="card-title">本应用不能做什么</text>
       <text class="gray">幸孕记是健康记录工具，不提供诊断与治疗建议；所有解读均为参考信息；用药请遵说明书与医嘱。</text>
     </view>
