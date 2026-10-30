@@ -5,6 +5,7 @@
  */
 'use strict'
 const auth = require('./common/lucky-auth-common')
+const crypto = require('crypto')
 
 const TOKEN_TTL_DAYS = 30
 
@@ -138,6 +139,52 @@ module.exports = {
   },
 
   /**
+   * 生成一次性恢复凭证（无需短信即可找回密码）。
+   * 凭证仅在本次返回中出现一次，服务端只存哈希；使用后立刻作废。
+   */
+  async createRecoveryCode() {
+    const g = await requireUser.call(this)
+    if (g.errCode !== 0) return g
+    const code = _recoveryCode()
+    await db.call(this).collection(usersCol).doc(g.uid).update({
+      recovery_hash: auth.hashPassword(code.replace(/-/g, '')),
+      recovery_created_at: Date.now(),
+      recovery_used_at: 0
+    })
+    return auth.ok({ code })
+  },
+
+  /**
+   * 用恢复凭证重置密码（未登录可调用）。
+   * 成功后吊销该账号全部 token，强制重新登录。
+   */
+  async resetPasswordByRecovery(params = {}) {
+    const username = String(params.username || '').trim()
+    const code = String(params.code || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase()
+    const np = String(params.newPassword || '')
+    if (np.length < 8 || np.length > 32) return auth.fail('PARAM_ERROR', '新密码长度需 8-32 位')
+    // 防爆破：按「账号+IP」限速
+    const rateKey = `recover:${username}:${this.getClientInfo().clientIP || 'na'}`
+    if (!auth.rateLimit(rateKey, 5, 10 * 60 * 1000)) {
+      return auth.fail('TOO_MANY_REQUESTS', '尝试过于频繁，请稍后再试')
+    }
+    const res = await db.call(this).collection(usersCol).where({ username }).get()
+    if (res.data.length === 0) return auth.fail('ACCOUNT_NOT_EXISTS', '账号不存在')
+    const user = res.data[0]
+    if (user.status !== 'active') return auth.fail('ACCOUNT_DISABLED', '账号当前不可用')
+    if (!user.recovery_hash) return auth.fail('NO_RECOVERY_CODE', '该账号未设置恢复凭证，请登录后在设置中生成')
+    if (!auth.verifyPassword(code, user.recovery_hash)) return auth.fail('RECOVERY_ERROR', '恢复凭证不正确')
+    await db.call(this).collection(usersCol).doc(user._id).update({
+      password: auth.hashPassword(np),
+      recovery_hash: '',
+      recovery_used_at: Date.now()
+    })
+    // 作废旧登录态，防止凭证泄露后被继续使用
+    await db.call(this).collection(tokenCol).where({ uid: user._id }).update({ revoked: true })
+    return auth.ok({ reset: true })
+  },
+
+  /**
    * 申请注销：30 天冷静期后彻底删除（docs/03）。
    * 立即生效：吊销全部 token、拦截登录；数据保留，供冷静期内撤回。
    */
@@ -176,6 +223,14 @@ module.exports = {
     })
     return auth.ok()
   }
+}
+
+/** 内部：生成一次性恢复凭证（去掉易混淆字符，展示为 XXXX-XXXX） */
+const RECOVERY_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+function _recoveryCode() {
+  let raw = ''
+  for (let i = 0; i < 8; i++) raw += RECOVERY_ALPHABET[crypto.randomInt(RECOVERY_ALPHABET.length)]
+  return `${raw.slice(0, 4)}-${raw.slice(4)}`
 }
 
 /** 内部：签发并落库 token（可吊销）。真实运行时 this 原型链无模块方法，内部调用一律走模块级函数。 */

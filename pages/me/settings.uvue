@@ -70,11 +70,28 @@
 
     <view class="card lb-rise-3">
       <text class="card-title">账号安全</text>
+      <view class="p-row" hover-class="lb-press" hover-stay-time="120" @click="openRecovery">
+        <text class="p-label">找回凭证</text>
+        <text class="p-value">{{ recoverySaving ? '生成中…' : '生成 ›' }}</text>
+      </view>
       <view class="p-row" hover-class="lb-press" hover-stay-time="120" @click="openPwd">
         <text class="p-label">修改密码</text>
         <text class="p-value">›</text>
       </view>
-      <text class="hint">忘记密码暂不支持自助找回（需短信服务，见 docs/08 §4）</text>
+      <text class="hint">忘记密码时用恢复凭证重置，无需短信；凭证只显示一次，请自行保存</text>
+    </view>
+
+    <!-- 恢复凭证弹窗 -->
+    <view class="mask lb-fade" v-if="recoveryVisible">
+      <view class="dialog lb-pop">
+        <text class="dlg-title">你的恢复凭证</text>
+        <text class="dlg-code">{{ recoveryCode }}</text>
+        <text class="dlg-content">请立即复制或抄下保存。它只显示这一次，用于忘记密码时重置。</text>
+        <view class="dlg-actions">
+          <text class="dlg-btn" @click="copyRecovery">复制</text>
+          <text class="dlg-btn dlg-btn-ok" @click="recoveryVisible = false">我已保存</text>
+        </view>
+      </view>
     </view>
 
     <!-- 修改密码弹窗（web 端 uni.showModal 回调不触发，统一自绘） -->
@@ -117,6 +134,9 @@
   const pwdSaving = ref<boolean>(false)
   const oldPwd = ref<string>('')
   const newPwd = ref<string>('')
+  const recoveryVisible = ref<boolean>(false)
+  const recoveryCode = ref<string>('')
+  const recoverySaving = ref<boolean>(false)
   const heightCm = ref<string>('')
   const preWeightKg = ref<string>('')
   const profileSaving = ref<boolean>(false)
@@ -150,6 +170,23 @@
     oldPwd.value = ''
     newPwd.value = ''
     pwdVisible.value = true
+  }
+  async function openRecovery() {
+    if (recoverySaving.value) return
+    recoverySaving.value = true
+    try {
+      const res = await luckyId('createRecoveryCode', {} as UTSJSONObject)
+      recoveryCode.value = res.getString('code') ?? ''
+      recoveryVisible.value = true
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    } finally { recoverySaving.value = false }
+  }
+  function copyRecovery() {
+    uni.setClipboardData({
+      data: recoveryCode.value,
+      success: () => { uni.showToast({ title: '已复制，请妥善保存', icon: 'none' }) }
+    })
   }
   async function onChangePwd() {
     if (pwdSaving.value) return
@@ -253,6 +290,8 @@
   .mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--lb-mask); justify-content: center; align-items: center; }
   .dialog { width: 560rpx; background-color: var(--lb-card); border-radius: 24rpx; padding: 40rpx 32rpx 24rpx 32rpx; }
   .dlg-title { font-size: 32rpx; font-weight: bold; color: var(--lb-text-1); text-align: center; }
+  .dlg-content { font-size: 26rpx; color: var(--lb-text-2); margin-top: 20rpx; text-align: center; line-height: 40rpx; }
+  .dlg-code { font-size: 44rpx; font-weight: bold; letter-spacing: 6rpx; color: var(--lb-primary-deep); text-align: center; margin-top: 24rpx; }
   .dlg-input { width: 100%; height: 88rpx; background-color: var(--lb-fill); border-radius: 16rpx; padding: 0 24rpx; font-size: 28rpx; color: var(--lb-text-1); margin-top: 20rpx; }
   .dlg-actions { flex-direction: row; justify-content: space-between; margin-top: 32rpx; }
   .dlg-btn { width: 230rpx; height: 80rpx; line-height: 80rpx; text-align: center; font-size: 29rpx; color: var(--lb-text-2); background-color: var(--lb-fill); border-radius: 40rpx; }

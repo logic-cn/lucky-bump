@@ -291,6 +291,15 @@ test('数据出口：打印/PDF 报告页已注册并提供打印入口', () => 
   assert.ok(pagesJson.pages.some(p => p.path == 'pages/data/export-report'), 'pages.json 未注册打印报告页')
 })
 
+test('找回密码：恢复凭证入口与重置页连通', () => {
+  const login = fs.readFileSync(path.join(ROOT, 'pages/account/login.uvue'), 'utf-8')
+  assert.ok(login.includes('/pages/account/recover'), '登录页缺少忘记密码入口')
+  const recover = fs.readFileSync(path.join(ROOT, 'pages/account/recover.uvue'), 'utf-8')
+  assert.ok(recover.includes('resetPasswordByRecovery'), '重置页未调用恢复接口')
+  const settings = fs.readFileSync(path.join(ROOT, 'pages/me/settings.uvue'), 'utf-8')
+  assert.ok(settings.includes('createRecoveryCode'), '设置页缺少生成恢复凭证入口')
+})
+
 /* ---------------- 可读性下限（小字号不得回流） ---------------- */
 
 test('最小字号不低于 24rpx（正文与辅助文案一致）', () => {

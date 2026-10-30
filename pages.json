@@ -9,6 +9,7 @@
     { "path": "pages/account/lock", "style": { "navigationBarTitleText": "解锁" } },
     { "path": "pages/account/login", "style": { "navigationBarTitleText": "登录" } },
     { "path": "pages/account/register", "style": { "navigationBarTitleText": "注册" } },
+    { "path": "pages/account/recover", "style": { "navigationBarTitleText": "找回密码" } },
     { "path": "pages/record/weight", "style": { "navigationBarTitleText": "体重" } },
     { "path": "pages/record/blood-pressure", "style": { "navigationBarTitleText": "血压" } },
     { "path": "pages/record/blood-glucose", "style": { "navigationBarTitleText": "血糖" } },

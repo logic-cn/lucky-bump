@@ -37,7 +37,42 @@ test('C5：logout 后 lucky-data / lucky-reminder 同样拒绝', async () => {
   assert.equal(r.errCode, 'TOKEN_INVALID', 'lucky-reminder 未校验吊销')
 })
 
-/* ---------------- C4：admin 不得越权读 strict ---------------- */
+/* ---------------- 恢复凭证找回密码（无需短信） ---------------- */
+
+test('恢复凭证：一次性、可重置密码并吊销旧 token', async () => {
+  const rt = createRuntime()
+  const reg = await rt.callObject('lucky-id', 'register', { username: 'recover1', password: 'oldPass123' })
+  assert.equal(reg.errCode, 0, JSON.stringify(reg))
+
+  const gen = await rt.callObject('lucky-id', 'createRecoveryCode', {}, { token: reg.token })
+  assert.equal(gen.errCode, 0, JSON.stringify(gen))
+  assert.ok(/^[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(gen.code), '凭证格式应为 XXXX-XXXX')
+
+  const bad = await rt.callObject('lucky-id', 'resetPasswordByRecovery', { username: 'recover1', code: 'ZZZZ-ZZZZ', newPassword: 'newPass123' })
+  assert.equal(bad.errCode, 'RECOVERY_ERROR', '错误凭证必须拒绝')
+
+  const ok = await rt.callObject('lucky-id', 'resetPasswordByRecovery', { username: 'recover1', code: gen.code, newPassword: 'newPass123' })
+  assert.equal(ok.errCode, 0, JSON.stringify(ok))
+
+  const oldLogin = await rt.callObject('lucky-id', 'login', { username: 'recover1', password: 'oldPass123' })
+  assert.equal(oldLogin.errCode, 'PASSWORD_ERROR', '旧密码应失效')
+  const newLogin = await rt.callObject('lucky-id', 'login', { username: 'recover1', password: 'newPass123' })
+  assert.equal(newLogin.errCode, 0, '新密码应可登录')
+
+  const reuse = await rt.callObject('lucky-id', 'resetPasswordByRecovery', { username: 'recover1', code: gen.code, newPassword: 'thirdPass123' })
+  assert.equal(reuse.errCode, 'NO_RECOVERY_CODE', '凭证使用后必须作废')
+
+  const after = await rt.callObject('lucky-id', 'checkToken', {}, { token: reg.token })
+  assert.equal(after.errCode, 'TOKEN_INVALID', '重置后旧 token 必须失效')
+})
+
+test('未设置恢复凭证的账号重置会得到明确提示', async () => {
+  const rt = createRuntime()
+  const reg = await rt.callObject('lucky-id', 'register', { username: 'noRecovery', password: 'password123' })
+  assert.equal(reg.errCode, 0)
+  const res = await rt.callObject('lucky-id', 'resetPasswordByRecovery', { username: 'noRecovery', code: 'AAAA-BBBB', newPassword: 'newPass123' })
+  assert.equal(res.errCode, 'NO_RECOVERY_CODE')
+})
 
 test('C4：visibilityFilter 只保留本人 strict 记录', () => {
   const auth = require('../../uniCloud-aliyun/cloudfunctions/common/lucky-auth-common')

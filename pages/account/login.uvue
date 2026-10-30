@@ -15,6 +15,9 @@
         <view class="link-wrap" hover-class="lb-press" hover-stay-time="120">
           <text class="link" @click="goRegister">没有账号？去注册</text>
         </view>
+        <view class="link-wrap" hover-class="lb-press" hover-stay-time="120">
+          <text class="link" @click="goRecover">忘记密码？</text>
+        </view>
       </view>
     </view>
     <view class="agreement-row lb-rise-2">
@@ -51,6 +54,7 @@
   const canceling = ref<boolean>(false)
 
   function goRegister() { uni.navigateTo({ url: '/pages/account/register' }) }
+  function goRecover() { uni.navigateTo({ url: '/pages/account/recover' }) }
   function goAgreement() { uni.navigateTo({ url: '/pages/me/agreement' }) }
   function goPrivacy() { uni.navigateTo({ url: '/pages/me/privacy-policy' }) }
   async function afterLogin() {

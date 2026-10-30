@@ -1,0 +1,85 @@
+<template>
+  <view class="page" :class="themeClass()">
+    <view class="logo-head lb-rise">
+      <view class="logo-mark"><text class="logo-emoji">🔑</text></view>
+      <text class="title">找回密码</text>
+      <text class="sub">用一次性恢复凭证重置，无需短信</text>
+    </view>
+
+    <view class="card lb-rise-1">
+      <input class="input" v-model="username" placeholder="用户名" placeholder-class="ph" />
+      <input class="input" v-model="code" placeholder="恢复凭证，如 ABCD-EFGH" placeholder-class="ph" />
+      <input class="input" type="text" :password="true" v-model="newPassword" placeholder="新密码（8-32 位）" placeholder-class="ph" />
+      <input class="input" type="text" :password="true" v-model="newPassword2" placeholder="再输入一次新密码" placeholder-class="ph" />
+      <button class="btn-primary" hover-class="lb-press" hover-stay-time="120" :disabled="saving" @click="submit">{{ saving ? '提交中…' : '重置密码' }}</button>
+      <view class="link-wrap" hover-class="lb-press" hover-stay-time="120">
+        <text class="link" @click="goLogin">返回登录</text>
+      </view>
+    </view>
+
+    <text class="hint lb-rise-2">恢复凭证在「我的 → 设置 → 账号安全」生成，显示一次请自行保存；使用后立即失效。重置成功会退出所有设备的登录。</text>
+  </view>
+</template>
+
+<script setup lang="ts">
+  import { ref } from 'vue'
+  import { luckyId } from '../../utils/request.uts'
+  import { themeClass } from '../../store/themeStore.uts'
+
+  const username = ref<string>('')
+  const code = ref<string>('')
+  const newPassword = ref<string>('')
+  const newPassword2 = ref<string>('')
+  const saving = ref<boolean>(false)
+
+  function goLogin() { uni.navigateBack() }
+
+  async function submit() {
+    if (saving.value) return
+    if (username.value.trim().length == 0) { uni.showToast({ title: '请输入用户名', icon: 'none' }); return }
+    if (code.value.trim().length == 0) { uni.showToast({ title: '请输入恢复凭证', icon: 'none' }); return }
+    if (newPassword.value.length < 8) { uni.showToast({ title: '密码至少 8 位', icon: 'none' }); return }
+    if (newPassword.value != newPassword2.value) { uni.showToast({ title: '两次密码不一致', icon: 'none' }); return }
+    saving.value = true
+    try {
+      const res = await luckyId('resetPasswordByRecovery', {
+        username: username.value.trim(), code: code.value.trim(), newPassword: newPassword.value
+      } as UTSJSONObject)
+      if (res.getNumber('errCode') == 0) {
+        uni.showToast({ title: '密码已重置，请重新登录', icon: 'none' })
+        setTimeout(() => { uni.reLaunch({ url: '/pages/account/login' }) }, 900)
+      }
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    } finally { saving.value = false }
+  }
+</script>
+
+<style>
+  @import '../../theme.scss';
+  .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
+  .logo-head { align-items: center; margin-top: 64rpx; }
+  .logo-mark { width: 140rpx; height: 140rpx; border-radius: 36rpx; background-color: var(--lb-primary-soft); align-items: center; justify-content: center; }
+  .logo-emoji { font-size: 64rpx; }
+  .title { font-size: 44rpx; font-weight: bold; color: var(--lb-text-1); margin-top: 24rpx; }
+  .sub { font-size: 24rpx; color: var(--lb-text-3); margin-top: 12rpx; }
+  .card { width: 640rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 40rpx; margin-top: 48rpx; align-items: center; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
+  .input { width: 560rpx; height: 88rpx; background-color: var(--lb-fill); border-radius: 24rpx; padding: 0 24rpx; font-size: 28rpx; color: var(--lb-text-1); margin-bottom: 20rpx; }
+  .ph { color: var(--lb-text-3); }
+  .btn-primary { width: 560rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 12rpx; transition: all 160ms ease-out; }
+  .link-wrap { padding: 8rpx 24rpx; border-radius: 24rpx; margin-top: 24rpx; transition: all 160ms ease-out; }
+  .link { color: var(--lb-primary); font-size: 26rpx; }
+  .hint { font-size: 24rpx; color: var(--lb-text-3); line-height: 38rpx; width: 640rpx; margin-top: 32rpx; text-align: center; }
+
+  @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+  @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
+  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms both; }
+  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both; }
+  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms both; }
+  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-fade { animation: lb-fade 200ms ease-out both; }
+  .lb-press { opacity: 0.72; transform: scale(0.98); }
+</style>
