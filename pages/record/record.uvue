@@ -79,6 +79,7 @@
           { icon: '🧷', label: '尿布', url: '/pages/baby/diaper' },
           { icon: '😴', label: '睡眠', url: '/pages/baby/sleep' },
           { icon: '📏', label: '成长', url: '/pages/baby/growth' },
+          { icon: '📷', label: '相册', url: '/pages/baby/album' },
           { icon: '🥣', label: '辅食计划', url: '/pages/tools/solid-food' },
           { icon: '💉', label: '疫苗', url: '/pages/baby/vaccines' }
         ]

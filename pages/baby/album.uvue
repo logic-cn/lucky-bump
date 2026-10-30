@@ -1,0 +1,163 @@
+<template>
+  <view class="page" :class="themeClass()">
+    <view class="card lb-rise">
+      <text class="card-title">成长相册</text>
+      <text class="hint">照片存在云端，家庭成员可查看；只有上传者本人可以删除。</text>
+      <input class="input" v-model="caption" placeholder="照片说明（选填，最多 40 字）" placeholder-class="ph" />
+      <button class="btn-save" hover-class="lb-press" hover-stay-time="120" :disabled="uploading" @click="chooseAndUpload">{{ uploading ? '上传中…' : '添加照片' }}</button>
+    </view>
+
+    <lbc-error v-if="loadFailed" :message="errorMsg" @retry="load" />
+
+    <view class="grid lb-rise-1" v-if="photos.length > 0">
+      <view class="photo-cell" v-for="(p, i) in photos" :key="i">
+        <image class="photo-img" mode="aspectFill" :src="p.getString('url') ?? ''" />
+        <text class="photo-date">{{ p.getString('date') ?? '' }}</text>
+        <text class="photo-caption" v-if="(p.getString('caption') ?? '').length > 0">{{ p.getString('caption') }}</text>
+        <text class="photo-del" v-if="p.getBoolean('mine') == true" @click="askDelete(p.getString('_id') ?? '')">删除</text>
+      </view>
+    </view>
+
+    <view class="card lb-rise-1" v-if="photos.length == 0 && !loadFailed">
+      <text class="empty">还没有照片</text>
+      <text class="hint">每次体检、第一次翻身、第一次笑，都值得留下来</text>
+    </view>
+
+    <!-- 删除确认（自绘，web 端 showModal 回调不触发） -->
+    <view class="mask lb-fade" v-if="confirmVisible">
+      <view class="dialog lb-pop">
+        <text class="dlg-title">删除这张照片？</text>
+        <text class="dlg-content">删除后无法恢复，云端文件也会一并移除。</text>
+        <view class="dlg-actions">
+          <text class="dlg-btn" @click="confirmVisible = false">取消</text>
+          <text class="dlg-btn dlg-btn-ok" @click="doDelete">确定删除</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script setup lang="ts">
+  import { ref } from 'vue'
+  import { onPageReady } from '../../utils/pageLifecycle.uts'
+  import { luckyBaby } from '../../utils/request.uts'
+  import { journeyState } from '../../store/journeyStore.uts'
+  import { themeClass } from '../../store/themeStore.uts'
+
+  const babyId = ref<string>('')
+  const photos = ref<UTSJSONObject[]>([])
+  const caption = ref<string>('')
+  const uploading = ref<boolean>(false)
+  const loadFailed = ref<boolean>(false)
+  const errorMsg = ref<string>('')
+  const confirmVisible = ref<boolean>(false)
+  const targetId = ref<string>('')
+
+  async function load() {
+    try {
+      const res = await luckyBaby('listPhotos', { journeyId: journeyState.journeyId, babyId: babyId.value } as UTSJSONObject)
+      photos.value = res.getArray<UTSJSONObject>('photos') ?? []
+      loadFailed.value = false
+    } catch (e) {
+      loadFailed.value = true
+      errorMsg.value = (e as Error).message
+    }
+  }
+
+  function chooseAndUpload() {
+    if (uploading.value) return
+    uni.chooseImage({
+      count: 1,
+      sizeType: ['compressed'],
+      success: (res: any) => {
+        const paths = res.tempFilePaths as string[]
+        if (paths.length > 0) uploadOne(paths[0])
+      },
+      fail: () => {}
+    })
+  }
+
+  async function uploadOne(path: string): Promise<void> {
+    uploading.value = true
+    try {
+      const dot = path.lastIndexOf('.')
+      const ext = dot >= 0 ? path.slice(dot + 1) : 'jpg'
+      const cloudPath = `album/${journeyState.journeyId}/${Date.now()}.${ext}`
+      const up = await uniCloud.uploadFile({ filePath: path, cloudPath } as UTSJSONObject)
+      const fileId = (up as UTSJSONObject).getString('fileID') ?? ''
+      if (fileId.length == 0) throw new Error('上传失败，请重试')
+      await luckyBaby('addPhoto', {
+        journeyId: journeyState.journeyId, babyId: babyId.value, fileId: fileId, caption: caption.value
+      } as UTSJSONObject)
+      caption.value = ''
+      load()
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    } finally { uploading.value = false }
+  }
+
+  function askDelete(id: string) {
+    if (id.length == 0) return
+    targetId.value = id
+    confirmVisible.value = true
+  }
+  async function doDelete() {
+    confirmVisible.value = false
+    try {
+      await luckyBaby('removePhoto', { journeyId: journeyState.journeyId, photoId: targetId.value } as UTSJSONObject)
+      uni.showToast({ title: '已删除', icon: 'none' })
+      load()
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    }
+  }
+
+  onPageReady(() => {
+    const stored = uni.getStorageSync('current_baby_id') as string
+    babyId.value = stored ?? ''
+    if (babyId.value.length == 0) {
+      uni.showToast({ title: '请先在宝宝页选择宝宝', icon: 'none' })
+      setTimeout(() => { uni.reLaunch({ url: '/pages/baby/baby-home' }) }, 800)
+      return
+    }
+    load()
+  })
+</script>
+
+<style>
+  @import '../../theme.scss';
+  .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
+  .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 36rpx; margin-top: 24rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
+  .card-title { font-size: 32rpx; font-weight: bold; color: var(--lb-text-1); }
+  .hint { font-size: 24rpx; color: var(--lb-text-3); line-height: 38rpx; margin-top: 12rpx; }
+  .input { width: 100%; height: 88rpx; background-color: var(--lb-fill); border-radius: 24rpx; padding: 0 24rpx; font-size: 28rpx; color: var(--lb-text-1); margin-top: 20rpx; }
+  .ph { color: var(--lb-text-3); }
+  .btn-save { width: 100%; height: 88rpx; line-height: 88rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 30rpx; border-radius: 48rpx; margin-top: 20rpx; }
+  .empty { font-size: 30rpx; font-weight: bold; color: var(--lb-text-1); }
+  .grid { width: 702rpx; flex-direction: row; flex-wrap: wrap; margin-top: 8rpx; }
+  .photo-cell { width: 335rpx; margin: 8rpx 8rpx 16rpx 8rpx; background-color: var(--lb-card); border-radius: 24rpx; padding: 12rpx; }
+  .photo-img { width: 311rpx; height: 311rpx; border-radius: 20rpx; background-color: var(--lb-fill); }
+  .photo-date { font-size: 24rpx; color: var(--lb-text-3); margin-top: 10rpx; }
+  .photo-caption { font-size: 24rpx; color: var(--lb-text-1); margin-top: 6rpx; }
+  .photo-del { font-size: 24rpx; color: var(--lb-danger); margin-top: 8rpx; align-self: flex-end; padding: 10rpx; }
+
+  .mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--lb-mask); justify-content: center; align-items: center; }
+  .dialog { width: 560rpx; background-color: var(--lb-card); border-radius: 24rpx; padding: 40rpx 32rpx 24rpx 32rpx; }
+  .dlg-title { font-size: 32rpx; font-weight: bold; color: var(--lb-text-1); text-align: center; }
+  .dlg-content { font-size: 26rpx; color: var(--lb-text-2); margin-top: 20rpx; text-align: center; line-height: 40rpx; }
+  .dlg-actions { flex-direction: row; justify-content: space-between; margin-top: 32rpx; }
+  .dlg-btn { width: 230rpx; height: 80rpx; line-height: 80rpx; text-align: center; font-size: 29rpx; color: var(--lb-text-2); background-color: var(--lb-fill); border-radius: 40rpx; }
+  .dlg-btn-ok { color: #FFFFFF; background-color: var(--lb-primary); }
+
+  @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+  @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
+  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms both; }
+  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both; }
+  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms both; }
+  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-fade { animation: lb-fade 200ms ease-out both; }
+  .lb-press { opacity: 0.72; transform: scale(0.98); }
+</style>

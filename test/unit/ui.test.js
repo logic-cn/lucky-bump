@@ -314,6 +314,18 @@ test('离线队列：四类低频写接入且复用 clientId', () => {
   assert.ok(home.includes('flushOffline'), '首页未触发离线补写')
 })
 
+test('宝宝相册：路由与入口已接通', () => {
+  const pagesJson = JSON.parse(fs.readFileSync(path.join(ROOT, 'pages.json'), 'utf-8'))
+  assert.ok(pagesJson.pages.some(p => p.path == 'pages/baby/album'), 'pages.json 未注册相册页')
+  const home = fs.readFileSync(path.join(ROOT, 'pages/baby/baby-home.uvue'), 'utf-8')
+  assert.ok(home.includes('/pages/baby/album'), '宝宝首页缺少相册入口')
+  const record = fs.readFileSync(path.join(ROOT, 'pages/record/record.uvue'), 'utf-8')
+  assert.ok(record.includes('/pages/baby/album'), '记录宫格缺少相册入口')
+  const album = fs.readFileSync(path.join(ROOT, 'pages/baby/album.uvue'), 'utf-8')
+  assert.ok(album.includes('uploadFile'), '相册未接上传')
+  assert.ok(album.includes('removePhoto'), '相册未接删除')
+})
+
 /* ---------------- 可读性下限（小字号不得回流） ---------------- */
 
 test('最小字号不低于 24rpx（正文与辅助文案一致）', () => {

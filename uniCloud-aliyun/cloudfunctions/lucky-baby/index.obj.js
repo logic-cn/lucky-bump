@@ -369,5 +369,64 @@ module.exports = {
       note: String(params.note || '').slice(0, 200), created_at: Date.now()
     })
     return auth.ok({ recordId: res.id, disclaimer: '本应用不做剂量建议，请以说明书与医嘱为准' })
+  },
+
+  /* ---------------- 成长相册 ---------------- */
+
+  /** 添加照片：先由客户端 uploadFile 得到 fileId，再登记到相册 */
+  async addPhoto(params = {}) {
+    const uid = await requireUser.call(this)
+    if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
+    const j = await accessibleJourney.call(this, uid, params.journeyId, 'write')
+    if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
+    const b = params.babyId ? await ownedBaby.call(this, uid, params.journeyId, params.babyId) : null
+    const fileId = String(params.fileId || '').trim().slice(0, 200)
+    if (!fileId) return auth.fail('PARAM_ERROR', '缺少图片')
+    const ts = params.ts || Date.now()
+    const res = await db.call(this).collection('lb-album').add({
+      user_id: uid, journey_id: j._id, baby_id: b ? b._id : '',
+      file_id: fileId, caption: String(params.caption || '').trim().slice(0, 40),
+      date: params.date || dateOf(ts), ts, created_at: Date.now()
+    })
+    return auth.ok({ photoId: res.id })
+  },
+
+  async listPhotos(params = {}) {
+    const uid = await requireUser.call(this)
+    if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
+    const j = await accessibleJourney.call(this, uid, params.journeyId)
+    if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
+    const q = { journey_id: j._id }
+    if (params.babyId) q.baby_id = String(params.babyId)
+    const res = await db.call(this).collection('lb-album').where(q).orderBy('ts', 'desc').limit(Math.min(200, +params.limit || 50)).get()
+    // mine 供客户端判断是否显示删除入口（最终权限仍由 removePhoto 校验）
+    let photos = res.data.map(p => Object.assign({}, p, { mine: p.user_id === uid }))
+    // 服务端换取临时访问地址，客户端直接渲染（临时地址约 2 小时有效，每次进入刷新）
+    try {
+      const ids = photos.map(p => p.file_id).filter(Boolean)
+      if (ids.length > 0) {
+        const tmp = await uniCloud.getTempFileURL({ fileList: ids })
+        const map = {}
+        for (const f of (tmp.fileList || [])) {
+          if (f.fileID && f.tempFileURL) map[f.fileID] = f.tempFileURL
+        }
+        photos = photos.map(p => Object.assign({}, p, { url: map[p.file_id] || '' }))
+      }
+    } catch (e) { /* 取地址失败时保留 file_id，不阻塞列表 */ }
+    return auth.ok({ photos })
+  },
+
+  /** 删除照片：仅上传者本人可删（家庭成员可看不可删） */
+  async removePhoto(params = {}) {
+    const uid = await requireUser.call(this)
+    if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
+    const j = await accessibleJourney.call(this, uid, params.journeyId, 'write')
+    if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
+    const r = await db.call(this).collection('lb-album').doc(String(params.photoId)).get()
+    const p = r.data[0]
+    if (!p || p.journey_id !== j._id) return auth.fail('NOT_FOUND', '照片不存在')
+    if (p.user_id !== uid) return auth.fail('PERMISSION_DENIED', '只有上传者可以删除')
+    await db.call(this).collection('lb-album').doc(p._id).remove()
+    return auth.ok()
   }
 }

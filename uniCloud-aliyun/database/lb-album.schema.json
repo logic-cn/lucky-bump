@@ -1,0 +1,43 @@
+{
+  "required": ["journey_id", "file_id", "ts"],
+  "properties": {
+    "user_id": {
+      "bsonType": "string",
+      "title": "上传者"
+    },
+    "journey_id": {
+      "bsonType": "string",
+      "title": "旅程"
+    },
+    "baby_id": {
+      "bsonType": "string",
+      "title": "宝宝"
+    },
+    "file_id": {
+      "bsonType": "string",
+      "title": "云存储文件 ID"
+    },
+    "caption": {
+      "bsonType": "string",
+      "title": "照片说明"
+    },
+    "date": {
+      "bsonType": "string",
+      "title": "日期"
+    },
+    "ts": {
+      "bsonType": "long",
+      "title": "时间戳"
+    },
+    "created_at": {
+      "bsonType": "long",
+      "title": "创建时间"
+    }
+  },
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  }
+}

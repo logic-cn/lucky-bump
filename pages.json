@@ -31,6 +31,7 @@
     { "path": "pages/baby/diaper", "style": { "navigationBarTitleText": "换尿布" } },
     { "path": "pages/baby/sleep", "style": { "navigationBarTitleText": "睡眠" } },
     { "path": "pages/baby/growth", "style": { "navigationBarTitleText": "成长记录" } },
+    { "path": "pages/baby/album", "style": { "navigationBarTitleText": "成长相册" } },
     { "path": "pages/baby/vaccines", "style": { "navigationBarTitleText": "疫苗接种" } },
     { "path": "pages/data/charts", "style": { "navigationBarTitleText": "指标曲线" } },
     { "path": "pages/data/export-report", "style": { "navigationBarTitleText": "打印报告" } },

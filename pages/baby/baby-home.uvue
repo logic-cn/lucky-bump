@@ -33,6 +33,7 @@
     <view class="card lb-rise-3">
       <text class="card-title">成长与照护</text>
       <view class="nav-row" hover-class="lb-press" hover-stay-time="120" @click="go('/pages/baby/growth')"><text class="nav-text">📏 成长记录与百分位</text><text class="nav-arrow">›</text></view>
+      <view class="nav-row" hover-class="lb-press" hover-stay-time="120" @click="go('/pages/baby/album')"><text class="nav-text">📷 成长相册</text><text class="nav-arrow">›</text></view>
       <view class="nav-row" hover-class="lb-press" hover-stay-time="120" @click="go('/pages/baby/vaccines')"><text class="nav-text">💉 疫苗接种计划</text><text class="nav-arrow">›</text></view>
       <view class="nav-row" hover-class="lb-press" hover-stay-time="120" @click="go('/pages/record/nursing-timer')"><text class="nav-text">⏱ 亲喂计时器</text><text class="nav-arrow">›</text></view>
     </view>
