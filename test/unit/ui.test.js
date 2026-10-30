@@ -71,13 +71,11 @@ test('每个页面内嵌 lb 动效标准块（lbc-disclaimer 豁免）', () => {
   assert.deepEqual(missing, [], `以下页面缺少动效标准块:\n${missing.join('\n')}`)
 })
 
-test('可交互 tab 页均有按压反馈（hover-class lb-press；learn 为纯静态知识页豁免）', () => {
-  for (const p of ['pages/index/index.uvue', 'pages/record/record.uvue', 'pages/data/data.uvue', 'pages/me/me.uvue']) {
+test('可交互 tab 页均有按压反馈（hover-class lb-press）', () => {
+  for (const p of ['pages/index/index.uvue', 'pages/record/record.uvue', 'pages/data/data.uvue', 'pages/me/me.uvue', 'pages/learn/learn.uvue']) {
     const src = fs.readFileSync(path.join(ROOT, p), 'utf-8')
     assert.ok(src.includes('hover-class="lb-press"'), `${p} 缺少按压反馈`)
   }
-  const learn = fs.readFileSync(path.join(ROOT, 'pages/learn/learn.uvue'), 'utf-8')
-  assert.ok(!/@click/.test(learn.match(/<template>[\s\S]*<\/template>/)[0]), 'learn 页应保持纯静态（若新增可点元素请同步加 hover-class 并纳入本测试）')
 })
 
 test('pages.json 与 uni.scss 设计令牌一致', () => {
@@ -249,6 +247,22 @@ test('经期管理具备日历补记、经量与异常提示', () => {
   assert.ok(src.includes("flow: flow.value"), '经期开始未记录经量')
   assert.ok(src.includes('abnormalTips'), '缺少周期异常提示')
   assert.ok(src.includes('不构成诊断'), '异常提示缺少免责说明')
+})
+
+test('知识板块具备本周要点、搜索、收藏与工具速查', () => {
+  const util = fs.readFileSync(path.join(ROOT, 'utils/knowledge.uts'), 'utf-8')
+  assert.ok(util.includes('weeklyFocus'), '缺少本周要点')
+  assert.ok(util.includes('searchTools'), '缺少工具速查')
+  assert.ok(util.includes('stageArticles'), '缺少按阶段取内容')
+  assert.ok(util.includes('source'), '条目缺少来源标注')
+  const count = (util.match(/id: '/g) || []).length
+  assert.ok(count >= 30, `知识条目偏少（${count}），至少 30 条`)
+
+  const page = fs.readFileSync(path.join(ROOT, 'pages/learn/learn.uvue'), 'utf-8')
+  assert.ok(page.includes('本周要点'), '页面缺少本周要点')
+  assert.ok(page.includes('能不能吃'), '页面缺少工具速查')
+  assert.ok(page.includes('lb_knowledge_favs'), '缺少收藏存储')
+  assert.ok(page.includes('search-input'), '缺少搜索框')
 })
 
 /* ---------------- 可读性下限（小字号不得回流） ---------------- */

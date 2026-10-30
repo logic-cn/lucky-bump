@@ -1,44 +1,71 @@
 <template>
   <view class="page" :class="themeClass()">
-    <view class="card lb-rise">
-      <text class="card-title">本周指南</text>
-      <text class="guide" v-if="stage == 'PRECONCEPTION'">备孕小贴士：叶酸每天 0.4mg；规律作息；排卵期前后隔天同房效率更高。焦虑是正常的，记录下来会好一些。</text>
-      <text class="guide" v-else-if="stage == 'T1'">孕早期：继续补充叶酸；孕吐严重（无法进食进水超 12 小时）请就医；11-13+6 周做 NT。此阶段谨遵医嘱用药。</text>
-      <text class="guide" v-else-if="stage == 'T2'">孕中期：20-24 周大排畸；24-28 周糖耐（检查前空腹 8-12 小时）；开始注意补钙补铁；侧睡更舒服。</text>
-      <text class="guide" v-else-if="stage == 'T3'">孕晚期：每天数胎动；34 周起胎心监护；35-37 周 GBS 筛查；核对待产包，记住 5-1-1 就医法则。</text>
-      <text class="guide" v-else-if="stage == 'POSTPARTUM'">产褥期：可以洗头洗澡，房间要通风；恶露一般 2-3 周变淡；情绪起伏很常见，EPDS 自评随时可做；42 天记得复查（妈妈和宝宝都要）。</text>
-      <text class="guide" v-else>育儿期：6 月龄起加辅食（含铁米粉起步，新食物观察 3 天）；按程序接种疫苗；每个宝宝节奏不同，里程碑晚一点不必焦虑。</text>
+    <!-- 搜索 -->
+    <view class="search-card lb-rise">
+      <input class="search-input" v-model="query" placeholder="搜食物、症状、检查，如 咖啡 / 胎动" placeholder-class="ph" />
+      <view class="search-clear" v-if="query.length > 0" hover-class="lb-press" hover-stay-time="120" @click="query = ''">
+        <text class="search-clear-text">清空</text>
+      </view>
     </view>
+
+    <!-- 本周要点 -->
+    <view class="card lb-rise" v-if="query.length == 0">
+      <text class="card-title">本周要点</text>
+      <text class="focus-item" v-for="(f, i) in focus" :key="i">· {{ f }}</text>
+    </view>
+
+    <!-- 工具速查 -->
     <view class="card lb-rise-1">
+      <text class="card-title">能不能吃 / 能不能做</text>
+      <view class="tool-row" v-for="(t, i) in visibleTools" :key="i">
+        <view class="tool-head">
+          <text class="tool-name">{{ t.name }}</text>
+          <text class="tool-verdict" :class="'verdict-' + t.verdict">{{ verdictText(t.verdict) }}</text>
+        </view>
+        <text class="tool-note">{{ t.note }}</text>
+      </view>
+      <text class="empty-text" v-if="visibleTools.length == 0">没有匹配的条目，换个关键词试试</text>
+      <view class="more-wrap" v-if="query.length == 0 && !toolsExpanded" hover-class="lb-press" hover-stay-time="120" @click="toolsExpanded = true">
+        <text class="more-link">查看全部 {{ toolTotal }} 项 ›</text>
+      </view>
+    </view>
+
+    <!-- 文章库 -->
+    <view class="card lb-rise-2">
+      <text class="card-title">文章库</text>
+      <view class="scope-row">
+        <view class="scope-chip" :class="scope == 'stage' ? 'scope-active' : ''" hover-class="lb-press" hover-stay-time="120" @click="scope = 'stage'">
+          <text class="scope-text" :class="scope == 'stage' ? 'scope-text-active' : ''">我的阶段</text>
+        </view>
+        <view class="scope-chip" :class="scope == 'all' ? 'scope-active' : ''" hover-class="lb-press" hover-stay-time="120" @click="scope = 'all'">
+          <text class="scope-text" :class="scope == 'all' ? 'scope-text-active' : ''">全部</text>
+        </view>
+        <view class="scope-chip" :class="scope == 'fav' ? 'scope-active' : ''" hover-class="lb-press" hover-stay-time="120" @click="scope = 'fav'">
+          <text class="scope-text" :class="scope == 'fav' ? 'scope-text-active' : ''">收藏 {{ favs.length }}</text>
+        </view>
+      </view>
+      <view class="art-row" v-for="(a, i) in visibleArticles" :key="a.id">
+        <view class="art-head">
+          <text class="art-title" hover-class="lb-press" hover-stay-time="120" @click="toggleExpand(a.id)">{{ a.title }}</text>
+          <text class="art-star" @click="toggleFav(a.id)">{{ isFav(a.id) ? '★' : '☆' }}</text>
+        </view>
+        <text class="art-tags">{{ a.tags }}</text>
+        <text class="art-body" v-if="expandedId == a.id">{{ a.body }}</text>
+        <text class="art-source" v-if="expandedId == a.id">来源：{{ a.source }}</text>
+      </view>
+      <text class="empty-text" v-if="visibleArticles.length == 0">没有匹配内容，可切换到"全部"或换个关键词</text>
+    </view>
+
+    <!-- 红线 -->
+    <view class="card lb-rise-3">
       <text class="card-title">红线提醒（出现这些请立即就医）</text>
       <text class="red">孕期：出血、剧烈腹痛、胎动明显减少、破水、血压 ≥160/110 或伴头痛视物模糊</text>
       <text class="red">产后：突然大量出血、恶露异味伴发热、伤口红肿渗液</text>
       <text class="red">宝宝：血便、陶土色大便、精神差拒奶、发热（3 月内）或持续高热、呼吸急促</text>
     </view>
-    <view class="card lb-rise-1">
-      <text class="card-title">产检关键节点</text>
-      <text class="guide" v-if="stage == 'PRECONCEPTION'">备孕检查：血常规、甲状腺功能、优生四项按医生建议；口腔检查别省；提前 3 个月每天叶酸 0.4mg。男方同步调整作息与烟酒。</text>
-      <text class="guide" v-else-if="stage == 'T1'">6-8 周确认宫内孕与胎心；11-13+6 周 NT 超声；早期唐筛或无创 DNA 按医生建议选择。建档后按医院节奏复查。</text>
-      <text class="guide" v-else-if="stage == 'T2'">20-24 周大排畸；24-28 周糖耐（前空腹 8-12 小时，喝糖水后按时抽血）；常规每 4 周一次产检。</text>
-      <text class="guide" v-else-if="stage == 'T3'">28-36 周每 2 周一次，36 周后每周一次；35-37 周 GBS 筛查；每天数胎动，记住 5-1-1 就医法则。</text>
-      <text class="guide" v-else-if="stage == 'POSTPARTUM'">产后 42 天妈妈与宝宝同时复查；伤口、恶露、盆底与情绪都值得主动说；EPDS 2/4/6 周各做一次。</text>
-      <text class="guide" v-else>按国家免疫规划程序接种；满月、3、6、8、12 月龄儿保；6 月龄起强化铁辅食，新食物观察 3 天。</text>
-    </view>
-    <view class="card lb-rise-2">
-      <text class="card-title">营养与作息</text>
-      <text class="guide" v-if="stage == 'PRECONCEPTION'">规律三餐、优质蛋白与深色蔬菜；每周 150 分钟中等强度运动；BMI 偏高或偏低都建议先与医生聊一聊。</text>
-      <text class="guide" v-else-if="stage == 'T1' || stage == 'T2' || stage == 'T3'">叶酸吃到孕 3 月；孕中期起注意钙与铁；孕吐期少量多餐、避免空腹；不喝酒不吸烟，用药先问医生。</text>
-      <text class="guide" v-else-if="stage == 'POSTPARTUM'">哺乳期每天多约 500kcal 与足量饮水；可以洗头洗澡、房间要通风；能睡就睡，别硬扛。</text>
-      <text class="guide" v-else>母乳或配方奶按需喂养；6 月龄前不加盐糖蜂蜜；辅食由稀到稠、由细到粗，一次只加一种新食物。</text>
-    </view>
-    <view class="card lb-rise-3">
-      <text class="card-title">情绪与支持</text>
-      <text class="guide">情绪起伏不是矫情。持续两周以上低落、失眠、对一切失去兴趣，或出现伤害自己的念头，请立刻联系信任的人或拨打心理援助热线（全国 12356，以当地公布号码为准）。</text>
-      <text class="guide">家人可以做的：多接手一件具体的事，少说"你想多了"。</text>
-    </view>
     <view class="card lb-rise-3">
       <text class="card-title">内容来源与边界</text>
-      <text class="gray">产检排程参考《孕前和孕期保健指南（2018）》；疫苗程序依据国家免疫规划（2021 版）；增重区间参考 IOM 孕期增重指南；成长曲线参照 WHO 儿童生长标准。以上均为通用科普，具体方案以你的医生意见为准。</text>
+      <text class="gray">产检与孕期知识参考《孕前和孕期保健指南（2018）》；疫苗依据国家免疫规划（2021 版）；增重参考 IOM 指南；成长曲线参照 WHO 标准。以上均为通用科普，具体方案以你的医生意见为准。</text>
     </view>
     <view class="card lb-rise-3">
       <text class="card-title">本应用不能做什么</text>
@@ -48,21 +75,123 @@
 </template>
 
 <script setup lang="ts">
-  import { computed } from 'vue'
+  import { computed, ref } from 'vue'
   import { journeyState } from '../../store/journeyStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
+  import {
+    weeklyFocus, stageArticles, allArticles, searchTools, Article, Tool
+  } from '../../utils/knowledge.uts'
+
+  const FAV_KEY = 'lb_knowledge_favs'
+  const query = ref<string>('')
+  const scope = ref<string>(journeyState.stage.length == 0 ? 'all' : 'stage')
+  const expandedId = ref<string>('')
+  const toolsExpanded = ref<boolean>(false)
+  const favs = ref<string[]>([])
 
   const stage = computed((): string => journeyState.stage)
+  const focus = computed((): string[] => weeklyFocus(journeyState.stage, journeyState.weeks, journeyState.postpartumDays))
+  const toolTotal = computed((): number => searchTools('').length)
+
+  function verdictText(v: string): string {
+    if (v == 'ok') return '可以'
+    if (v == 'no') return '不建议'
+    return '注意'
+  }
+  function loadFavs() {
+    const raw = uni.getStorageSync(FAV_KEY) as string
+    favs.value = raw == null || raw.length == 0 ? ([] as string[]) : raw.split(',')
+  }
+  function isFav(id: string): boolean { return favs.value.indexOf(id) >= 0 }
+  function toggleFav(id: string) {
+    const next: string[] = []
+    for (let i = 0; i < favs.value.length; i++) {
+      if (favs.value[i] != id) next.push(favs.value[i])
+    }
+    if (favs.value.indexOf(id) < 0) next.push(id)
+    favs.value = next
+    uni.setStorageSync(FAV_KEY, next.join(','))
+  }
+  function toggleExpand(id: string) {
+    expandedId.value = expandedId.value == id ? '' : id
+  }
+
+  function matches(a: Article, key: string): boolean {
+    return a.title.indexOf(key) >= 0 || a.tags.indexOf(key) >= 0 || a.body.indexOf(key) >= 0
+  }
+
+  const visibleTools = computed((): Tool[] => {
+    const list = searchTools(query.value)
+    if (query.value.length > 0 || toolsExpanded.value) return list
+    return list.slice(0, 6)
+  })
+
+  const visibleArticles = computed((): Article[] => {
+    let base: Article[] = []
+    if (scope.value == 'fav') {
+      base = allArticles()
+      const favList: Article[] = []
+      for (let i = 0; i < base.length; i++) {
+        if (favs.value.indexOf(base[i].id) >= 0) favList.push(base[i])
+      }
+      base = favList
+    } else if (scope.value == 'all') {
+      base = allArticles()
+    } else {
+      base = stageArticles(stage.value)
+    }
+    const key = query.value.trim()
+    if (key.length == 0) return base
+    const out: Article[] = []
+    for (let i = 0; i < base.length; i++) {
+      if (matches(base[i], key)) out.push(base[i])
+    }
+    return out
+  })
+
+  loadFavs()
 </script>
 
 <style>
   @import '../../theme.scss';
   .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
-  .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 40rpx; margin-top: 24rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
-  .card-title { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 16rpx; }
-  .guide { font-size: 26rpx; color: var(--lb-text-2); line-height: 44rpx; }
+  .search-card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 16rpx 24rpx; flex-direction: row; align-items: center; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
+  .search-input { flex: 1; height: 76rpx; font-size: 28rpx; color: var(--lb-text-1); }
+  .ph { color: var(--lb-text-3); }
+  .search-clear { padding: 12rpx; border-radius: 24rpx; transition: all 160ms ease-out; }
+  .search-clear-text { font-size: 24rpx; color: var(--lb-text-3); }
+
+  .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 36rpx; margin-top: 24rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
+  .card-title { font-size: 30rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 20rpx; }
+  .focus-item { font-size: 26rpx; color: var(--lb-text-2); line-height: 44rpx; }
+  .empty-text { font-size: 24rpx; color: var(--lb-text-3); margin-top: 12rpx; line-height: 38rpx; }
   .red { font-size: 24rpx; color: var(--lb-danger); line-height: 44rpx; }
   .gray { font-size: 24rpx; color: var(--lb-text-3); line-height: 44rpx; }
+
+  .tool-row { padding: 18rpx 0; border-bottom-width: 1px; border-bottom-color: var(--lb-line); }
+  .tool-head { flex-direction: row; align-items: center; }
+  .tool-name { flex: 1; font-size: 28rpx; color: var(--lb-text-1); font-weight: bold; }
+  .tool-verdict { font-size: 24rpx; border-radius: 999rpx; padding: 4rpx 16rpx; }
+  .verdict-ok { color: var(--lb-success); background-color: var(--lb-success-soft); }
+  .verdict-caution { color: var(--lb-warning); background-color: var(--lb-warning-soft); }
+  .verdict-no { color: var(--lb-danger); background-color: var(--lb-danger-soft); }
+  .tool-note { font-size: 24rpx; color: var(--lb-text-2); line-height: 38rpx; margin-top: 8rpx; }
+  .more-wrap { padding-top: 20rpx; transition: all 160ms ease-out; }
+  .more-link { font-size: 24rpx; color: var(--lb-primary); }
+
+  .scope-row { flex-direction: row; flex-wrap: wrap; margin-bottom: 12rpx; }
+  .scope-chip { background-color: var(--lb-fill); border-radius: 999rpx; padding: 12rpx 26rpx; margin: 6rpx 12rpx 6rpx 0; transition: all 160ms ease-out; }
+  .scope-active { background-color: var(--lb-primary-soft); }
+  .scope-text { font-size: 24rpx; color: var(--lb-text-2); }
+  .scope-text-active { color: var(--lb-primary-deep); font-weight: bold; }
+
+  .art-row { padding: 20rpx 0; border-bottom-width: 1px; border-bottom-color: var(--lb-line); }
+  .art-head { flex-direction: row; align-items: center; }
+  .art-title { flex: 1; font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); line-height: 40rpx; }
+  .art-star { width: 64rpx; text-align: center; font-size: 34rpx; color: var(--lb-primary); }
+  .art-tags { font-size: 24rpx; color: var(--lb-text-3); margin-top: 8rpx; }
+  .art-body { font-size: 26rpx; color: var(--lb-text-2); line-height: 44rpx; margin-top: 14rpx; }
+  .art-source { font-size: 24rpx; color: var(--lb-text-3); margin-top: 10rpx; }
 
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }

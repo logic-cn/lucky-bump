@@ -1,0 +1,184 @@
+/**
+ * 知识内容库（本地静态，随版本更新）
+ * 边界：只做通用科普，不提供诊断、用药与治疗建议；条目均标注来源。
+ */
+
+export type Article = {
+  id: string,
+  title: string,
+  stage: string,      // COMMON/PRECONCEPTION/T1/T2/T3/POSTPARTUM/PARENTING
+  weekFrom: number,   // 孕期适用周区间，其他阶段为 0
+  weekTo: number,
+  tags: string,
+  body: string,
+  source: string
+}
+
+export type Tool = {
+  name: string,
+  verdict: string,    // ok/caution/no
+  note: string
+}
+
+const ARTICLES: Article[] = [
+  // 备孕
+  { id: 'p1', title: '叶酸每天 0.4mg，提前 3 个月开始', stage: 'PRECONCEPTION', weekFrom: 0, weekTo: 0, tags: '叶酸 营养 备孕', body: '无特殊病史时每天补充 0.4mg 叶酸，孕前 3 个月开始并持续到孕 3 月。有癫痫、既往神经管缺陷妊娠等特殊情况，请按医生建议调整剂量。', source: '中国居民膳食指南' },
+  { id: 'p2', title: '排卵日怎么估算', stage: 'PRECONCEPTION', weekFrom: 0, weekTo: 0, tags: '排卵 周期 同房', body: '排卵通常发生在下次月经前约 14 天。日历推算只是起点，配合排卵试纸与基础体温能提高判断准确度；易孕窗口一般为排卵前 2 天到排卵后 1 天。', source: '妇产科学教材通用知识' },
+  { id: 'p3', title: '备孕检查清单', stage: 'PRECONCEPTION', weekFrom: 0, weekTo: 0, tags: '孕前检查 优生', body: '血常规、甲状腺功能、优生四项按医生建议选择；口腔检查别省。男方同步调整作息、戒烟酒。检查结果请由医生解读。', source: '孕前和孕期保健指南（2018）' },
+  { id: 'p4', title: '周期不规律先记录三个周期', stage: 'PRECONCEPTION', weekFrom: 0, weekTo: 0, tags: '月经 周期 异常', body: '周期短于 21 天、长于 35 天，或连续多个周期波动明显，建议先完整记录 3 个周期再就医；医生会更需要你的记录而不是单次日期。', source: '妇产科学教材通用知识' },
+  { id: 'p5', title: '男方准备同样重要', stage: 'PRECONCEPTION', weekFrom: 0, weekTo: 0, tags: '男方 生活方式', body: '戒烟酒、规律作息、避免久坐与高温环境（如长时间泡热水澡），对精子质量有实际帮助。', source: '孕前和孕期保健指南（2018）' },
+
+  // 孕早期
+  { id: 't1', title: '孕吐严重到什么程度要就医', stage: 'T1', weekFrom: 0, weekTo: 13, tags: '孕吐 早孕 就医', body: '少量多餐、避免空腹、远离油烟通常能缓解。若完全无法进食进水超过 12 小时、明显消瘦或尿量减少，请及时就医。', source: '孕前和孕期保健指南（2018）' },
+  { id: 't2', title: 'NT 检查在 11-13+6 周', stage: 'T1', weekFrom: 11, weekTo: 13, tags: 'NT 产检 超声', body: 'NT 超声有严格时间窗，建议提前预约。结果需结合血清学筛查或无创 DNA 由医生综合判断。', source: '孕前和孕期保健指南（2018）' },
+  { id: 't3', title: '孕早期用药先问医生', stage: 'T1', weekFrom: 0, weekTo: 13, tags: '用药 安全', body: '包括中成药、保健品与外用药，都请先告知医生怀孕周数再决定。不要自行停药或加药。', source: '药品说明书通用原则' },
+  { id: 't4', title: '出血或剧烈腹痛立即就医', stage: 'T1', weekFrom: 0, weekTo: 13, tags: '出血 腹痛 急诊', body: '孕早期出现阴道出血、剧烈腹痛、头晕晕厥，请不要等待观察，尽快到急诊。少量褐色分泌物也应联系医生确认。', source: '孕前和孕期保健指南（2018）' },
+  { id: 't5', title: '6-8 周确认宫内孕与胎心', stage: 'T1', weekFrom: 6, weekTo: 8, tags: '早孕 超声 建档', body: '确认宫内孕与胎心后按医院流程建档。过早检查可能看不到胎心，按医生建议安排复查时间。', source: '孕前和孕期保健指南（2018）' },
+  { id: 't6', title: '叶酸至少吃到孕 3 月', stage: 'T1', weekFrom: 0, weekTo: 13, tags: '叶酸 营养', body: '继续每天 0.4mg 叶酸至孕 3 月；后续是否需要继续补充，按医生建议与饮食情况决定。', source: '中国居民膳食指南' },
+
+  // 孕中期
+  { id: 'm1', title: '大排畸在 20-24 周', stage: 'T2', weekFrom: 20, weekTo: 24, tags: '大排畸 超声 产检', body: '系统超声检查胎儿结构，需提前预约。检查前不必空腹，穿方便检查的衣物；结果由产检医生解读。', source: '孕前和孕期保健指南（2018）' },
+  { id: 'm2', title: '糖耐在 24-28 周，前空腹 8-12 小时', stage: 'T2', weekFrom: 24, weekTo: 28, tags: '糖耐 血糖 产检', body: '检查前一晚正常饮食，检查当天空腹 8-12 小时；喝糖水后按医护安排抽血，中途不要进食走动过多。', source: '妊娠期高血糖诊治指南通用建议' },
+  { id: 'm3', title: '补钙补铁从孕中期开始关注', stage: 'T2', weekFrom: 14, weekTo: 27, tags: '钙 铁 营养', body: '奶制品、深色蔬菜、红肉是常见来源。是否需要补充剂、剂量多少，请结合血检由医生决定。', source: '中国居民膳食指南' },
+  { id: 'm4', title: '体重增长看孕前 BMI', stage: 'T2', weekFrom: 14, weekTo: 27, tags: '体重 增重 IOM', body: '正常 BMI 孕期总增重建议 11.5-16kg；偏低或偏高人群区间不同。体重页会按你的身高与孕前体重给出区间。', source: 'IOM 孕期增重指南' },
+  { id: 'm5', title: '侧卧更舒服，水肿明显要留意', stage: 'T2', weekFrom: 14, weekTo: 27, tags: '睡眠 水肿', body: '左侧卧或半侧卧有助于减轻压迫。若下肢水肿突然加重并伴头痛、视物模糊，请尽快就医。', source: '孕前和孕期保健指南（2018）' },
+  { id: 'm6', title: '常规产检每 4 周一次', stage: 'T2', weekFrom: 14, weekTo: 27, tags: '产检 频率', body: '28 周前通常每 4 周一次；28-35 周每 2 周，36 周起每周。具体以建档医院安排为准。', source: '孕前和孕期保健指南（2018）' },
+
+  // 孕晚期
+  { id: 'l1', title: '每天数胎动，明显减少立即就医', stage: 'T3', weekFrom: 28, weekTo: 42, tags: '胎动 监测', body: '每天固定时段安静侧卧计数。若 2 小时少于 10 次，或与你平时的规律相比明显减少，请联系医生或就诊。', source: '孕前和孕期保健指南（2018）' },
+  { id: 'l2', title: '5-1-1 法则：什么时候去医院', stage: 'T3', weekFrom: 34, weekTo: 42, tags: '宫缩 临产 就医', body: '宫缩约 5 分钟一次、每次持续约 1 分钟、连续 1 小时，建议前往医院。初产妇可结合医生嘱咐调整。', source: '产科通用健康教育' },
+  { id: 'l3', title: '破水后平卧并尽快就医', stage: 'T3', weekFrom: 28, weekTo: 42, tags: '破水 急诊', body: '感觉有温热液体持续流出时，垫上卫生巾平卧，尽快就医；不要洗澡或自行冲洗，记下破水时间与颜色。', source: '产科通用健康教育' },
+  { id: 'l4', title: 'GBS 筛查在 35-37 周', stage: 'T3', weekFrom: 35, weekTo: 37, tags: 'GBS 筛查', body: 'B 族链球菌筛查用于评估分娩时感染风险，结果阳性时医生会在临产时给予相应处理。', source: '孕前和孕期保健指南（2018）' },
+  { id: 'l5', title: '36 周前备好待产包', stage: 'T3', weekFrom: 34, weekTo: 42, tags: '待产包 准备', body: '证件、产检资料、产妇与宝宝用品分袋打包。工具页提供可勾选的待产包清单，提前准备更从容。', source: '产科通用健康教育' },
+  { id: 'l6', title: '见红可以观察，量大要就医', stage: 'T3', weekFrom: 34, weekTo: 42, tags: '见红 临产', body: '少量粉褐色分泌物可在家观察并记录宫缩；若出血量接近月经量、伴腹痛或胎动异常，请立即就医。', source: '产科通用健康教育' },
+
+  // 产褥期
+  { id: 'd1', title: '42 天复查妈妈和宝宝都要', stage: 'POSTPARTUM', weekFrom: 0, weekTo: 0, tags: '产后 复查', body: '产后 42 天评估伤口、恶露、盆底与情绪，宝宝同时做生长发育评估。提前列出想问医生的问题。', source: '孕前和孕期保健指南（2018）' },
+  { id: 'd2', title: '恶露一般 2-3 周变淡', stage: 'POSTPARTUM', weekFrom: 0, weekTo: 0, tags: '恶露 产后', body: '颜色由红转褐再转淡，量逐渐减少。若突然大量出血、异味伴发热，请及时就医。', source: '妇产科学教材通用知识' },
+  { id: 'd3', title: '情绪自评 2/4/6 周各做一次', stage: 'POSTPARTUM', weekFrom: 0, weekTo: 0, tags: 'EPDS 情绪', body: '情绪起伏很常见。持续两周以上低落、失眠、对一切失去兴趣，或出现伤害自己的念头，请立刻寻求专业帮助。', source: 'EPDS 量表使用规范' },
+  { id: 'd4', title: '乳房红肿发热警惕乳腺炎', stage: 'POSTPARTUM', weekFrom: 0, weekTo: 0, tags: '哺乳 乳腺炎', body: '按需喂养，注意含接姿势。出现局部红肿、疼痛伴发热，应尽快就医，不要硬扛或用力揉搓。', source: '母乳喂养通用指南' },
+  { id: 'd5', title: '可以洗头洗澡，房间要通风', stage: 'POSTPARTUM', weekFrom: 0, weekTo: 0, tags: '产后 护理', body: '注意水温与保暖，洗后及时擦干。通风时让妈妈和宝宝避开直吹即可，不必捂汗。', source: '产褥期保健通用建议' },
+
+  // 育儿
+  { id: 'b1', title: '6 月龄加辅食，从含铁米粉开始', stage: 'PARENTING', weekFrom: 0, weekTo: 0, tags: '辅食 6月龄', body: '由稀到稠、由细到粗，一次只加一种新食物并观察 3 天。1 岁前不加盐糖蜂蜜。', source: '中国居民膳食指南' },
+  { id: 'b2', title: '疫苗按国家免疫规划接种', stage: 'PARENTING', weekFrom: 0, weekTo: 0, tags: '疫苗 接种', body: '按程序接种，接种后留观 30 分钟。发热、精神差等异常反应及时联系接种点或就医。', source: '国家免疫规划（2021 版）' },
+  { id: 'b3', title: '0-3 月睡眠 14-17 小时/天', stage: 'PARENTING', weekFrom: 0, weekTo: 0, tags: '睡眠 新生儿', body: '个体差异很大，不必与他人比较。仰卧睡、床面平整、避免捂热是更安全的睡眠环境。', source: 'WHO 儿童睡眠建议' },
+  { id: 'b4', title: '大运动的大致节奏', stage: 'PARENTING', weekFrom: 0, weekTo: 0, tags: '大运动 里程碑', body: '3 月抬头、6 月翻身、8 月坐、12 月站走是常见范围，晚一点不必焦虑；明显落后请儿保评估。', source: 'WHO 儿童生长标准' },
+  { id: 'b5', title: '3 月内发热要立即就医', stage: 'PARENTING', weekFrom: 0, weekTo: 0, tags: '发热 就医', body: '3 月龄内宝宝发热请立即就医；较大宝宝持续高热、精神差、拒奶或呼吸急促也应尽快就诊。', source: '儿科通用诊疗原则' },
+  { id: 'b6', title: '按需喂养，不强行灌喂', stage: 'PARENTING', weekFrom: 0, weekTo: 0, tags: '喂养 奶量', body: '观察饥饿与饱足信号，避免强迫喂养。尿量、体重增长与精神状态比单次奶量更能说明吃得好不好。', source: '婴幼儿喂养通用指南' },
+
+  // 通用
+  { id: 'x1', title: '情绪支持与求助渠道', stage: 'COMMON', weekFrom: 0, weekTo: 0, tags: '情绪 心理 热线', body: '持续两周以上低落、失眠、对一切失去兴趣，或出现伤害自己的念头，请立刻联系信任的人或拨打心理援助热线（全国 12356，以当地公布号码为准）。', source: '国家心理健康服务热线' },
+  { id: 'x2', title: '哪些记录永远仅本人可见', stage: 'COMMON', weekFrom: 0, weekTo: 0, tags: '隐私 家庭组', body: '同房、验孕、情绪自评在服务端严格仅本人可见，家庭成员与记录者都无法访问；所有访问会留痕。', source: '幸孕记隐私承诺' },
+  { id: 'x3', title: '本应用的边界', stage: 'COMMON', weekFrom: 0, weekTo: 0, tags: '免责 诊断', body: '幸孕记是健康记录工具，不提供诊断与治疗建议；所有解读均为参考信息，用药请遵说明书与医嘱。', source: '幸孕记免责声明' }
+]
+
+const TOOLS: Tool[] = [
+  { name: '咖啡', verdict: 'caution', note: '每天咖啡因建议不超过 200mg（约一杯中杯美式），注意奶茶与巧克力也含咖啡因' },
+  { name: '淡茶', verdict: 'caution', note: '可以少量，避免浓茶与空腹饮用；睡前不喝' },
+  { name: '酒精', verdict: 'no', note: '孕期与哺乳期不建议饮酒，没有安全剂量' },
+  { name: '生鱼片/生食', verdict: 'no', note: '避免生食海鲜、生蛋与未煮熟肉类，降低感染风险' },
+  { name: '螃蟹', verdict: 'ok', note: '彻底煮熟、适量即可；过敏体质谨慎' },
+  { name: '山楂', verdict: 'caution', note: '少量食用通常无碍，不必刻意大量吃' },
+  { name: '荔枝', verdict: 'caution', note: '糖分较高，控制量，血糖异常者更要注意' },
+  { name: '吸烟与二手烟', verdict: 'no', note: '孕期与哺乳期都应完全避免，包括二手烟' },
+  { name: '染发', verdict: 'caution', note: '孕早期尽量避免，必须做时选通风环境并缩短接触时间' },
+  { name: '泡温泉/桑拿', verdict: 'no', note: '孕早期与晚期不建议，体温过高有风险' },
+  { name: '剧烈运动', verdict: 'caution', note: '避免对抗、跳跃与跌倒风险；散步、孕妇瑜伽通常更合适，特殊情况遵医嘱' },
+  { name: '同房', verdict: 'caution', note: '孕中期多数情况可以；有出血、破水、前置胎盘或医生叮嘱时避免' },
+  { name: '米酒下奶', verdict: 'no', note: '酒精会进入乳汁，不建议用酒类催奶，多喝水与勤吸吮更有效' },
+  { name: '束腹带', verdict: 'caution', note: '产后是否使用、松紧与时长请按医生建议，不宜过紧' },
+  { name: '疫苗（孕期）', verdict: 'caution', note: '灭活疫苗是否接种按医生建议；活疫苗通常不建议，具体遵医嘱' }
+]
+
+/** 本周要点：按阶段给出 3 条最相关的行动提示 */
+export function weeklyFocus(stage: string, weeks: number, postpartumDays: number): string[] {
+  const out: string[] = []
+  if (stage.length == 0) {
+    out.push('完成建档后，本周要点会按你的阶段更新')
+    out.push('每天记录一条，趋势才有意义')
+    out.push('出现出血、剧烈腹痛或胎动异常，请及时就医')
+    return out
+  }
+  if (stage == 'PRECONCEPTION') {
+    out.push('每天叶酸 0.4mg，固定时间吃')
+    out.push('今天记录经期或排卵试纸，周期预测会更准')
+    out.push('规律作息，比“拼命努力”更重要')
+    return out
+  }
+  if (stage == 'T1' || stage == 'T2' || stage == 'T3') {
+    if (weeks < 14) {
+      out.push('叶酸吃到孕 3 月，避免自行用药')
+      out.push('少量多餐缓解孕吐，无法进水进食超 12 小时就医')
+      out.push('NT 检查在 11-13+6 周，提前预约')
+    } else if (weeks < 28) {
+      out.push('20-24 周大排畸，24-28 周糖耐（前空腹 8-12 小时）')
+      out.push('关注钙与铁，体重按孕前 BMI 区间增长')
+      out.push('常规产检每 4 周一次，按医院安排')
+    } else {
+      out.push('每天固定时段数胎动，明显减少立即就医')
+      out.push('记住 5-1-1：宫缩 5 分钟一次、持续 1 分钟、共 1 小时')
+      out.push('36 周前备好待产包与证件')
+    }
+    return out
+  }
+  if (stage == 'POSTPARTUM') {
+    if (postpartumDays <= 42) {
+      out.push('恶露 2-3 周变淡，异味伴发热及时就医')
+      out.push('情绪自评 2/4/6 周各做一次')
+      out.push('42 天复查妈妈和宝宝都要')
+    } else {
+      out.push('复查后按医生建议恢复活动与盆底训练')
+      out.push('哺乳期每天多约 500kcal 与足量饮水')
+      out.push('能睡就睡，别硬扛')
+    }
+    return out
+  }
+  out.push('6 月龄起加辅食，从含铁米粉开始，一次一种观察 3 天')
+  out.push('按国家免疫规划接种疫苗，接种后留观 30 分钟')
+  out.push('每个宝宝节奏不同，里程碑晚一点不必焦虑')
+  return out
+}
+
+/** 我的阶段：本阶段优先，通用内容兜底 */
+export function stageArticles(stage: string): Article[] {
+  const own: Article[] = []
+  const common: Article[] = []
+  for (let i = 0; i < ARTICLES.length; i++) {
+    if (ARTICLES[i].stage == stage) own.push(ARTICLES[i])
+    else if (ARTICLES[i].stage == 'COMMON') common.push(ARTICLES[i])
+  }
+  return own.concat(common)
+}
+
+export function allArticles(): Article[] { return ARTICLES }
+
+/** 关键词搜索：标题/标签/正文，空词返回全部 */
+export function searchArticles(q: string): Article[] {
+  const key = q.trim()
+  if (key.length == 0) return ARTICLES
+  const out: Article[] = []
+  for (let i = 0; i < ARTICLES.length; i++) {
+    const a = ARTICLES[i]
+    if (a.title.indexOf(key) >= 0 || a.tags.indexOf(key) >= 0 || a.body.indexOf(key) >= 0) out.push(a)
+  }
+  return out
+}
+
+export function searchTools(q: string): Tool[] {
+  const key = q.trim()
+  if (key.length == 0) return TOOLS
+  const out: Tool[] = []
+  for (let i = 0; i < TOOLS.length; i++) {
+    const t = TOOLS[i]
+    if (t.name.indexOf(key) >= 0 || t.note.indexOf(key) >= 0) out.push(t)
+  }
+  return out
+}
+
+export function articleById(id: string): Article | null {
+  for (let i = 0; i < ARTICLES.length; i++) {
+    if (ARTICLES[i].id == id) return ARTICLES[i]
+  }
+  return null
+}
