@@ -351,6 +351,20 @@ test('提醒完成闭环：首页打勾回写', () => {
   assert.ok(server.includes('lb-reminder-done'), '服务端未记录完成状态')
 })
 
+test('Web 可安装：PWA manifest 与主屏幕图标', () => {
+  const manifestPath = path.join(ROOT, 'static/manifest.webmanifest')
+  assert.ok(fs.existsSync(manifestPath), '缺少 manifest.webmanifest')
+  const m = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'))
+  assert.equal(m.display, 'standalone', 'manifest 应为独立窗口模式')
+  assert.ok(m.icons.length > 0, 'manifest 缺少图标')
+  for (const icon of m.icons) {
+    const p = path.join(ROOT, icon.src.replace(/^\//, ''))
+    assert.ok(fs.existsSync(p), `manifest 图标不存在: ${icon.src}`)
+  }
+  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf-8')
+  assert.ok(html.includes('rel="manifest"'), 'index.html 未引用 manifest')
+})
+
 /* ---------------- 可读性下限（小字号不得回流） ---------------- */
 
 test('最小字号不低于 24rpx（正文与辅助文案一致）', () => {

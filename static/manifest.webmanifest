@@ -1,0 +1,20 @@
+{
+  "name": "幸孕记 Lucky Bump",
+  "short_name": "幸孕记",
+  "description": "从备孕到育儿，一条不断档的生命记录",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F8F4F5",
+  "theme_color": "#E4537F",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "/static/icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
