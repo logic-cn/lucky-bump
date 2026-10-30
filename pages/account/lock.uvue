@@ -3,58 +3,65 @@
     <text class="lock-icon">🔒</text>
     <text class="lock-title">幸孕记已锁定</text>
     <text class="lock-sub">{{ subText }}</text>
+    <input class="lock-input" type="text" :password="true" v-model="password" placeholder="输入登录密码解锁" placeholder-class="ph" />
     <button class="btn-unlock" hover-class="lb-press" hover-stay-time="120" :disabled="unlocking" @click="tryUnlock">{{ unlocking ? '验证中…' : '解锁' }}</button>
+    <text class="lock-link" v-if="bioAvailable" @click="tryBiometric">使用面容 / 指纹</text>
   </view>
 </template>
 
 <script setup lang="ts">
   import { ref } from 'vue'
+  import { luckyId } from '../../utils/request.uts'
   import { isBiometricAvailable, authenticate } from '../../utils/biometric.uts'
   import { markUnlocked } from '../../store/appStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
 
+  const bioAvailable = isBiometricAvailable()
   const unlocking = ref<boolean>(false)
-  const subText = ref<string>(isBiometricAvailable() ? '验证面容或指纹后继续使用' : '验证身份后继续使用')
+  const password = ref<string>('')
+  const subText = ref<string>(bioAvailable ? '验证面容/指纹，或输入登录密码' : '输入登录密码后继续使用')
 
   function goHome() {
     markUnlocked()
     uni.reLaunch({ url: '/pages/index/index' })
   }
 
+  /** 密码校验走服务端，避免端上存储密码（docs/08 §8.9 降级路径） */
   async function tryUnlock() {
     if (unlocking.value) return
-    unlocking.value = true
-    if (isBiometricAvailable()) {
-      const ok = await authenticate('解锁幸孕记')
-      unlocking.value = false
-      if (ok) { goHome(); return }
-      subText.value = '验证未通过，请重试'
+    if (password.value.length < 8) {
+      subText.value = '请输入 8 位以上的登录密码'
       return
     }
+    unlocking.value = true
+    try {
+      await luckyId('verifyPassword', { password: password.value } as UTSJSONObject)
+      goHome()
+    } catch (e) {
+      subText.value = (e as Error).message.length > 0 ? (e as Error).message : '密码错误，请重试'
+    } finally {
+      unlocking.value = false
+    }
+  }
+
+  async function tryBiometric() {
+    if (unlocking.value) return
+    unlocking.value = true
+    const ok = await authenticate('解锁幸孕记')
     unlocking.value = false
-    // 无生物识别能力：降级为直接进入（会话仍受 token 保护，见 docs/08 §8）
-    goHome()
+    if (ok) { goHome(); return }
+    subText.value = '验证未通过，请重试或输入密码'
   }
 </script>
 
 <style>
   @import '../../theme.scss';
-  @import '../../theme.scss';
   .page { flex: 1; background-color: var(--lb-bg); align-items: center; justify-content: center; padding: 48rpx; }
   .lock-icon { font-size: 96rpx; }
   .lock-title { font-size: 38rpx; font-weight: bold; color: var(--lb-text-1); margin-top: 24rpx; }
   .lock-sub { font-size: 26rpx; color: var(--lb-text-3); margin-top: 12rpx; text-align: center; }
-  .btn-unlock { width: 400rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 48rpx; transition: all 160ms ease-out; }
-
-  @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
-  @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
-  @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
-  @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
-  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms both; }
-  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both; }
-  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms both; }
-  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-  .lb-fade { animation: lb-fade 200ms ease-out both; }
-  .lb-press { opacity: 0.72; transform: scale(0.98); }
+  .lock-input { width: 520rpx; height: 88rpx; background-color: var(--lb-card); border-radius: 24rpx; padding: 0 24rpx; font-size: 28rpx; color: var(--lb-text-1); margin-top: 40rpx; text-align: center; }
+  .ph { color: var(--lb-text-3); }
+  .btn-unlock { width: 400rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 32rpx; transition: all 160ms ease-out; }
+  .lock-link { font-size: 26rpx; color: var(--lb-primary); margin-top: 28rpx; }
 </style>

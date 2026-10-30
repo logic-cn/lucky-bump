@@ -107,6 +107,22 @@ module.exports = {
     return auth.ok()
   },
 
+  /**
+   * 应用锁解锁：校验当前登录用户的密码（不签发新 token，仅返回校验结果）。
+   * 生物识别不可用时的降级路径，避免"点一下即进"的假锁（docs/08 §8.9）。
+   */
+  async verifyPassword(params = {}) {
+    const g = await requireUser.call(this)
+    if (g.errCode !== 0) return g
+    const res = await db.call(this).collection(usersCol).doc(g.uid).get()
+    const user = res.data[0]
+    if (!user) return auth.fail('ACCOUNT_NOT_EXISTS', '用户不存在')
+    if (!auth.verifyPassword(String(params.password || ''), user.password)) {
+      return auth.fail('PASSWORD_ERROR', '密码错误')
+    }
+    return auth.ok({ verified: true })
+  },
+
   async changePassword(params = {}) {
     const g = await requireUser.call(this)
     if (g.errCode !== 0) return g

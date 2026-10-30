@@ -53,3 +53,21 @@ test('注销：cancelDeletion 对正常账号拒绝', async () => {
   const c = await rt.callObject('lucky-id', 'cancelDeletion', { username: 'deluser4', password: 'password123' })
   assert.equal(c.errCode, 'STATE_ERROR', '未申请注销的账号不应可撤回')
 })
+
+test('应用锁：verifyPassword 校验通过且不发新 token', async () => {
+  const rt = createRuntime()
+  const r = await reg(rt, 'lock01')
+  const ok = await rt.callObject('lucky-id', 'verifyPassword', { password: 'password123' }, { token: r.token })
+  assert.equal(ok.errCode, 0, JSON.stringify(ok))
+  assert.equal(ok.verified, true)
+  assert.equal(ok.token, undefined, '解锁校验不得签发新 token')
+})
+
+test('应用锁：verifyPassword 密码错误 / 未登录均拒绝', async () => {
+  const rt = createRuntime()
+  const r = await reg(rt, 'lock02')
+  const bad = await rt.callObject('lucky-id', 'verifyPassword', { password: 'wrongpass' }, { token: r.token })
+  assert.equal(bad.errCode, 'PASSWORD_ERROR')
+  const anon = await rt.callObject('lucky-id', 'verifyPassword', { password: 'password123' })
+  assert.equal(anon.errCode, 'TOKEN_INVALID', '无 token 不得解锁')
+})

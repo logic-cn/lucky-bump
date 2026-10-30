@@ -7,7 +7,7 @@
         <switch :checked="appLock" @change="onAppLock" color="#E4537F" />
       </view>
       <text class="hint" v-if="bioAvailable">启动时需面容/指纹验证</text>
-      <text class="hint" v-else>当前设备暂未接入生物识别，启动时点击解锁按钮即可进入</text>
+      <text class="hint" v-else>当前设备暂未接入生物识别，启动时需输入登录密码解锁</text>
       <text class="hint">建议开启：你的记录里有最私密的旅程。</text>
     </view>
     <view class="card lb-rise-1">
