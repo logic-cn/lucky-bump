@@ -7,7 +7,7 @@
 
 - 当前阶段：**Web 端生产可用已达** —— 白屏根因修复完毕（4 层），浏览器端到端全链路验证通过（注册→引导→首页→记录→预测→时间线→退出→复登），生产 uniCloud 空间联调可用
 - 最近更新：2026-10-30（缺口补齐轮：定时 purge / 产后日程 / 提醒落地 / 真锁 / 日记照片 / 出生卡 / 导出摘要 / 留痕等 14 项）
-- 测试：`npm test` → 68 pass / 0 fail
+- 测试：`npm test` → 70 pass / 0 fail
 
 ## 任务清单
 
@@ -129,9 +129,18 @@
 - [x] 隐私文案对齐真实能力：去掉未实现的「云备份/完整导出」承诺，通知脱敏开关标注为推送接入后生效
 - [x] lbc 组件令牌化：card/redline/disclaimer 全部改用 `var(--lb-*)`，新增静态断言禁止组件颜色字面量
 - [x] learn 知识页扩充：按阶段补产检节点、营养作息、情绪支持、内容来源，保留红线与医疗边界
-- [x] 回归：`npm test` 68/68
+- [x] 回归：`npm test` 70/70
 - [ ] 仍需人工：上传 `lucky-maintenance` 云函数与 `lb-audit-logs` schema 到云端（HBuilderX）；推送/生物识别/导航栏动态改色待平台能力验证（见 docs/08 §8/§6）
+
+### 端到端验证（2026-10-30，Web dev + 生产 uniCloud 空间）⛔ 部分阻塞
+
+- [x] 云端可用性：登录/注册云对象调用正常返回（`lucky-id` ACCOUNT_NOT_EXISTS / 注册 token）
+- [x] UI 流程（Playwright，390×844）：登录页 → 注册页 → 注册成功 → 引导页（备孕）→ 日期选择 → 建档 → 首页渲染
+- [ ] **阻塞：页面生命周期钩子不触发**——HBuilderX 5.34 vapor 运行时下 `onLoad` / `onPageShow` 均未执行（页面 vm 的 `$onShow` 为空、首页无 `lucky-journey`/`lucky-data` 调用、token 为空时不跳登录页）。因此依赖生命周期加载数据的记录/数据/设置/计时器恢复等流程无法在 UI 层验证（详见 docs/08 §8.13）
+- [x] API 级全生命周期：`test/e2e/lifecycle.test.js` 通过（注册→备孕→验孕→孕期→产检→分娩→产褥→育儿→家庭→数据→提醒→二宝→登出）
+- [x] `npm test` 70/70；UI 布局 37 页 × 320/390/414/960 宽度无横向溢出
+- [ ] 临时账号：`e2e3338914`、`e2e3339183`（密码 `e2ePass123`，未清理；可在冷静期入口注销，或等 purge 上线后清除）
 
 ## 中断恢复指引
 
-Web 端已可用。后续运行只涉及：1) `npm test` 保持 68/68；2) 上传云函数前先跑 `scripts/sync_commons.sh`；3) 新增云函数 `lucky-maintenance` 与 `lb-audit-logs` 表需在 HBuilderX 上传/初始化；4) 真机运行/云打包按 docs/08 §5（需 HBuilderX 用户操作）；5) 如用户提出功能修改，按 docs/03 规范实现并回归测试（web 端限制见 docs/08 §8）。
+Web 端已可用。后续运行只涉及：1) `npm test` 保持 70/70；2) 上传云函数前先跑 `scripts/sync_commons.sh`；3) 新增云函数 `lucky-maintenance` 与 `lb-audit-logs` 表需在 HBuilderX 上传/初始化；4) 真机运行/云打包按 docs/08 §5（需 HBuilderX 用户操作）；5) 如用户提出功能修改，按 docs/03 规范实现并回归测试（web 端限制见 docs/08 §8）。

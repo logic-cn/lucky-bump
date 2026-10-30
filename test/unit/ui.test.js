@@ -176,3 +176,19 @@ test('按钮文字统一居中（theme.scss 集中登记）', () => {
   }
   assert.deepEqual(offenders, [], `以下按钮类未在 theme.scss 中显式居中（文字会贴左/被圆角裁切）：\n${offenders.join('\n')}`)
 })
+
+test('页面显示生命周期使用组合式 onPageShow（禁止选项式 onShow）', () => {
+  const offenders = []
+  for (const file of walkUvue(path.join(ROOT, 'pages'))) {
+    const src = fs.readFileSync(file, 'utf-8')
+    // 只匹配真正的调用/导入，忽略注释中的说明文字
+    const lines = src.split('\n')
+    lines.forEach((line, i) => {
+      if (line.trim().startsWith('//')) return
+      if (/import[^\n]*\bonShow\b/.test(line) || /\bonShow\s*\(/.test(line)) {
+        offenders.push(`${path.relative(ROOT, file)}:${i + 1}`)
+      }
+    })
+  }
+  assert.deepEqual(offenders, [], `uni-app x 组合式页面应使用 onPageShow：\n${offenders.join('\n')}`)
+})
