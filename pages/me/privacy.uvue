@@ -27,13 +27,14 @@
       <text class="s-item">💗 验孕记录</text>
       <text class="s-item">💗 产后情绪自评（EPDS）</text>
       <view class="p-row">
-        <text class="p-label">锁屏通知只显示"你有 1 条新提醒"</text>
+        <text class="p-label">通知内容脱敏（提醒只显示数量）</text>
         <switch :checked="quietPush" @change="onQuietPush" color="#E4537F" />
       </view>
+      <text class="hint">该开关为推送能力接入后生效（当前无系统级推送，见 docs/08）</text>
     </view>
     <view class="card lb-rise-2">
       <text class="card-title">你的数据权利</text>
-      <text class="hint">· 云备份默认关闭，开启时端侧加密\n· 完整导出：随时带走全部数据\n· 注销账号：30 天冷静期后彻底删除（含云端）</text>
+      <text class="hint">· 数据导出：结构化 JSON + 可读摘要（媒体打包待 V1.1）\n· 云备份：本期未开通；如后续提供将另行征得同意\n· 注销账号：30 天冷静期后由定时任务彻底删除（含云端）</text>
       <view class="nav-row" hover-class="lb-press" hover-stay-time="120" @click="go('/pages/data/data')"><text class="nav-text">去导出我的数据</text><text class="nav-arrow">›</text></view>
     </view>
     <view class="card lb-rise-3">
