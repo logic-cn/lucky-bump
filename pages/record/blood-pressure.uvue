@@ -40,6 +40,7 @@
   import { journeyState } from '../../store/journeyStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
   import { todayDateStr, dateToTs, isToday } from '../../utils/recordDate.uts'
+  import { newClientId, isNetworkError, enqueueRecord } from '../../utils/offlineQueue.uts'
 
   const sbp = ref<string>('')
   const dbp = ref<string>('')
@@ -81,32 +82,55 @@
     const value = { sbp: sbpVal, dbp: dbpVal } as UTSJSONObject
     const hrVal = parseInt(hr.value)
     if (hrVal >= 30 && hrVal <= 220) value['hr'] = hrVal
+    const cid = newClientId()
+    const params = {
+      journeyId: journeyState.journeyId, code: 'blood_pressure', value,
+      date: recordDate.value, ts: dateToTs(recordDate.value), clientId: cid
+    } as UTSJSONObject
     saving.value = true
+    let queued = false
     try {
-      const res = await luckyRecord('addMetric', {
-        journeyId: journeyState.journeyId, code: 'blood_pressure', value,
-        date: recordDate.value, ts: dateToTs(recordDate.value)
-      } as UTSJSONObject)
+      const res = await luckyRecord('addMetric', params)
       const rl = res.getJSON('redline')
       if (rl != null) {
         const r = rl as UTSJSONObject
         redlineLevel.value = r.getString('level') ?? ''
         redlineMsg.value = r.getString('message') ?? ''
         redlineAction.value = r.getString('action') ?? ''
-      } else {
-        uni.setStorageSync('lb_last_bp', `${sbpVal}/${dbpVal}`)
-        lastSbp.value = `${sbpVal}`
-        lastDbp.value = `${dbpVal}`
-        saved.value = true
-        sbp.value = ''
-        dbp.value = ''
-        hr.value = ''
-        focusInput.value = false
-        setTimeout(() => { focusInput.value = true }, 50)
       }
     } catch (e) {
-      uni.showToast({ title: (e as Error).message, icon: 'none' })
-    } finally { saving.value = false }
+      const msg = (e as Error).message
+      if (!isNetworkError(msg)) {
+        uni.showToast({ title: msg, icon: 'none' })
+        saving.value = false
+        return
+      }
+      queued = true
+      enqueueRecord('addMetric', params, cid)
+      // 离线时本地先给阈值提示，避免延误；最终判定仍以医生为准
+      if (sbpVal >= 160 || dbpVal >= 110) {
+        redlineLevel.value = 'critical'
+        redlineMsg.value = '血压明显升高，请休息 5 分钟后复测，仍高请尽快联系医生或就医'
+        redlineAction.value = '如伴头痛、视物模糊或胸闷，请立即就医'
+      } else if (sbpVal >= 140 || dbpVal >= 90) {
+        redlineLevel.value = 'warn'
+        redlineMsg.value = '血压偏高，建议休息后复测并联系医生'
+        redlineAction.value = ''
+      }
+    }
+    if (redlineLevel.value.length == 0) {
+      uni.setStorageSync('lb_last_bp', `${sbpVal}/${dbpVal}`)
+      lastSbp.value = `${sbpVal}`
+      lastDbp.value = `${dbpVal}`
+      saved.value = true
+      sbp.value = ''
+      dbp.value = ''
+      hr.value = ''
+      focusInput.value = false
+      setTimeout(() => { focusInput.value = true }, 50)
+    }
+    if (queued) uni.showToast({ title: '网络不佳，已离线保存，联网后自动同步', icon: 'none' })
+    saving.value = false
   }
 </script>
 

@@ -111,6 +111,7 @@
   import { isQuietNow } from '../../utils/quiet.uts'
   import { track } from '../../utils/track.uts'
   import { recentUrls, rememberRecent, recentRank } from '../../utils/recentGrid.uts'
+  import { flushOffline } from '../../utils/offlineQueue.uts'
 
   type QuickItem = { icon: string, label: string, url: string }
 
@@ -310,6 +311,13 @@
   onPageReady(() => {
     recent.value = recentUrls()
     refresh()
+    // 联网后自动补写离线记录
+    flushOffline().then((n: number) => {
+      if (n > 0) {
+        uni.showToast({ title: `已同步 ${n} 条离线记录`, icon: 'none' })
+        refresh()
+      }
+    }).catch(() => {})
   })
 </script>
 

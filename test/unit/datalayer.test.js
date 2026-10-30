@@ -241,3 +241,36 @@ test('本周小结：today 返回最近 7 天记录数与体重变化', async ()
   assert.equal(t.weekStats.records, 2, '体重 1 条 + 日记 1 条')
   assert.equal(t.weekStats.weightDelta, null, '仅一条体重时无变化值')
 })
+
+/* ---------------- 离线补写幂等 ---------------- */
+
+test('离线补写幂等：同一 clientId 的指标与日记只落一条', async () => {
+  const rt = createRuntime()
+  const reg = await rt.callObject('lucky-id', 'register', { username: 'idem1', password: 'password123' })
+  assert.equal(reg.errCode, 0, JSON.stringify(reg))
+  const mk = await rt.callObject('lucky-journey', 'createJourney', { mode: 'ttc' }, { token: reg.token })
+  const jid = mk.journeyId
+
+  const metric = { journeyId: jid, code: 'weight', value: { kg: 58.5 }, clientId: 'cid-1' }
+  const a = await rt.callObject('lucky-record', 'addMetric', metric, { token: reg.token })
+  const b = await rt.callObject('lucky-record', 'addMetric', metric, { token: reg.token })
+  assert.equal(a.errCode, 0, JSON.stringify(a))
+  assert.equal(b.errCode, 0, JSON.stringify(b))
+  assert.equal(b.duplicated, true, '重复 clientId 应标记 duplicated')
+  const list = await rt.callObject('lucky-record', 'listMetrics', { journeyId: jid, code: 'weight' }, { token: reg.token })
+  assert.equal(list.records.length, 1, '重放不得产生重复体重记录')
+
+  const d1 = await rt.callObject('lucky-record', 'addDiary', { journeyId: jid, text: '离线日记', clientId: 'd-1' }, { token: reg.token })
+  const d2 = await rt.callObject('lucky-record', 'addDiary', { journeyId: jid, text: '离线日记', clientId: 'd-1' }, { token: reg.token })
+  assert.equal(d1.errCode, 0)
+  assert.equal(d2.duplicated, true, '重复 clientId 日记应标记 duplicated')
+  const dl = await rt.callObject('lucky-record', 'listDiaries', { journeyId: jid }, { token: reg.token })
+  assert.equal(dl.diaries.length, 1, '重放不得产生重复日记')
+})
+
+test('离线能力探测：capabilities 声明幂等支持', async () => {
+  const rt = createRuntime()
+  const cap = await rt.callObject('lucky-record', 'capabilities', {})
+  assert.equal(cap.errCode, 0, JSON.stringify(cap))
+  assert.equal(cap.offlineQueue, true)
+})

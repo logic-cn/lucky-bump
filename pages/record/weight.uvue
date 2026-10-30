@@ -27,6 +27,7 @@
   import { themeClass } from '../../store/themeStore.uts'
   import { track } from '../../utils/track.uts'
   import { todayDateStr, dateToTs, isToday } from '../../utils/recordDate.uts'
+  import { newClientId, isNetworkError, enqueueRecord } from '../../utils/offlineQueue.uts'
 
   const kg = ref<string>('')
   const saving = ref<boolean>(false)
@@ -79,23 +80,35 @@
     const kgVal = parseFloat(kg.value)
     if (!(kgVal >= 30 && kgVal <= 300)) { uni.showToast({ title: '请输入有效体重（30-300kg）', icon: 'none' }); return }
     saving.value = true
+    const cid = newClientId()
+    const params = {
+      journeyId: journeyState.journeyId, code: 'weight',
+      value: { kg: kgVal }, date: recordDate.value, ts: dateToTs(recordDate.value), clientId: cid
+    } as UTSJSONObject
+    let queued = false
     try {
-      await luckyRecord('addMetric', {
-        journeyId: journeyState.journeyId, code: 'weight',
-        value: { kg: kgVal }, date: recordDate.value, ts: dateToTs(recordDate.value)
-      } as UTSJSONObject)
+      await luckyRecord('addMetric', params)
       track('record_create', { type: 'weight' } as UTSJSONObject)
-      uni.setStorageSync('lb_has_record', true)
-      lastWeight.value = `${kgVal}`
-      uni.setStorageSync('lb_last_weight', lastWeight.value)
-      saved.value = true
-      // 保存后留在页内，便于连续补录；清空输入并重新聚焦
-      kg.value = ''
-      focusInput.value = false
-      setTimeout(() => { focusInput.value = true }, 50)
     } catch (e) {
-      uni.showToast({ title: (e as Error).message, icon: 'none' })
-    } finally { saving.value = false }
+      const msg = (e as Error).message
+      if (!isNetworkError(msg)) {
+        uni.showToast({ title: msg, icon: 'none' })
+        saving.value = false
+        return
+      }
+      queued = true
+      enqueueRecord('addMetric', params, cid)
+    }
+    uni.setStorageSync('lb_has_record', true)
+    lastWeight.value = `${kgVal}`
+    uni.setStorageSync('lb_last_weight', lastWeight.value)
+    saved.value = true
+    // 保存后留在页内，便于连续补录；清空输入并重新聚焦
+    kg.value = ''
+    focusInput.value = false
+    setTimeout(() => { focusInput.value = true }, 50)
+    if (queued) uni.showToast({ title: '网络不佳，已离线保存，联网后自动同步', icon: 'none' })
+    saving.value = false
   }
 </script>
 

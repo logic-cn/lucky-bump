@@ -300,6 +300,20 @@ test('找回密码：恢复凭证入口与重置页连通', () => {
   assert.ok(settings.includes('createRecoveryCode'), '设置页缺少生成恢复凭证入口')
 })
 
+test('离线队列：四类低频写接入且复用 clientId', () => {
+  const util = fs.readFileSync(path.join(ROOT, 'utils/offlineQueue.uts'), 'utf-8')
+  assert.ok(util.includes('capabilities'), '缺少服务端能力探测（未部署时不得重放）')
+  assert.ok(util.includes('clientId'), '缺少幂等标识')
+  assert.ok(util.includes('flushOffline'), '缺少补写入口')
+  for (const p of ['pages/record/weight.uvue', 'pages/record/blood-pressure.uvue', 'pages/record/blood-glucose.uvue', 'pages/record/diary.uvue']) {
+    const src = fs.readFileSync(path.join(ROOT, p), 'utf-8')
+    assert.ok(src.includes('enqueueRecord('), `${p} 未接入离线队列`)
+    assert.ok(src.includes('clientId: cid'), `${p} 未携带 clientId`)
+  }
+  const home = fs.readFileSync(path.join(ROOT, 'pages/index/index.uvue'), 'utf-8')
+  assert.ok(home.includes('flushOffline'), '首页未触发离线补写')
+})
+
 /* ---------------- 可读性下限（小字号不得回流） ---------------- */
 
 test('最小字号不低于 24rpx（正文与辅助文案一致）', () => {

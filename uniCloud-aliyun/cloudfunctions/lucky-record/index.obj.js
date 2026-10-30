@@ -175,6 +175,14 @@ function predictCycle(cycles, events, now = Date.now()) {
 }
 
 module.exports = {
+  /**
+   * 能力探测：客户端据此判断能否安全重放离线队列。
+   * 未部署本版本时该方法不存在，客户端会保持队列不重放，避免重复记录。
+   */
+  async capabilities() {
+    return auth.ok({ offlineQueue: true, clientId: true })
+  },
+
   /** 添加指标记录。value 结构按 METRICS 白名单校验 */
   async addMetric(params = {}) {
     const uid = await requireUser.call(this)
@@ -185,9 +193,15 @@ module.exports = {
     const v = validateMetric(code, params.value || {})
     if (v.error) return auth.fail('PARAM_ERROR', v.error)
     const ts = params.ts || Date.now()
+    const clientId = String(params.clientId || '').slice(0, 64)
+    // 离线补写幂等：同一 clientId 只落一条（客户端断网重放不会产生重复记录）
+    if (clientId) {
+      const dup = await db.call(this).collection(LOGS).where({ journey_id: j._id, client_id: clientId }).limit(1).get()
+      if (dup.data[0]) return auth.ok({ recordId: dup.data[0]._id, redline: null, duplicated: true })
+    }
     const doc = {
       user_id: uid, journey_id: j._id, code, value: v.value,
-      date: params.date || dateOf(ts), ts,
+      date: params.date || dateOf(ts), ts, client_id: clientId,
       stage_snapshot: j.edd && !j.delivery_date ? `W${Math.floor(Math.max(0, daysBetween2(j.lmp_date || (j.edd - 280 * DAY), ts)) / 7)}` : '',
       sensitivity: (METRICS[code] && METRICS[code].sensitivity) || 'normal',
       created_at: Date.now()
@@ -360,11 +374,16 @@ module.exports = {
     const text = String(params.text || '').trim().slice(0, 2000)
     if (!text) return auth.fail('PARAM_ERROR', '日记内容不能为空')
     const ts = params.ts || Date.now()
+    const clientId = String(params.clientId || '').slice(0, 64)
+    if (clientId) {
+      const dup = await db.call(this).collection('lb-diaries').where({ journey_id: j._id, client_id: clientId }).limit(1).get()
+      if (dup.data[0]) return auth.ok({ recordId: dup.data[0]._id, duplicated: true })
+    }
     const res = await db.call(this).collection('lb-diaries').add({
       user_id: uid, journey_id: j._id, text,
       mood: ['great', 'good', 'normal', 'low', 'bad'].includes(params.mood) ? params.mood : 'normal',
       media_ids: Array.isArray(params.mediaIds) ? params.mediaIds.slice(0, 9) : [],
-      date: params.date || dateOf(ts), ts, sensitivity: 'normal', created_at: Date.now()
+      date: params.date || dateOf(ts), ts, client_id: clientId, sensitivity: 'normal', created_at: Date.now()
     })
     return auth.ok({ recordId: res.id })
   },

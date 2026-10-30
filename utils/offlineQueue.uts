@@ -1,0 +1,77 @@
+/**
+ * 离线记录队列（仅覆盖体重/血压/血糖/日记四类低频写）
+ * - 断网时把请求参数入队，联网后按顺序补写
+ * - 每条带 clientId，服务端幂等去重，重放不会产生重复记录
+ * - 服务端未部署幂等能力（capabilities 不存在）时保持队列不重放
+ */
+import { callCloud, luckyRecord } from './request.uts'
+import { appState } from '../store/appStore.uts'
+
+const KEY = 'lb_offline_queue'
+const MAX_ENTRIES = 20
+
+type OfflineEntry = { obj: string, method: string, params: UTSJSONObject, clientId: string, ts: number }
+
+function readQueue(): OfflineEntry[] {
+  const raw = uni.getStorageSync(KEY) as string
+  if (raw == null || raw.length == 0) return [] as OfflineEntry[]
+  try {
+    const list = JSON.parse(raw) as OfflineEntry[]
+    return list ?? ([] as OfflineEntry[])
+  } catch (e) {
+    return [] as OfflineEntry[]
+  }
+}
+
+function writeQueue(list: OfflineEntry[]): void {
+  uni.setStorageSync(KEY, JSON.stringify(list))
+}
+
+/** 生成一次记录的唯一标识（同一笔记录在重放时必须复用） */
+export function newClientId(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+}
+
+export function isNetworkError(message: string): boolean {
+  return message.indexOf('网络异常') >= 0
+}
+
+export function pendingCount(): number {
+  return readQueue().length
+}
+
+/** 入队并返回当前待同步条数 */
+export function enqueueRecord(method: string, params: UTSJSONObject, clientId: string): number {
+  const list = readQueue()
+  list.push({ obj: 'lucky-record', method: method, params: params, clientId: clientId, ts: Date.now() })
+  while (list.length > MAX_ENTRIES) list.shift()
+  writeQueue(list)
+  return list.length
+}
+
+/** 联网后补写；返回成功同步条数。失败保留剩余队列，下次再试。 */
+export async function flushOffline(): Promise<number> {
+  if (appState.token.length == 0) return 0
+  const list = readQueue()
+  if (list.length == 0) return 0
+  // 能力探测：未部署幂等能力的服务端不允许重放，避免重复记录
+  try {
+    const cap = await luckyRecord('capabilities', {} as UTSJSONObject)
+    if (cap.getBoolean('offlineQueue') != true) return 0
+  } catch (e) {
+    return 0
+  }
+  let done = 0
+  while (list.length > 0) {
+    const item = list[0]
+    try {
+      await callCloud(item.obj, item.method, item.params)
+      list.shift()
+      done += 1
+    } catch (e) {
+      break
+    }
+  }
+  writeQueue(list)
+  return done
+}

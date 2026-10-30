@@ -38,6 +38,7 @@
   import { journeyState } from '../../store/journeyStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
   import { todayDateStr, dateToTs, isToday } from '../../utils/recordDate.uts'
+  import { newClientId, isNetworkError, enqueueRecord } from '../../utils/offlineQueue.uts'
 
   type Slot = { value: string, label: string }
 
@@ -72,29 +73,48 @@
   async function save() {
     const mmolVal = parseFloat(mmol.value)
     if (!(mmolVal >= 1 && mmolVal <= 35)) { uni.showToast({ title: '请输入有效血糖值', icon: 'none' }); return }
+    const cid = newClientId()
+    const params = {
+      journeyId: journeyState.journeyId, code: 'blood_glucose',
+      value: { slot: slot.value, mmol: mmolVal },
+      date: recordDate.value, ts: dateToTs(recordDate.value), clientId: cid
+    } as UTSJSONObject
     saving.value = true
+    let queued = false
     try {
-      const res = await luckyRecord('addMetric', {
-        journeyId: journeyState.journeyId, code: 'blood_glucose',
-        value: { slot: slot.value, mmol: mmolVal },
-        date: recordDate.value, ts: dateToTs(recordDate.value)
-      } as UTSJSONObject)
+      const res = await luckyRecord('addMetric', params)
       const rl = res.getJSON('redline')
       if (rl != null) {
         const r = rl as UTSJSONObject
         redlineMsg.value = r.getString('message') ?? ''
         redlineAction.value = r.getString('action') ?? ''
-      } else {
-        lastGlucose.value = `${mmolVal}`
-        uni.setStorageSync('lb_last_glucose', lastGlucose.value)
-        saved.value = true
-        mmol.value = ''
-        focusInput.value = false
-        setTimeout(() => { focusInput.value = true }, 50)
       }
     } catch (e) {
-      uni.showToast({ title: (e as Error).message, icon: 'none' })
-    } finally { saving.value = false }
+      const msg = (e as Error).message
+      if (!isNetworkError(msg)) {
+        uni.showToast({ title: msg, icon: 'none' })
+        saving.value = false
+        return
+      }
+      queued = true
+      enqueueRecord('addMetric', params, cid)
+      // 离线时本地先按切点提示，避免延误
+      const limit = slot.value == 'fasting' ? 5.1 : (slot.value == '1h' ? 10.0 : (slot.value == '2h' ? 8.5 : 11.1))
+      if (mmolVal >= limit) {
+        redlineMsg.value = '血糖值超过参考切点，请与医生确认（不构成诊断）'
+        redlineAction.value = '记录饮食与测量时间，复诊时带给医生'
+      }
+    }
+    if (redlineMsg.value.length == 0) {
+      lastGlucose.value = `${mmolVal}`
+      uni.setStorageSync('lb_last_glucose', lastGlucose.value)
+      saved.value = true
+      mmol.value = ''
+      focusInput.value = false
+      setTimeout(() => { focusInput.value = true }, 50)
+    }
+    if (queued) uni.showToast({ title: '网络不佳，已离线保存，联网后自动同步', icon: 'none' })
+    saving.value = false
   }
 </script>
 
