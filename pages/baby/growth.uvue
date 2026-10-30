@@ -29,6 +29,17 @@
 
     <lbc-error v-if="historyFailed" message="历史测量记录加载失败" @retry="load" />
 
+    <view class="card lb-rise-2" v-if="chartRows.length > 0">
+      <text class="card-title">体重趋势（最近 {{ chartRows.length }} 次）</text>
+      <view class="chart">
+        <view class="bar-col" v-for="(s, i) in chartRows" :key="i">
+          <view class="bar" :style="{ height: kgBar(s.kg) + 'rpx' }" />
+          <text class="bar-date">{{ s.date.slice(5) }}</text>
+          <text class="bar-val">{{ s.kg }}</text>
+        </view>
+      </view>
+    </view>
+
     <view class="card lb-rise-3" v-if="samples.length > 0">
       <text class="card-title">历史测量</text>
       <view class="s-row" v-for="(s, i) in samples" :key="i">
@@ -46,7 +57,7 @@
   import { journeyState } from '../../store/journeyStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
 
-  type SRow = { date: string, val: string }
+  type SRow = { date: string, val: string, kg: number }
 
   const babyId = ref<string>('')
   const saving = ref<boolean>(false)
@@ -70,6 +81,25 @@
   const pctHeight = computed((): string => pctStr('heightPct'))
   const pctHead = computed((): string => pctStr('headPct'))
 
+  // 体重趋势：按时间正序取最近 7 次有体重的测量
+  const chartRows = computed((): SRow[] => {
+    const out: SRow[] = []
+    for (let i = samples.value.length - 1; i >= 0; i--) {
+      if (samples.value[i].kg > 0) out.push(samples.value[i])
+    }
+    return out.slice(Math.max(0, out.length - 7))
+  })
+  const maxKg = computed((): number => {
+    let mx = 1
+    for (let i = 0; i < chartRows.value.length; i++) {
+      if (chartRows.value[i].kg > mx) mx = chartRows.value[i].kg
+    }
+    return mx
+  })
+  function kgBar(kg: number): number {
+    return Math.max(24, Math.round(kg / maxKg.value * 150))
+  }
+
   function onDateChange(e: UniPickerChangeEvent) { measureDate.value = (e.detail.value as string) ?? measureDate.value }
   async function load() {
     try {
@@ -82,7 +112,8 @@
         const h = s.getNumber('height_cm') ?? 0
         rows.push({
           date: new Date(s.getNumber('measure_date') ?? 0).toISOString().slice(0, 10),
-          val: `${w > 0 ? w + 'kg ' : ''}${h > 0 ? h + 'cm' : ''}`
+          val: `${w > 0 ? w + 'kg ' : ''}${h > 0 ? h + 'cm' : ''}`,
+          kg: w
         })
       }
       samples.value = rows
@@ -146,6 +177,11 @@
   .alert-text { font-size: 24rpx; color: var(--lb-warning); }
   .hint { font-size: 24rpx; color: var(--lb-text-3); margin-top: 20rpx; }
   .s-row { flex-direction: row; padding: 10rpx 0; }
+  .chart { flex-direction: row; align-items: flex-end; justify-content: space-between; width: 622rpx; height: 220rpx; margin-top: 12rpx; }
+  .bar-col { flex: 1; align-items: center; }
+  .bar { width: 28rpx; background-color: var(--lb-primary-soft); border-radius: 8rpx 8rpx 0 0; }
+  .bar-date { font-size: 24rpx; color: var(--lb-text-3); margin-top: 8rpx; }
+  .bar-val { font-size: 24rpx; color: var(--lb-primary-deep); font-weight: bold; }
   .s-date { width: 220rpx; font-size: 24rpx; color: var(--lb-text-3); }
   .s-val { font-size: 26rpx; color: var(--lb-text-1); }
 

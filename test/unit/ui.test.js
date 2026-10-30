@@ -349,6 +349,18 @@ test('提醒完成闭环：首页打勾回写', () => {
   assert.ok(index.includes('todo-check'), '缺少待办打勾入口')
   const server = fs.readFileSync(path.join(ROOT, 'uniCloud-aliyun/cloudfunctions/lucky-reminder/index.obj.js'), 'utf-8')
   assert.ok(server.includes('lb-reminder-done'), '服务端未记录完成状态')
+  const settings = fs.readFileSync(path.join(ROOT, 'pages/me/settings.uvue'), 'utf-8')
+  assert.ok(settings.includes('askRemoveRule'), '设置页缺少删除提醒入口')
+  assert.ok(settings.includes("luckyReminder('removeRule'"), '未调用删除提醒接口')
+})
+
+test('生长曲线与经期提醒：页面能力已接入', () => {
+  const growth = fs.readFileSync(path.join(ROOT, 'pages/baby/growth.uvue'), 'utf-8')
+  assert.ok(growth.includes('chartRows'), '缺少体重趋势数据')
+  assert.ok(growth.includes('kgBar'), '缺少趋势柱高计算')
+  const cycle = fs.readFileSync(path.join(ROOT, 'pages/record/cycle.uvue'), 'utf-8')
+  assert.ok(cycle.includes('setPeriodReminder'), '经期页缺少一键提醒')
+  assert.ok(cycle.includes("luckyReminder('addRule'"), '未调用提醒创建接口')
 })
 
 test('Web 可安装：PWA manifest 与主屏幕图标', () => {

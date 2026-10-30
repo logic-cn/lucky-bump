@@ -43,3 +43,15 @@ test('提醒完成：listDue 与 today 同时移除，重复完成幂等', async
   }, { token })
   assert.equal(again.errCode, 0, '重复完成应幂等')
 })
+
+test('删除提醒：列表不再返回该规则', async () => {
+  const { rt, token, jid, date } = await setup()
+  const rule = await rt.callObject('lucky-reminder', 'addRule', {
+    journeyId: jid, title: '可删除提醒', type: 'absolute', anchorDate: date
+  }, { token })
+  assert.equal(rule.errCode, 0, JSON.stringify(rule))
+  const del = await rt.callObject('lucky-reminder', 'removeRule', { ruleId: rule.ruleId }, { token })
+  assert.equal(del.errCode, 0, JSON.stringify(del))
+  const list = await rt.callObject('lucky-reminder', 'listRules', { journeyId: jid }, { token })
+  assert.ok(!list.rules.some(r => r._id === rule.ruleId), '删除后列表不应再返回该提醒')
+})

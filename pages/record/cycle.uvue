@@ -63,6 +63,9 @@
       <text class="pred-text" v-else>周期波动超过 7 天，建议坚持记录排卵试纸与体温</text>
       <text class="pred-sub">易孕窗口：{{ predFrom }} 至 {{ predTo }}</text>
       <text class="pred-sub">预测下次月经：{{ predNext }}</text>
+      <view class="remind-btn" v-if="predNext != '-'" hover-class="lb-press" hover-stay-time="120" @click="setPeriodReminder">
+        <text class="remind-text">{{ periodReminded ? '已设置经期提醒' : '设为下个经期提醒' }}</text>
+      </view>
       <view class="abnormal" v-if="abnormalTips.length > 0">
         <text class="abnormal-title">值得关注</text>
         <text class="abnormal-text" v-for="(t, i) in abnormalTips" :key="i">· {{ t }}</text>
@@ -108,6 +111,7 @@
   import { computed, ref } from 'vue'
   import { onPageReady } from '../../utils/pageLifecycle.uts'
   import { luckyRecord } from '../../utils/request.uts'
+  import { luckyReminder } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
   import { track } from '../../utils/track.uts'
@@ -129,6 +133,8 @@
   const flow = ref<string>('medium')
   const delVisible = ref<boolean>(false)
   const delId = ref<string>('')
+  const periodReminded = ref<boolean>(false)
+  const reminderSaving = ref<boolean>(false)
   const now = new Date()
   const calYear = ref<number>(now.getFullYear())
   const calMonth = ref<number>(now.getMonth() + 1)
@@ -312,6 +318,21 @@
     }
   }
 
+  async function setPeriodReminder() {
+    if (reminderSaving.value || predNext.value == '-') return
+    reminderSaving.value = true
+    try {
+      await luckyReminder('addRule', {
+        journeyId: journeyState.journeyId, type: 'absolute',
+        title: '预计经期', anchorDate: predNext.value, leadDays: 2
+      } as UTSJSONObject)
+      periodReminded.value = true
+      uni.showToast({ title: '已设置，经期前 2 天提醒', icon: 'none' })
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    } finally { reminderSaving.value = false }
+  }
+
   async function saveBbt() {
     const t = parseFloat(bbt.value)
     if (!(t >= 34 && t <= 42)) { uni.showToast({ title: '请输入有效体温', icon: 'none' }); return }
@@ -385,6 +406,8 @@
   .link-text { font-size: 24rpx; color: var(--lb-text-3); margin-top: 20rpx; text-align: center; }
 
   .stat-row { flex-direction: row; margin-top: 8rpx; }
+  .remind-btn { margin-top: 20rpx; padding: 14rpx 0; border-radius: 999rpx; background-color: var(--lb-primary-soft); align-items: center; transition: all 160ms ease-out; }
+  .remind-text { font-size: 24rpx; color: var(--lb-primary-deep); font-weight: bold; }
   .stat { flex: 1; align-items: center; }
   .stat-num { font-size: 40rpx; font-weight: bold; color: var(--lb-primary-deep); }
   .stat-cap { font-size: 24rpx; color: var(--lb-text-3); margin-top: 8rpx; }
