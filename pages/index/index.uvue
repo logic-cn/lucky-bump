@@ -6,7 +6,7 @@
         <text class="hero-week" :lines="1">{{ weekLabel }}</text>
         <text class="hero-stage" v-if="stageLabel.length > 0 && stageLabel != weekLabel">{{ stageLabel }}</text>
       </view>
-      <text class="hero-sub" v-if="showBabySize">宝宝现在约 {{ babySizeText }}，距预产期还有 {{ journeyState.daysToEdd }} 天</text>
+      <text class="hero-sub" v-if="showBabySize">宝宝现在{{ babySizeText }}，距预产期还有 {{ journeyState.daysToEdd }} 天</text>
       <text class="hero-sub" v-else-if="isPostpartum">产后第 {{ journeyState.postpartumDays }} 天 · 照顾好你自己也是宝宝的事</text>
       <text class="hero-sub" v-else-if="isTtc">距预测下次月经还有 {{ daysToPeriod }} 天 · 记录身体信号，好孕自来</text>
     </view>
@@ -172,9 +172,15 @@
       if (latest != null) {
         const parts: string[] = []
         const w = latest.getJSON('weight')
-        if (w != null) parts.push(`体重 ${w.getNumber('kg') ?? 0}kg`)
+        if (w != null) {
+          const wv = w.getJSON('value')
+          if (wv != null) parts.push(`体重 ${wv.getNumber('kg') ?? 0}kg`)
+        }
         const bp = latest.getJSON('blood_pressure')
-        if (bp != null) parts.push(`血压 ${bp.getNumber('sbp') ?? 0}/${bp.getNumber('dbp') ?? 0}`)
+        if (bp != null) {
+          const bv = bp.getJSON('value')
+          if (bv != null) parts.push(`血压 ${bv.getNumber('sbp') ?? 0}/${bv.getNumber('dbp') ?? 0}`)
+        }
         trendText.value = parts.join(' · ')
       }
       const jv = res.getJSON('journey')

@@ -34,6 +34,10 @@ export function stageText(stage: string): string {
 
 export function weekText(): string {
   if (journeyState.deliveryDate.length > 0) return `产后第 ${journeyState.postpartumDays} 天`
+  // 孕 0 周也要显示孕周，不能回落成"备孕中"（早孕刚建档场景）
+  if (journeyState.stage == 'T1' || journeyState.stage == 'T2' || journeyState.stage == 'T3') {
+    return `孕 ${journeyState.weeks} 周 + ${journeyState.days} 天`
+  }
   if (journeyState.weeks > 0 || journeyState.days > 0) return `孕 ${journeyState.weeks} 周 + ${journeyState.days} 天`
   return '备孕中'
 }
