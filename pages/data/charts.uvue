@@ -74,7 +74,8 @@
       const res = await luckyData('series', { journeyId: journeyState.journeyId, code: code.value } as UTSJSONObject)
       const arr = res.getArray<UTSJSONObject>('points') ?? []
       const pts: Pt[] = []
-      for (let i = Math.max(0, arr.length - 14); i < arr.length; i++) {
+      // 手机宽度下一屏最多容纳 7 根柱，超过会挤爆日期标签
+      for (let i = Math.max(0, arr.length - 7); i < arr.length; i++) {
         const p = arr[i].getJSON('primary')
         const raw = arr[i].getJSON('raw') as UTSJSONObject | null
         if (p == null) continue
@@ -101,19 +102,19 @@
   @import '../../theme.scss';
   .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
   .metrics { flex-direction: row; flex-wrap: wrap; margin-bottom: 8rpx; }
-  .metric { background-color: var(--lb-card); border-radius: 999rpx; padding: 14rpx 28rpx; margin: 8rpx; transition: all 160ms ease-out; }
+  .metric { background-color: var(--lb-card); border-radius: 999rpx; padding: 18rpx 28rpx; margin: 8rpx; transition: all 160ms ease-out; }
   .metric-active { background-color: var(--lb-primary); }
   .metric-text { font-size: 26rpx; color: var(--lb-text-2); }
   .metric-text-active { color: #FFFFFF; font-weight: bold; }
   .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 32rpx; margin-top: 16rpx; align-items: center; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
   .card-title { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 20rpx; align-self: flex-start; }
   .empty { font-size: 28rpx; color: var(--lb-text-2); margin-top: 16rpx; }
-  .hint { font-size: 22rpx; color: var(--lb-text-3); margin-top: 12rpx; }
+  .hint { font-size: 24rpx; color: var(--lb-text-3); margin-top: 12rpx; }
   .chart { flex-direction: row; align-items: flex-end; justify-content: space-between; width: 636rpx; height: 240rpx; }
-  .bar-col { align-items: center; width: 80rpx; }
-  .bar { width: 32rpx; background-color: #F5A3C3; border-radius: 8rpx 8rpx 0 0; }
-  .bar-date { font-size: 18rpx; color: var(--lb-text-3); margin-top: 8rpx; }
-  .bar-val { font-size: 18rpx; color: var(--lb-primary-deep); font-weight: bold; }
+  .bar-col { flex: 1; align-items: center; }
+  .bar { width: 28rpx; background-color: #F5A3C3; border-radius: 8rpx 8rpx 0 0; }
+  .bar-date { font-size: 22rpx; color: var(--lb-text-3); margin-top: 8rpx; }
+  .bar-val { font-size: 22rpx; color: var(--lb-primary-deep); font-weight: bold; }
   .d-row { flex-direction: row; width: 636rpx; padding: 12rpx 0; border-bottom-width: 1px; border-bottom-color: var(--lb-line); }
   .d-date { flex: 1; font-size: 26rpx; color: var(--lb-text-3); }
   .d-val { font-size: 26rpx; color: var(--lb-text-1); }

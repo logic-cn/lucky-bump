@@ -237,14 +237,14 @@
   .input { width: 636rpx; height: 88rpx; background-color: var(--lb-fill); border-radius: 24rpx; padding: 0 24rpx; font-size: 28rpx; color: var(--lb-text-1); margin-bottom: 16rpx; }
   .ph { color: var(--lb-text-3); }
   .opts { flex-direction: row; flex-wrap: wrap; margin-bottom: 16rpx; }
-  .opt { background-color: var(--lb-fill); border-radius: 24rpx; padding: 12rpx 24rpx; margin: 6rpx; transition: all 160ms ease-out; }
+  .opt { background-color: var(--lb-fill); border-radius: 24rpx; padding: 16rpx 24rpx; margin: 6rpx; transition: all 160ms ease-out; }
   .opt-active { background-color: var(--lb-primary-soft); }
   .opt-text { font-size: 24rpx; color: var(--lb-text-2); }
   .opt-text-active { color: var(--lb-primary-deep); font-weight: bold; }
   .pick-box { width: 636rpx; height: 88rpx; background-color: var(--lb-fill); border-radius: 24rpx; align-items: center; justify-content: center; margin-bottom: 16rpx; transition: all 160ms ease-out; }
   .pick-text { font-size: 28rpx; color: var(--lb-text-1); }
   .btn-save { width: 636rpx; height: 88rpx; line-height: 88rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 28rpx; border-radius: 24rpx; margin-top: 8rpx; transition: all 160ms ease-out; }
-  .hint { font-size: 20rpx; color: var(--lb-text-3); margin-top: 16rpx; }
+  .hint { font-size: 24rpx; color: var(--lb-text-3); margin-top: 16rpx; }
   .p-row { flex-direction: row; align-items: center; justify-content: space-between; padding: 12rpx 0; }
   .p-label { font-size: 26rpx; color: var(--lb-text-1); }
   .p-value { font-size: 26rpx; color: var(--lb-text-3); }

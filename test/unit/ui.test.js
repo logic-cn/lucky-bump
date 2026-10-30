@@ -218,3 +218,32 @@ test('数据主视图加载失败必须显式可重试（禁止静默空态）',
   assert.ok(comp.includes("defineEmits(['retry'])"), 'lbc-error 必须抛出 retry 事件（vapor 不支持选项式 methods）')
   assert.ok(comp.includes('var(--lb-'), 'lbc-error 颜色须走主题令牌')
 })
+
+test('记录宫格按最近使用排序（本地记忆，不上云）', () => {
+  const src = fs.readFileSync(path.join(ROOT, 'pages/record/record.uvue'), 'utf-8')
+  assert.ok(src.includes("lb_recent_grid"), '缺少最近使用存储键')
+  assert.ok(/function remember\(url: string\)/.test(src), '缺少打开记录时的记忆逻辑')
+  assert.ok(/orderByRecent\(/.test(src), '缺少组内最近使用排序')
+  // 每个分组都必须经过排序，避免只改了一组
+  const pushes = src.match(/items: (orderByRecent\([a-z]+\)|\[\{ icon: '🏥')/g) || []
+  assert.ok(pushes.length >= 4, '记录分组未全部接入最近使用排序')
+})
+
+/* ---------------- 可读性下限（小字号不得回流） ---------------- */
+
+test('最小字号不低于 22rpx，说明性文案不低于 24rpx', () => {
+  const READABLE = ['hint', 'redline-note', 'disclaimer', 'tip', 'grid-label', 'link', 'lbc-disclaimer-text', 'lbc-redline-note']
+  const offenders = []
+  for (const file of [...walkUvue(path.join(ROOT, 'pages')), ...walkUvue(path.join(ROOT, 'components'))]) {
+    const src = fs.readFileSync(file, 'utf-8')
+    for (const m of src.matchAll(/font-size:\s*(\d+)rpx/g)) {
+      if (Number(m[1]) < 22) offenders.push(`${path.relative(ROOT, file)}: font-size ${m[1]}rpx`)
+    }
+    for (const cls of READABLE) {
+      const re = new RegExp(`\\.${cls}\\s*\\{[^}]*font-size:\\s*(\\d+)rpx`)
+      const mm = re.exec(src)
+      if (mm && Number(mm[1]) < 24) offenders.push(`${path.relative(ROOT, file)}: .${cls} ${mm[1]}rpx`)
+    }
+  }
+  assert.deepEqual(offenders, [], `以下位置字号过小:\n${offenders.join('\n')}`)
+})

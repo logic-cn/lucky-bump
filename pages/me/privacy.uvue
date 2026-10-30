@@ -135,7 +135,7 @@
   .a-row { flex-direction: row; justify-content: space-between; padding: 10rpx 0; border-bottom-width: 1px; border-bottom-color: var(--lb-line); }
   .a-name { font-size: 26rpx; color: var(--lb-text-1); }
   .a-time { font-size: 24rpx; color: var(--lb-text-3); }
-  .hint { font-size: 22rpx; color: var(--lb-text-3); margin: 8rpx 0 16rpx 0; }
+  .hint { font-size: 24rpx; color: var(--lb-text-3); margin: 8rpx 0 16rpx 0; }
   .nav-row { flex-direction: row; align-items: center; padding: 20rpx 0; transition: all 160ms ease-out; }
   .nav-text { flex: 1; font-size: 26rpx; color: var(--lb-primary); }
   .nav-text-danger { flex: 1; font-size: 26rpx; color: var(--lb-danger); }

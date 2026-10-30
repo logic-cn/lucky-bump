@@ -97,7 +97,7 @@
   .opt-text-active { color: var(--lb-primary-deep); font-weight: bold; }
   .switch-row { flex-direction: row; align-items: center; justify-content: space-between; width: 620rpx; padding: 12rpx 0; }
   .switch-label { font-size: 28rpx; color: var(--lb-text-1); }
-  .hint { font-size: 20rpx; color: var(--lb-text-3); margin-top: 24rpx; }
+  .hint { font-size: 24rpx; color: var(--lb-text-3); margin-top: 24rpx; }
   .btn-save { width: 702rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 40rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
   .redline { width: 702rpx; background-color: var(--lb-warning-soft); border-radius: 36rpx; padding: 40rpx; margin-top: 32rpx; }
   .redline-title { font-size: 34rpx; font-weight: bold; color: var(--lb-danger); }

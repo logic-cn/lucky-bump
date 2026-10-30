@@ -79,7 +79,7 @@
   .num-input { width: 320rpx; height: 140rpx; font-size: 88rpx; font-weight: bold; color: var(--lb-text-1); text-align: center; border-bottom-width: 2px; border-bottom-color: var(--lb-primary); }
   .unit { font-size: 26rpx; color: var(--lb-text-3); margin-left: 16rpx; }
   .ph { color: var(--lb-text-3); }
-  .hint { font-size: 20rpx; color: var(--lb-text-3); margin-top: 32rpx; }
+  .hint { font-size: 24rpx; color: var(--lb-text-3); margin-top: 32rpx; }
   .btn-save { width: 702rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 48rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
   .redline { width: 702rpx; background-color: var(--lb-warning-soft); border-radius: 36rpx; padding: 40rpx; margin-top: 32rpx; }
   .redline-title { font-size: 34rpx; font-weight: bold; color: var(--lb-danger); }

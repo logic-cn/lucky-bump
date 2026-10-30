@@ -149,11 +149,11 @@
   .date-box { width: 620rpx; height: 88rpx; background-color: var(--lb-fill); border-radius: 24rpx; align-items: center; padding: 0 24rpx; transition: all 160ms ease-out; }
   .date-text { font-size: 28rpx; color: var(--lb-text-1); }
   .opts { flex-direction: row; }
-  .opt { background-color: var(--lb-fill); border-radius: 24rpx; padding: 16rpx 28rpx; margin-right: 12rpx; transition: all 160ms ease-out; }
+  .opt { background-color: var(--lb-fill); border-radius: 24rpx; padding: 20rpx 28rpx; margin-right: 12rpx; transition: all 160ms ease-out; }
   .opt-active { background-color: var(--lb-primary-soft); }
   .opt-text { font-size: 26rpx; color: var(--lb-text-2); }
   .opt-text-active { color: var(--lb-primary-deep); font-weight: bold; }
-  .input { width: 620rpx; height: 88rpx; background-color: var(--lb-fill); border-radius: 24rpx; padding: 0 24rpx; font-size: 28rpx; color: var(--lb-text-1); }
+  .input { width: 100%; height: 88rpx; background-color: var(--lb-fill); border-radius: 24rpx; padding: 0 24rpx; font-size: 28rpx; color: var(--lb-text-1); }
   .center { align-items: center; justify-content: center; }
   .row2 { flex-direction: row; margin-bottom: 12rpx; }
   .half { flex: 1; margin-right: 12rpx; }
@@ -163,7 +163,7 @@
   .add-baby-text { font-size: 26rpx; color: var(--lb-primary); }
   .ph { color: var(--lb-text-3); }
   .btn-save { width: 702rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 32rpx; transition: all 160ms ease-out; }
-  .hint { font-size: 20rpx; color: var(--lb-text-3); margin-top: 24rpx; }
+  .hint { font-size: 24rpx; color: var(--lb-text-3); margin-top: 24rpx; }
 
   .mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--lb-mask); justify-content: center; align-items: center; }
   .bcard { width: 600rpx; background-color: var(--lb-card); border-radius: 40rpx; padding: 48rpx 40rpx 32rpx 40rpx; align-items: center; }

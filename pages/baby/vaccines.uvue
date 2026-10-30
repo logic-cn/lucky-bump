@@ -108,7 +108,7 @@
   .v-sub { font-size: 22rpx; color: var(--lb-text-3); margin-top: 4rpx; }
   .v-record { font-size: 22rpx; color: var(--lb-success); background-color: var(--lb-success-soft); border-radius: 999rpx; padding: 4rpx 16rpx; margin-top: 4rpx; align-self: flex-start; }
   .btn-record { width: 140rpx; height: 64rpx; line-height: 64rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 24rpx; border-radius: 36rpx; transition: all 160ms ease-out; }
-  .hint { font-size: 20rpx; color: var(--lb-text-3); margin-top: 24rpx; }
+  .hint { font-size: 24rpx; color: var(--lb-text-3); margin-top: 24rpx; }
 
   .mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--lb-mask); justify-content: center; align-items: center; }
   .dialog { width: 560rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 40rpx 32rpx 24rpx 32rpx; }

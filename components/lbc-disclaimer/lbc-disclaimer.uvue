@@ -15,5 +15,5 @@
 
 <style>
   .lbc-disclaimer { width: 702rpx; background-color: var(--lb-fill); border-radius: 24rpx; padding: 24rpx; }
-  .lbc-disclaimer-text { font-size: 20rpx; color: var(--lb-text-2); line-height: 34rpx; }
+  .lbc-disclaimer-text { font-size: 24rpx; color: var(--lb-text-2); line-height: 38rpx; }
 </style>

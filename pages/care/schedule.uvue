@@ -87,7 +87,7 @@
   .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
   .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 40rpx; margin-top: 40rpx; align-items: center; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
   .empty { font-size: 32rpx; font-weight: bold; color: var(--lb-text-1); }
-  .hint { font-size: 22rpx; color: var(--lb-text-3); margin: 16rpx 0; text-align: center; }
+  .hint { font-size: 24rpx; color: var(--lb-text-3); margin: 16rpx 0; text-align: center; }
   .btn-save { width: 620rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 24rpx; transition: all 160ms ease-out; }
   .item { width: 702rpx; flex-direction: row; background-color: var(--lb-card); border-radius: 36rpx; padding: 28rpx; margin-bottom: 16rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); transition: all 160ms ease-out; }
   .dot-col { align-items: center; margin-right: 20rpx; }
@@ -99,7 +99,7 @@
   .item-body { flex: 1; }
   .row1 { flex-direction: row; align-items: center; }
   .item-title { font-size: 30rpx; font-weight: bold; color: var(--lb-text-1); flex: 1; }
-  .status { font-size: 20rpx; border-radius: 16rpx; padding: 4rpx 12rpx; }
+  .status { font-size: 22rpx; border-radius: 16rpx; padding: 4rpx 12rpx; }
   .status-done { color: var(--lb-success); background-color: var(--lb-success-soft); }
   .status-due { color: var(--lb-danger); background-color: var(--lb-danger-soft); }
   .status-upcoming { color: var(--lb-text-3); background-color: var(--lb-line); }

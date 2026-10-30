@@ -15,12 +15,48 @@
 </template>
 
 <script setup lang="ts">
-  import { computed } from 'vue'
+  import { computed, ref } from 'vue'
+  import { onPageReady } from '../../utils/pageLifecycle.uts'
   import { journeyState } from '../../store/journeyStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
 
   type RItem = { icon: string, label: string, url: string }
   type RGroup = { title: string, items: RItem[] }
+
+  // 最近使用：本地记录打开过的记录页（逗号分隔存 URL，URL 不含逗号）
+  const recent = ref<string[]>([])
+
+  function loadRecent() {
+    const raw = uni.getStorageSync('lb_recent_grid') as string
+    recent.value = raw == null || raw.length == 0 ? ([] as string[]) : raw.split(',')
+  }
+  function remember(url: string) {
+    const list: string[] = [url]
+    for (let i = 0; i < recent.value.length && list.length < 6; i++) {
+      if (recent.value[i] != url) list.push(recent.value[i])
+    }
+    recent.value = list
+    uni.setStorageSync('lb_recent_grid', list.join(','))
+  }
+  function rank(url: string): number {
+    const k = recent.value.indexOf(url)
+    return k < 0 ? 999 : k
+  }
+  // 组内稳定排序：用过的按最近先后前置，未用过的保持原有顺序
+  function orderByRecent(items: RItem[]): RItem[] {
+    if (recent.value.length == 0) return items
+    const used: RItem[] = []
+    const rest: RItem[] = []
+    for (let i = 0; i < items.length; i++) {
+      if (rank(items[i].url) < 999) used.push(items[i]); else rest.push(items[i])
+    }
+    for (let i = 0; i < used.length; i++) {
+      for (let j = i + 1; j < used.length; j++) {
+        if (rank(used[j].url) < rank(used[i].url)) { const t = used[i]; used[i] = used[j]; used[j] = t }
+      }
+    }
+    return used.concat(rest)
+  }
 
   const groups = computed((): RGroup[] => {
         const s = journeyState.stage
@@ -53,17 +89,22 @@
           { icon: '📏', label: '成长', url: '/pages/baby/growth' },
           { icon: '💉', label: '疫苗', url: '/pages/baby/vaccines' }
         ]
-        if (s == 'PRECONCEPTION') groups.push({ title: '备孕', items: ttc })
-        if (s == 'T1' || s == 'T2' || s == 'T3') groups.push({ title: '孕期', items: pregnancy })
+        if (s == 'PRECONCEPTION') groups.push({ title: '备孕', items: orderByRecent(ttc) })
+        if (s == 'T1' || s == 'T2' || s == 'T3') groups.push({ title: '孕期', items: orderByRecent(pregnancy) })
         if (s == 'POSTPARTUM' || s == 'RECOVERY' || s == 'PARENTING') {
-          groups.push({ title: '产后恢复', items: postpartum })
-          groups.push({ title: '宝宝', items: baby })
+          groups.push({ title: '产后恢复', items: orderByRecent(postpartum) })
+          groups.push({ title: '宝宝', items: orderByRecent(baby) })
         }
         groups.push({ title: '产检', items: [{ icon: '🏥', label: '产检中心', url: '/pages/care/schedule' }] })
         return groups
   })
 
-  function go(url: string) { uni.navigateTo({ url }) }
+  function go(url: string) {
+    remember(url)
+    uni.navigateTo({ url })
+  }
+
+  onPageReady(() => { loadRecent() })
 </script>
 
 <style>
@@ -80,7 +121,7 @@
   .grid-chip-3 { background-color: var(--lb-warning-soft); }
   .grid-chip-4 { background-color: var(--lb-chip-5); }
   .grid-icon { font-size: 40rpx; }
-  .grid-label { font-size: 22rpx; color: var(--lb-text-2); margin-top: 12rpx; }
+  .grid-label { font-size: 24rpx; color: var(--lb-text-2); margin-top: 12rpx; }
 
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }

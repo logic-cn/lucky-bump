@@ -314,7 +314,7 @@
   .grid-chip-3 { background-color: var(--lb-warning-soft); }
   .grid-chip-4 { background-color: var(--lb-chip-5); }
   .grid-icon { font-size: 40rpx; }
-  .grid-label { font-size: 22rpx; color: var(--lb-text-2); margin-top: 12rpx; }
+  .grid-label { font-size: 24rpx; color: var(--lb-text-2); margin-top: 12rpx; }
   .trend-text { font-size: 28rpx; color: var(--lb-text-2); }
   .mom-row { flex-direction: row; justify-content: space-between; padding: 8rpx 12rpx; }
   .mom-item { align-items: center; flex: 1; }

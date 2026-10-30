@@ -75,18 +75,18 @@
   .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 40rpx; margin-top: 24rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
   .result-warn { background-color: var(--lb-danger-soft); }
   .title { font-size: 34rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 16rpx; }
-  .hint { font-size: 22rpx; color: var(--lb-text-3); margin-bottom: 24rpx; }
+  .hint { font-size: 24rpx; color: var(--lb-text-3); margin-bottom: 24rpx; }
   .q { margin-top: 24rpx; }
   .q-text { font-size: 28rpx; color: var(--lb-text-1); margin-bottom: 12rpx; }
   .opt-row { flex-direction: row; }
-  .opt { flex: 1; height: 68rpx; background-color: var(--lb-fill); border-radius: 20rpx; align-items: center; justify-content: center; margin-right: 12rpx; transition: all 160ms ease-out; }
+  .opt { flex: 1; height: 76rpx; background-color: var(--lb-fill); border-radius: 20rpx; align-items: center; justify-content: center; margin-right: 12rpx; transition: all 160ms ease-out; }
   .opt-active { background-color: var(--lb-primary-soft); }
   .opt-text { font-size: 24rpx; color: var(--lb-text-1); }
   .opt-text-active { color: var(--lb-primary-deep); font-weight: bold; }
   .btn-save { width: 620rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 40rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
   .score { font-size: 64rpx; font-weight: bold; color: var(--lb-text-1); }
   .action { font-size: 30rpx; color: var(--lb-text-1); margin-top: 24rpx; text-align: center; }
-  .disclaimer { font-size: 22rpx; color: var(--lb-text-3); margin-top: 24rpx; text-align: center; }
+  .disclaimer { font-size: 24rpx; color: var(--lb-text-3); margin-top: 24rpx; text-align: center; }
 
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }

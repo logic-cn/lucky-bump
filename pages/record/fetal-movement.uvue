@@ -129,7 +129,7 @@
   .opt-active { background-color: var(--lb-primary-soft); }
   .opt-text { font-size: 28rpx; color: var(--lb-text-1); }
   .opt-text-active { color: var(--lb-primary-deep); font-weight: bold; }
-  .hint { font-size: 22rpx; color: var(--lb-text-3); margin: 8rpx 0 24rpx 0; text-align: center; }
+  .hint { font-size: 24rpx; color: var(--lb-text-3); margin: 8rpx 0 24rpx 0; text-align: center; }
   .btn-save { width: 620rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 8rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
   .btn-gray { background-color: var(--lb-fill); color: var(--lb-text-2); box-shadow: none; }
   .count { font-size: 120rpx; font-weight: bold; color: var(--lb-primary); }

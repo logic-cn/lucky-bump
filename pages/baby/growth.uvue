@@ -144,7 +144,7 @@
   .pct-cap { font-size: 22rpx; color: var(--lb-text-3); margin-top: 8rpx; }
   .alert { width: 620rpx; background-color: var(--lb-warning-soft); border-radius: 24rpx; padding: 20rpx; margin-top: 20rpx; }
   .alert-text { font-size: 24rpx; color: var(--lb-warning); }
-  .hint { font-size: 20rpx; color: var(--lb-text-3); margin-top: 20rpx; }
+  .hint { font-size: 24rpx; color: var(--lb-text-3); margin-top: 20rpx; }
   .s-row { flex-direction: row; padding: 10rpx 0; }
   .s-date { width: 220rpx; font-size: 24rpx; color: var(--lb-text-3); }
   .s-val { font-size: 26rpx; color: var(--lb-text-1); }

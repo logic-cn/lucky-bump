@@ -104,7 +104,7 @@
   .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 40rpx; margin-top: 24rpx; align-items: center; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
   .label { font-size: 26rpx; color: var(--lb-text-1); margin: 16rpx 0 16rpx 0; }
   .opts { flex-direction: row; flex-wrap: wrap; justify-content: center; }
-  .opt { background-color: var(--lb-fill); border-radius: 24rpx; padding: 16rpx 24rpx; margin: 8rpx; transition: all 160ms ease-out; }
+  .opt { background-color: var(--lb-fill); border-radius: 24rpx; padding: 20rpx 24rpx; margin: 8rpx; transition: all 160ms ease-out; }
   .opt-active { background-color: var(--lb-primary-soft); }
   .opt-danger-active { background-color: var(--lb-danger-soft); }
   .opt-text { font-size: 26rpx; color: var(--lb-text-2); }
