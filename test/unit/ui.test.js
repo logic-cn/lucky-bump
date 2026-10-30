@@ -231,18 +231,12 @@ test('记录宫格按最近使用排序（本地记忆，不上云）', () => {
 
 /* ---------------- 可读性下限（小字号不得回流） ---------------- */
 
-test('最小字号不低于 22rpx，说明性文案不低于 24rpx', () => {
-  const READABLE = ['hint', 'redline-note', 'disclaimer', 'tip', 'grid-label', 'link', 'lbc-disclaimer-text', 'lbc-redline-note']
+test('最小字号不低于 24rpx（正文与辅助文案一致）', () => {
   const offenders = []
   for (const file of [...walkUvue(path.join(ROOT, 'pages')), ...walkUvue(path.join(ROOT, 'components'))]) {
     const src = fs.readFileSync(file, 'utf-8')
     for (const m of src.matchAll(/font-size:\s*(\d+)rpx/g)) {
-      if (Number(m[1]) < 22) offenders.push(`${path.relative(ROOT, file)}: font-size ${m[1]}rpx`)
-    }
-    for (const cls of READABLE) {
-      const re = new RegExp(`\\.${cls}\\s*\\{[^}]*font-size:\\s*(\\d+)rpx`)
-      const mm = re.exec(src)
-      if (mm && Number(mm[1]) < 24) offenders.push(`${path.relative(ROOT, file)}: .${cls} ${mm[1]}rpx`)
+      if (Number(m[1]) < 24) offenders.push(`${path.relative(ROOT, file)}: font-size ${m[1]}rpx`)
     }
   }
   assert.deepEqual(offenders, [], `以下位置字号过小:\n${offenders.join('\n')}`)

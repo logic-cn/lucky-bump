@@ -233,7 +233,7 @@
   .r-row { flex-direction: row; align-items: center; padding: 14rpx 0; border-bottom-width: 1px; border-bottom-color: var(--lb-line); }
   .r-body { flex: 1; }
   .r-title { font-size: 28rpx; color: var(--lb-text-1); }
-  .r-sub { font-size: 22rpx; color: var(--lb-text-3); margin-top: 4rpx; }
+  .r-sub { font-size: 24rpx; color: var(--lb-text-3); margin-top: 4rpx; }
   .input { width: 636rpx; height: 88rpx; background-color: var(--lb-fill); border-radius: 24rpx; padding: 0 24rpx; font-size: 28rpx; color: var(--lb-text-1); margin-bottom: 16rpx; }
   .ph { color: var(--lb-text-3); }
   .opts { flex-direction: row; flex-wrap: wrap; margin-bottom: 16rpx; }

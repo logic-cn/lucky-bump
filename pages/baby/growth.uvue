@@ -141,7 +141,7 @@
   .pct-row { flex-direction: row; }
   .pct-col { align-items: center; margin: 0 24rpx; }
   .pct-num { font-size: 44rpx; font-weight: bold; color: var(--lb-primary); }
-  .pct-cap { font-size: 22rpx; color: var(--lb-text-3); margin-top: 8rpx; }
+  .pct-cap { font-size: 24rpx; color: var(--lb-text-3); margin-top: 8rpx; }
   .alert { width: 620rpx; background-color: var(--lb-warning-soft); border-radius: 24rpx; padding: 20rpx; margin-top: 20rpx; }
   .alert-text { font-size: 24rpx; color: var(--lb-warning); }
   .hint { font-size: 24rpx; color: var(--lb-text-3); margin-top: 20rpx; }

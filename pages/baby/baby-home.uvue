@@ -110,13 +110,13 @@
   .hero-current { opacity: 1; }
   .hero-name { font-size: 40rpx; font-weight: bold; color: #FFFFFF; }
   .hero-sub { font-size: 24rpx; color: rgba(255,255,255,0.92); margin-top: 8rpx; }
-  .hero-cur { font-size: 22rpx; color: #FFFFFF; background-color: rgba(255,255,255,0.28); border-radius: 16rpx; padding: 4rpx 12rpx; margin-top: 12rpx; align-self: flex-start; }
+  .hero-cur { font-size: 24rpx; color: #FFFFFF; background-color: rgba(255,255,255,0.28); border-radius: 16rpx; padding: 4rpx 12rpx; margin-top: 12rpx; align-self: flex-start; }
   .summary { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 32rpx; margin-top: 16rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
   .card-title { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 20rpx; }
   .sum-row { flex-direction: row; justify-content: space-between; }
   .sum-col { align-items: center; flex: 1; }
   .sum-num { font-size: 36rpx; font-weight: bold; color: var(--lb-primary); }
-  .sum-cap { font-size: 22rpx; color: var(--lb-text-3); margin-top: 8rpx; }
+  .sum-cap { font-size: 24rpx; color: var(--lb-text-3); margin-top: 8rpx; }
   .quick-row { flex-direction: row; margin-top: 24rpx; }
   .btn-quick { flex: 1; height: 80rpx; line-height: 80rpx; background-color: var(--lb-primary-soft); color: var(--lb-primary-deep); font-size: 24rpx; border-radius: 24rpx; margin: 0 6rpx; transition: all 160ms ease-out; }
   .nav-row { flex-direction: row; align-items: center; padding: 24rpx 0; border-bottom-width: 1px; border-bottom-color: var(--lb-line); transition: all 160ms ease-out; }

@@ -142,7 +142,7 @@
   .list { width: 702rpx; margin-top: 40rpx; }
   .list-title { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 16rpx; }
   .diary { background-color: var(--lb-card); border-radius: 36rpx; padding: 32rpx; margin-bottom: 16rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
-  .diary-date { font-size: 22rpx; color: var(--lb-text-3); }
+  .diary-date { font-size: 24rpx; color: var(--lb-text-3); }
   .diary-text { font-size: 28rpx; color: var(--lb-text-1); margin-top: 12rpx; }
 
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }

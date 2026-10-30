@@ -113,8 +113,8 @@
   .chart { flex-direction: row; align-items: flex-end; justify-content: space-between; width: 636rpx; height: 240rpx; }
   .bar-col { flex: 1; align-items: center; }
   .bar { width: 28rpx; background-color: #F5A3C3; border-radius: 8rpx 8rpx 0 0; }
-  .bar-date { font-size: 22rpx; color: var(--lb-text-3); margin-top: 8rpx; }
-  .bar-val { font-size: 22rpx; color: var(--lb-primary-deep); font-weight: bold; }
+  .bar-date { font-size: 24rpx; color: var(--lb-text-3); margin-top: 8rpx; }
+  .bar-val { font-size: 24rpx; color: var(--lb-primary-deep); font-weight: bold; }
   .d-row { flex-direction: row; width: 636rpx; padding: 12rpx 0; border-bottom-width: 1px; border-bottom-color: var(--lb-line); }
   .d-date { flex: 1; font-size: 26rpx; color: var(--lb-text-3); }
   .d-val { font-size: 26rpx; color: var(--lb-text-1); }

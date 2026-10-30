@@ -22,8 +22,8 @@
       <text class="agreement-link" @click="goAgreement">《用户协议》</text>
       <text class="agreement">与</text>
       <text class="agreement-link" @click="goPrivacy">《隐私政策》</text>
-      <text class="agreement">；健康数据仅用于为你服务。</text>
     </view>
+    <text class="agreement-sub lb-rise-2">健康数据仅用于为你服务。</text>
 
     <!-- 注销冷静期提示 + 撤回入口（自绘弹窗，web 端 uni.showModal 回调不触发，见 docs/08 §8） -->
     <view class="mask lb-fade" v-if="pendingVisible">
@@ -116,6 +116,7 @@
   .agreement-row { flex-direction: row; flex-wrap: wrap; justify-content: center; margin-top: 48rpx; width: 680rpx; }
   .agreement { font-size: 24rpx; color: var(--lb-text-3); text-align: center; }
   .agreement-link { font-size: 24rpx; color: var(--lb-primary); }
+  .agreement-sub { width: 680rpx; font-size: 24rpx; color: var(--lb-text-3); margin-top: 8rpx; text-align: center; }
   .mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--lb-mask); justify-content: center; align-items: center; }
   .dialog { width: 560rpx; background-color: var(--lb-card); border-radius: 24rpx; padding: 40rpx 32rpx 24rpx 32rpx; }
   .dlg-title { font-size: 32rpx; font-weight: bold; color: var(--lb-text-1); text-align: center; }

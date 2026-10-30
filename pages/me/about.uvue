@@ -38,7 +38,7 @@
   .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
   .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 32rpx; margin-top: 24rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
   .title { font-size: 34rpx; font-weight: bold; color: var(--lb-text-1); align-self: center; }
-  .ver { font-size: 22rpx; color: var(--lb-text-3); margin-top: 12rpx; align-self: center; }
+  .ver { font-size: 24rpx; color: var(--lb-text-3); margin-top: 12rpx; align-self: center; }
   .card-title { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 16rpx; }
   .body { font-size: 24rpx; color: var(--lb-text-2); line-height: 42rpx; }
   .nav-row { flex-direction: row; align-items: center; padding: 18rpx 0; border-bottom-width: 1px; border-bottom-color: var(--lb-line); }

@@ -170,7 +170,7 @@
   .m-avatar-text { font-size: 30rpx; color: #FFFFFF; }
   .m-body { flex: 1; margin-left: 20rpx; }
   .m-name { font-size: 28rpx; color: var(--lb-text-1); }
-  .m-role { font-size: 22rpx; color: var(--lb-text-3); margin-top: 4rpx; }
+  .m-role { font-size: 24rpx; color: var(--lb-text-3); margin-top: 4rpx; }
   .m-action-wrap { transition: all 160ms ease-out; }
   .m-action { font-size: 24rpx; color: var(--lb-danger); padding: 14rpx; }
   .hint { font-size: 24rpx; color: var(--lb-text-3); margin: 8rpx 0 16rpx 0; }

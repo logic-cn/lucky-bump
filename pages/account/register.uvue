@@ -23,8 +23,8 @@
       <text class="agreement-link" @click="goAgreement">《用户协议》</text>
       <text class="agreement">与</text>
       <text class="agreement-link" @click="goPrivacy">《隐私政策》</text>
-      <text class="agreement">。同房、验孕、情绪自评永远仅本人可见。</text>
     </view>
+    <text class="agreement-sub lb-rise-2">同房、验孕、情绪自评永远仅本人可见。</text>
   </view>
 </template>
 
@@ -76,6 +76,7 @@
   .agreement-row { flex-direction: row; flex-wrap: wrap; justify-content: center; margin-top: 48rpx; width: 680rpx; }
   .agreement { font-size: 24rpx; color: var(--lb-text-3); text-align: center; }
   .agreement-link { font-size: 24rpx; color: var(--lb-primary); }
+  .agreement-sub { width: 680rpx; font-size: 24rpx; color: var(--lb-text-3); margin-top: 8rpx; text-align: center; }
 
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }

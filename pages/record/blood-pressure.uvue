@@ -76,7 +76,7 @@
   .bp-row { flex-direction: row; align-items: flex-end; }
   .bp-col { align-items: center; }
   .bp-input { width: 200rpx; height: 140rpx; font-size: 88rpx; font-weight: bold; color: var(--lb-text-1); text-align: center; border-bottom-width: 2px; border-bottom-color: var(--lb-primary); }
-  .bp-cap { font-size: 22rpx; color: var(--lb-text-3); margin-top: 12rpx; }
+  .bp-cap { font-size: 24rpx; color: var(--lb-text-3); margin-top: 12rpx; }
   .bp-slash { font-size: 56rpx; color: var(--lb-arrow); margin: 0 24rpx 40rpx 24rpx; }
   .ph { color: var(--lb-text-3); }
   .hr-input { width: 500rpx; height: 80rpx; font-size: 28rpx; color: var(--lb-text-1); text-align: center; background-color: var(--lb-fill); border-radius: 24rpx; margin-top: 40rpx; }
