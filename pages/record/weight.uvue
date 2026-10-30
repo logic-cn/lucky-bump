@@ -18,6 +18,7 @@
   import { luckyRecord, luckyId } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
+  import { track } from '../../utils/track.uts'
 
   const kg = ref<string>('')
   const saving = ref<boolean>(false)
@@ -57,6 +58,7 @@
     saving.value = true
     try {
       await luckyRecord('addMetric', { journeyId: journeyState.journeyId, code: 'weight', value: { kg: kgVal } } as UTSJSONObject)
+      track('record_create', { type: 'weight' } as UTSJSONObject)
       saved.value = true
       setTimeout(() => { uni.navigateBack() }, 600)
     } catch (e) {

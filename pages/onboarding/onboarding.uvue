@@ -37,6 +37,7 @@
   import { computed, ref } from 'vue'
   import { luckyJourney } from '../../utils/request.uts'
   import { themeClass } from '../../store/themeStore.uts'
+  import { track } from '../../utils/track.uts'
 
   const step = ref<number>(0)        // 0 选阶段 / 1 录日期
   const mode = ref<string>('ttc')
@@ -72,6 +73,7 @@
       }
       const res = await luckyJourney('createJourney', { mode: mode.value, lmpDate: dateValue.value } as UTSJSONObject)
       if (res.getNumber('errCode') == 0) {
+        track('onboarding_complete', { mode: mode.value } as UTSJSONObject)
         // 不在跳转前 applyJourney：首页 onShow 会经 loadCurrentJourney 拉取最新旅程并写入状态；
         // 此处若先改全局 reactive 再立即 reLaunch，会触发 web 端 vdom 回退渲染的 proxy 竞态
         loading.value = false

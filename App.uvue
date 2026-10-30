@@ -2,10 +2,12 @@
   import { onLaunch, onShow, onHide } from '@dcloudio/uni-app'
   import { appInit, isLockRequired } from './store/appStore.uts'
   import { initTheme } from './store/themeStore.uts'
+  import { track } from './utils/track.uts'
 
   onLaunch(() => {
     appInit()
     initTheme()
+    track('app_launch')
     console.log('幸孕记 App Launch')
   })
   onShow(() => {

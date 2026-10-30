@@ -19,10 +19,10 @@ sync_one() {
   sed -i '' "s|require('uni-config-center')|require('./uni-config-center')|" "$dest/lucky-auth-common/index.js"
 }
 
-for obj in lucky-id lucky-journey lucky-data lucky-reminder lucky-family; do
+for obj in lucky-id lucky-journey lucky-data lucky-reminder lucky-family lucky-analytics; do
   sync_one "$obj" lucky-auth-common uni-config-center
 done
 for obj in lucky-baby lucky-care lucky-record lucky-seed; do
   sync_one "$obj" lucky-auth-common lucky-templates uni-config-center
 done
-echo "公共模块已 vendor 进 9 个云对象（含 uni-config-center 密钥配置，注意该目录不入 git）"
+echo "公共模块已 vendor 进 10 个云对象（含 uni-config-center 密钥配置，注意该目录不入 git）"

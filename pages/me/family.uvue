@@ -67,6 +67,7 @@
   import { luckyFamily } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
+  import { track } from '../../utils/track.uts'
 
   type GOpt = { value: string, label: string, allow: boolean }
 
@@ -110,6 +111,7 @@
   async function invite(role: string) {
     try {
       const res = await luckyFamily('invite', { journeyId: journeyState.journeyId, role } as UTSJSONObject)
+      track('family_invite', { role: role } as UTSJSONObject)
       inviteCode.value = res.getString('code') ?? ''
     } catch (e) { uni.showToast({ title: (e as Error).message, icon: 'none' }) }
   }

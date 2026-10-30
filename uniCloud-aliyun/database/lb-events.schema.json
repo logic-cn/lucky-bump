@@ -1,0 +1,47 @@
+{
+  "required": [
+    "uid",
+    "event",
+    "ts"
+  ],
+  "properties": {
+    "uid": {
+      "bsonType": "string",
+      "title": "用户"
+    },
+    "journey_id": {
+      "bsonType": "string",
+      "title": "旅程"
+    },
+    "event": {
+      "bsonType": "string",
+      "title": "事件名",
+      "enum": [
+        "app_launch",
+        "onboarding_complete",
+        "record_create",
+        "reminder_done",
+        "export_done",
+        "family_invite"
+      ]
+    },
+    "props": {
+      "bsonType": "object",
+      "title": "事件属性（仅短值）"
+    },
+    "date": {
+      "bsonType": "string",
+      "title": "日期（按天聚合用）"
+    },
+    "ts": {
+      "bsonType": "long",
+      "title": "时间戳"
+    }
+  },
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  }
+}

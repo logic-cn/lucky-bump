@@ -1,0 +1,39 @@
+import { appState } from '../store/appStore.uts'
+import { journeyState } from '../store/journeyStore.uts'
+import { callCloud } from './request.uts'
+
+/**
+ * 最小埋点（docs/05 成功指标）：只上报行为事件与短属性，不发送健康内容。
+ * 事件白名单由云端 lucky-analytics 校验；队列满 5 条或调用 flushTrack 时批量上报。
+ * 未登录（无 token）时直接丢弃，避免产生无法归属的匿名事件。
+ */
+
+let queue: UTSJSONObject[] = []
+let flushing: boolean = false
+
+export function track(event: string, props: UTSJSONObject = new UTSJSONObject({})): void {
+  if (appState.token.length == 0) return
+  queue.push({
+    event: event,
+    journeyId: journeyState.journeyId,
+    props: props,
+    ts: Date.now()
+  } as UTSJSONObject)
+  flushTrack()
+}
+
+export function flushTrack(): void {
+  if (flushing || queue.length == 0 || appState.token.length == 0) return
+  flushing = true
+  const batch = queue.slice(0, 20)
+  callCloud('lucky-analytics', 'report', { events: batch } as UTSJSONObject)
+    .then(() => {
+      queue.splice(0, batch.length)
+      flushing = false
+      if (queue.length >= 5) flushTrack()
+    })
+    .catch(() => {
+      flushing = false
+      // 埋点失败不得影响业务；队列保留，下次触发时重试
+    })
+}

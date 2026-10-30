@@ -37,6 +37,7 @@
   import { luckyBaby } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
+  import { track } from '../../utils/track.uts'
 
   type FOpt = { value: string, label: string }
   type FRow = { time: string, desc: string }
@@ -88,6 +89,7 @@
     saving.value = true
     try {
       await luckyBaby('addFeeding', { journeyId: journeyState.journeyId, babyId: babyId.value, mode: mode.value, ml: ml.value } as UTSJSONObject)
+      track('record_create', { type: 'feeding' } as UTSJSONObject)
       uni.showToast({ title: '已记录 ✓', icon: 'success' })
       load()
     } catch (e) {

@@ -42,6 +42,7 @@
   const infoContent = ref<string>('')
   import { journeyState } from '../../store/journeyStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
+  import { track } from '../../utils/track.uts'
 
   function go(url: string) { uni.navigateTo({ url }) }
 
@@ -49,6 +50,7 @@
     try {
       await luckyData('exportAll', { journeyId: journeyState.journeyId } as UTSJSONObject)
       const sum = await luckyData('exportSummary', { journeyId: journeyState.journeyId } as UTSJSONObject)
+      track('export_done')
       infoTitle.value = '数据已就绪'
       infoContent.value = sum.getString('summary') ?? ''
       infoVisible.value = true

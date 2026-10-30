@@ -37,6 +37,7 @@
   import { luckyRecord } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
+  import { track } from '../../utils/track.uts'
 
   const bbt = ref('')
   const saving = ref(false)
@@ -80,6 +81,7 @@
   async function markPeriod(kind: string) {
     try {
       await luckyRecord('addCycleEvent', { journeyId: journeyState.journeyId, type: kind == 'start' ? 'period_start' : 'period_end' } as UTSJSONObject)
+      track('record_create', { type: 'cycle' } as UTSJSONObject)
       uni.showToast({ title: '已记录 ✓', icon: 'success' })
       load()
     } catch (e) { uni.showToast({ title: (e as Error).message, icon: 'none' }) }
