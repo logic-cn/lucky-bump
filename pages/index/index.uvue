@@ -46,6 +46,15 @@
       <text class="card-title">最近记录</text>
       <text class="trend-text">{{ trendText }}</text>
     </view>
+
+    <!-- 到期提醒弹层（免打扰时段内仅紧急提醒弹出） -->
+    <view class="mask lb-fade" v-if="reminderVisible">
+      <view class="dialog lb-pop">
+        <text class="dlg-title">今日提醒</text>
+        <text class="dlg-content">{{ reminderText }}</text>
+        <view class="dlg-actions"><text class="dlg-btn dlg-btn-ok" @click="reminderVisible = false">知道了</text></view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -56,6 +65,7 @@
   import { journeyState, weekText, stageText, loadCurrentJourney, loadToday } from '../../store/journeyStore.uts'
   import { luckyRecord } from '../../utils/request.uts'
   import { themeClass } from '../../store/themeStore.uts'
+  import { isQuietNow } from '../../utils/quiet.uts'
 
   type QuickItem = { icon: string, label: string, url: string }
 
@@ -63,6 +73,8 @@
   const babySizeText = ref('')
   const daysToPeriod = ref(0)
   const trendText = ref('')
+  const reminderVisible = ref<boolean>(false)
+  const reminderText = ref<string>('')
 
   const stageLabel = computed((): string => stageText(journeyState.stage))
   const weekLabel = computed((): string => weekText())
@@ -108,6 +120,32 @@
     return prep.length > 0 ? `${due} · ${prep}` : due
   }
 
+  /** 到期提醒：当天只弹一次；免打扰时段内仅紧急提醒可突破（docs/03 M9） */
+  function maybeShowReminder() {
+    const today = new Date().toISOString().slice(0, 10)
+    const shown = uni.getStorageSync('lb_reminder_shown_date')
+    if (shown != null && (shown as string) == today) return
+    const due: UTSJSONObject[] = []
+    let hasUrgent = false
+    for (let i = 0; i < todos.value.length; i++) {
+      const t = todos.value[i]
+      const d = t.getString('dueDate') ?? ''
+      if (d.length > 0 && d <= today) {
+        due.push(t)
+        if (t.getBoolean('urgent') == true) hasUrgent = true
+      }
+    }
+    if (due.length == 0) return
+    if (isQuietNow() && !hasUrgent) return
+    const lines: string[] = []
+    const max = due.length > 3 ? 3 : due.length
+    for (let i = 0; i < max; i++) lines.push('· ' + (due[i].getString('title') ?? ''))
+    if (due.length > 3) lines.push(`…还有 ${due.length - 3} 条，见首页待办`)
+    reminderText.value = lines.join('\n')
+    reminderVisible.value = true
+    uni.setStorageSync('lb_reminder_shown_date', today)
+  }
+
   async function refresh() {
     if (appState.token.length == 0) { uni.reLaunch({ url: '/pages/account/login' }); return }
     try {
@@ -144,6 +182,7 @@
           daysToPeriod.value = diff
         }
       }
+      maybeShowReminder()
     } catch (e) {
       // token 失效已由请求层统一跳登录
     }
@@ -183,6 +222,14 @@
   .grid-icon { font-size: 40rpx; }
   .grid-label { font-size: 22rpx; color: var(--lb-text-2); margin-top: 12rpx; }
   .trend-text { font-size: 28rpx; color: var(--lb-text-2); }
+
+  .mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--lb-mask); justify-content: center; align-items: center; }
+  .dialog { width: 560rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 40rpx 32rpx 24rpx 32rpx; }
+  .dlg-title { font-size: 32rpx; font-weight: bold; color: var(--lb-text-1); text-align: center; }
+  .dlg-content { font-size: 27rpx; color: var(--lb-text-2); margin-top: 20rpx; text-align: left; line-height: 44rpx; }
+  .dlg-actions { flex-direction: row; justify-content: center; margin-top: 36rpx; }
+  .dlg-btn { width: 300rpx; height: 80rpx; line-height: 80rpx; text-align: center; font-size: 29rpx; color: #FFFFFF; background-color: var(--lb-primary); border-radius: 40rpx; }
+  .dlg-btn-ok { color: #FFFFFF; background-color: var(--lb-primary); }
 
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }

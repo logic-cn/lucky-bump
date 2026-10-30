@@ -1,0 +1,35 @@
+/**
+ * 免打扰时段（docs/03 M9）：端上执行，随系统设置持久化。
+ * 默认 22:00-07:00；跨午夜区间按 start > end 判断。
+ */
+
+const START_KEY = 'lb_quiet_start'
+const END_KEY = 'lb_quiet_end'
+const DEFAULT_START = '22:00'
+const DEFAULT_END = '07:00'
+
+function readTime(key: string, fallback: string): string {
+  const raw = uni.getStorageSync(key)
+  return raw == null || (raw as string).length != 5 ? fallback : (raw as string)
+}
+
+export function quietStart(): string { return readTime(START_KEY, DEFAULT_START) }
+export function quietEnd(): string { return readTime(END_KEY, DEFAULT_END) }
+
+export function setQuietRange(start: string, end: string): void {
+  uni.setStorageSync(START_KEY, start)
+  uni.setStorageSync(END_KEY, end)
+}
+
+function hourOf(t: string): number {
+  const h = parseInt(t.substring(0, 2))
+  return Number.isNaN(h) ? 0 : h
+}
+
+/** 当前是否处于免打扰窗口（整点粒度，够用且不引入定时器） */
+export function isQuietNow(nowHour: number = new Date().getHours()): boolean {
+  const s = hourOf(quietStart())
+  const e = hourOf(quietEnd())
+  if (s == e) return false
+  return s < e ? (nowHour >= s && nowHour < e) : (nowHour >= s || nowHour < e)
+}

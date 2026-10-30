@@ -27,7 +27,24 @@
       <input v-if="type == 'by_month'" class="input" type="number" v-model="month" placeholder="月龄，如 6" placeholder-class="ph" />
       <input v-if="type == 'recurring'" class="input" type="number" v-model="intervalDays" placeholder="间隔天数，如 1" placeholder-class="ph" />
       <button class="btn-save" hover-class="lb-press" hover-stay-time="120" :disabled="saving" @click="add">{{ saving ? '保存中…' : '添加提醒' }}</button>
-      <text class="hint">默认免打扰 22:00-7:00（产后 3 月内自动延长）；仅紧急提醒可突破</text>
+      <text class="hint">免打扰期间不弹到期提醒（待办列表仍保留）；紧急提醒不受限制</text>
+    </view>
+
+    <view class="card lb-rise-1">
+      <text class="card-title">免打扰时段</text>
+      <view class="p-row">
+        <text class="p-label">开始</text>
+        <picker mode="time" :value="quietStartTime" @change="onQuietStartChange">
+          <text class="pick-text">{{ quietStartTime }}</text>
+        </picker>
+      </view>
+      <view class="p-row">
+        <text class="p-label">结束</text>
+        <picker mode="time" :value="quietEndTime" @change="onQuietEndChange">
+          <text class="pick-text">{{ quietEndTime }}</text>
+        </picker>
+      </view>
+      <text class="hint">默认 22:00-7:00；仅影响前台提醒弹层，不隐藏待办</text>
     </view>
 
     <view class="card lb-rise-2">
@@ -45,6 +62,7 @@
   import { luckyReminder } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
   import { themeState, setThemeMode, themeClass } from '../../store/themeStore.uts'
+  import { quietStart, quietEnd, setQuietRange } from '../../utils/quiet.uts'
 
   type TOpt = { value: string, label: string }
 
@@ -57,6 +75,16 @@
   const month = ref<string>('')
   const intervalDays = ref<string>('')
   const darkMode = ref<boolean>(themeState.resolved == 'dark')
+  const quietStartTime = ref<string>(quietStart())
+  const quietEndTime = ref<string>(quietEnd())
+  function onQuietStartChange(e: UniPickerChangeEvent) {
+    quietStartTime.value = (e.detail.value as string) ?? '22:00'
+    setQuietRange(quietStartTime.value, quietEndTime.value)
+  }
+  function onQuietEndChange(e: UniPickerChangeEvent) {
+    quietEndTime.value = (e.detail.value as string) ?? '07:00'
+    setQuietRange(quietStartTime.value, quietEndTime.value)
+  }
   const types = ref<TOpt[]>([
     { value: 'absolute', label: '指定日期' },
     { value: 'by_week', label: '按孕周' },
