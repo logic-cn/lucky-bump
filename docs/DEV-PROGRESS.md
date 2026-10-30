@@ -6,8 +6,8 @@
 ## 状态总览
 
 - 当前阶段：**Web 端生产可用已达** —— 白屏根因修复完毕（4 层），浏览器端到端全链路验证通过（注册→引导→首页→记录→预测→时间线→退出→复登），生产 uniCloud 空间联调可用
-- 最近更新：2026-10-28（Web 端白屏修复 + 运行时缺陷规避 + 云端部署修复，详见 docs/08 §8/§9）
-- 测试：`npm test` → 17 pass / 0 fail
+- 最近更新：2026-10-30（缺口补齐轮：定时 purge / 产后日程 / 提醒落地 / 真锁 / 日记照片 / 出生卡 / 导出摘要 / 留痕等 14 项）
+- 测试：`npm test` → 68 pass / 0 fail
 
 ## 任务清单
 
@@ -113,6 +113,25 @@
 - [x] UI 全面重设计收尾（与守护任务协同）：批次 D/E 审计、全仓旧色一致性扫描、record 页芯片宫格补齐；详见 docs/UI-REDESIGN-PROGRESS.md
 - [x] 回归：`npm test` 52/52（新增 account/tracker/ui 三套测试 + 静态鉴权网 2 条）
 
+### 缺口补齐轮（2026-10-30，代码 14 项）✅
+
+- [x] P0 注销定时 purge：新增 `lucky-maintenance` 云函数（每日 03:00 触发器），按旅程级联删除业务数据/家庭关系/token/账号，单账号失败隔离、重复执行幂等（`test/unit/maintenance.test.js`）
+- [x] P0 分娩后产褥期日程：`registerDelivery` 将未完成产检置 skipped，按分娩日生成「产后 42 天复查」+ EPDS 2/4/6 周随访（同名幂等，`test/unit/postpartum.test.js`）
+- [x] P0 提醒落地：`utils/quiet.uts` 免打扰时段（默认 22:00-07:00，可配置）+ 首页每天一次到期提醒弹层（紧急提醒可突破免打扰）
+- [x] P0 应用锁真校验：新增 `lucky-id.verifyPassword`（仅校验不发 token），锁页改为服务端密码校验；生物识别可用时保留快捷入口
+- [x] 日记照片：选图 → `uniCloud.uploadFile` → `mediaIds` 落库（最多 9 张，复用产检报告上传范式）
+- [x] 出生卡：分娩登记成功后展示（日期/小名/体重身长）+ 复制分享文案
+- [x] 导出：新增 `lucky-data.exportSummary`（仅主人、strict 只取本人）人类可读摘要，数据页展示并一键复制
+- [x] 修改密码入口：设置页「账号安全 → 修改密码」自绘弹窗（找回密码仍需短信服务）
+- [x] 体重推荐区间：设置页「身体档案」（身高/孕前体重）→ 体重页按孕前 BMI 选择 IOM 四档区间
+- [x] 产后首页「妈妈今天」卡：`lucky-data.today` 增返 momCard（当日喂养/尿布/宝宝睡眠）；并修正日差口径（UTC 正午锚定导致当天上午登记被判成 T3）
+- [x] 隐私留痕：新增 `lb-audit-logs`（clientDB 锁死），家庭成员访问首页按「人+动作+天」去重记录；主人隐私页可查近 30 条，成员无权读取
+- [x] 隐私文案对齐真实能力：去掉未实现的「云备份/完整导出」承诺，通知脱敏开关标注为推送接入后生效
+- [x] lbc 组件令牌化：card/redline/disclaimer 全部改用 `var(--lb-*)`，新增静态断言禁止组件颜色字面量
+- [x] learn 知识页扩充：按阶段补产检节点、营养作息、情绪支持、内容来源，保留红线与医疗边界
+- [x] 回归：`npm test` 68/68
+- [ ] 仍需人工：上传 `lucky-maintenance` 云函数与 `lb-audit-logs` schema 到云端（HBuilderX）；推送/生物识别/导航栏动态改色待平台能力验证（见 docs/08 §8/§6）
+
 ## 中断恢复指引
 
-Web 端已可用。后续运行只涉及：1) `npm test` 保持 17/17；2) 上传云函数前先跑 `scripts/sync_commons.sh`；3) 真机运行/云打包按 docs/08 §5（需 HBuilderX 用户操作）；4) 如用户提出功能修改，按 docs/03 规范实现并回归测试（web 端限制见 docs/08 §8）。
+Web 端已可用。后续运行只涉及：1) `npm test` 保持 68/68；2) 上传云函数前先跑 `scripts/sync_commons.sh`；3) 新增云函数 `lucky-maintenance` 与 `lb-audit-logs` 表需在 HBuilderX 上传/初始化；4) 真机运行/云打包按 docs/08 §5（需 HBuilderX 用户操作）；5) 如用户提出功能修改，按 docs/03 规范实现并回归测试（web 端限制见 docs/08 §8）。
