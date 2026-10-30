@@ -71,7 +71,7 @@
 
 <script setup lang="ts">
   import { computed, ref } from 'vue'
-  import { onShow } from '@dcloudio/uni-app'
+  import { onPageShow } from '@dcloudio/uni-app'
   import { appState } from '../../store/appStore.uts'
   import { journeyState, weekText, stageText, loadCurrentJourney, loadToday } from '../../store/journeyStore.uts'
   import { luckyRecord } from '../../utils/request.uts'
@@ -213,7 +213,7 @@
     }
   }
 
-  onShow(() => {
+  onPageShow(() => {
     refresh()
   })
 </script>
