@@ -44,6 +44,12 @@
           <text class="flow-text" :class="flow == f.value ? 'flow-text-active' : ''">{{ f.label }}</text>
         </view>
       </view>
+      <view class="flow-row" v-if="selectedKind == 'start'">
+        <text class="label-inline">伴随症状</text>
+        <view class="flow-chip" v-for="(s, i) in symptoms" :key="i" :class="hasSymptom(s.value) ? 'flow-chip-active' : ''" hover-class="lb-press" hover-stay-time="120" @click="toggleSymptom(s.value)">
+          <text class="flow-text" :class="hasSymptom(s.value) ? 'flow-text-active' : ''">{{ s.label }}</text>
+        </view>
+      </view>
       <view class="btn-row">
         <button class="btn-half btn-primary-bg" hover-class="lb-press" hover-stay-time="120" :disabled="saving" @click="markOn('start')">{{ saving ? '保存中…' : '这天经期开始' }}</button>
         <button class="btn-half btn-gray" hover-class="lb-press" hover-stay-time="120" :disabled="saving" @click="markOn('end')">这天经期结束</button>
@@ -123,6 +129,10 @@
   const DAY = 86400000
   const weekdays = ref<string[]>(['一', '二', '三', '四', '五', '六', '日'])
   const flows = ref<Flow[]>([{ value: 'light', label: '少' }, { value: 'medium', label: '中' }, { value: 'heavy', label: '多' }] as Flow[])
+  const symptoms = ref<Flow[]>([
+    { value: 'cramp', label: '痛经' }, { value: 'backache', label: '腰酸' },
+    { value: 'headache', label: '头痛' }, { value: 'mood', label: '情绪波动' }
+  ] as Flow[])
   const bbt = ref('')
   const saving = ref(false)
   const events = ref<UTSJSONObject[]>([])
@@ -131,6 +141,7 @@
   const selectedDate = ref<string>('')
   const selectedKind = ref<string>('start')
   const flow = ref<string>('medium')
+  const pickedSymptoms = ref<string[]>([])
   const delVisible = ref<boolean>(false)
   const delId = ref<string>('')
   const periodReminded = ref<boolean>(false)
@@ -249,6 +260,15 @@
     selectedDate.value = c.date
     selectedKind.value = 'start'
   }
+  function hasSymptom(v: string): boolean { return pickedSymptoms.value.indexOf(v) >= 0 }
+  function toggleSymptom(v: string) {
+    const next: string[] = []
+    for (let i = 0; i < pickedSymptoms.value.length; i++) {
+      if (pickedSymptoms.value[i] != v) next.push(pickedSymptoms.value[i])
+    }
+    if (pickedSymptoms.value.indexOf(v) < 0) next.push(v)
+    pickedSymptoms.value = next
+  }
 
   function markToday(kind: string) {
     selectedDate.value = todayDateStr()
@@ -260,7 +280,7 @@
     if (selectedDate.value.length == 0) return
     saving.value = true
     try {
-      const value = kind == 'start' ? ({ flow: flow.value } as UTSJSONObject) : ({} as UTSJSONObject)
+      const value = kind == 'start' ? ({ flow: flow.value, symptoms: pickedSymptoms.value } as UTSJSONObject) : ({} as UTSJSONObject)
       await luckyRecord('addCycleEvent', {
         journeyId: journeyState.journeyId,
         type: kind == 'start' ? 'period_start' : 'period_end',
@@ -270,6 +290,7 @@
       uni.setStorageSync('lb_has_record', true)
       uni.showToast({ title: '已记录 ✓', icon: 'success' })
       selectedDate.value = ''
+      pickedSymptoms.value = []
       load()
     } catch (e) {
       uni.showToast({ title: (e as Error).message, icon: 'none' })
@@ -285,11 +306,26 @@
     } catch (e) { /* 首屏失败保持空态，不误导 */ }
   }
 
+  function symptomLabel(v: string): string {
+    if (v == 'cramp') return '痛经'
+    if (v == 'backache') return '腰酸'
+    if (v == 'headache') return '头痛'
+    if (v == 'mood') return '情绪波动'
+    return ''
+  }
+
   function eventText(type: string, value: any): string {
     if (type == 'period_start') {
       const f = (value as UTSJSONObject)?.getString('flow') ?? ''
       const fl = f == 'light' ? '（少）' : f == 'heavy' ? '（多）' : f == 'medium' ? '（中）' : ''
-      return `🌸 经期开始${fl}`
+      const arr = (value as UTSJSONObject)?.getArray('symptoms') ?? []
+      const labels: string[] = []
+      for (let i = 0; i < arr.length; i++) {
+        const l = symptomLabel(`${arr[i]}`)
+        if (l.length > 0) labels.push(l)
+      }
+      const sym = labels.length > 0 ? ` · ${labels.join('、')}` : ''
+      return `🌸 经期开始${fl}${sym}`
     }
     if (type == 'period_end') return '经期结束'
     if (type == 'ovulation_test') {

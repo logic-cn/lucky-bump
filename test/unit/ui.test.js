@@ -249,6 +249,7 @@ test('经期管理具备日历补记、经量与异常提示', () => {
   assert.ok(src.includes('不构成诊断'), '异常提示缺少免责说明')
   assert.ok(src.includes('deleteCycleEvent'), '缺少经期记录删除（纠错）')
   assert.ok(src.includes('askDelete'), '缺少删除确认入口')
+  assert.ok(src.includes('pickedSymptoms'), '缺少经期伴随症状')
 })
 
 test('知识板块具备本周要点、搜索、收藏与工具速查', () => {
