@@ -50,6 +50,9 @@
     <view class="card lb-rise-2">
       <text class="card-title">通用</text>
       <view class="p-row"><text class="p-label">暗色模式</text><switch :checked="darkMode" @change="onDark" color="#E4537F" /></view>
+      <!-- #ifdef WEB -->
+      <view class="p-row"><text class="p-label">浏览器通知</text><switch :checked="webNotify" @change="onWebNotify" color="#E4537F" /></view>
+      <!-- #endif -->
       <view class="p-row"><text class="p-label">体重单位</text><text class="p-value">kg</text></view>
       <view class="p-row"><text class="p-label">当前版本</text><text class="p-value">1.0.0</text></view>
     </view>
@@ -116,6 +119,7 @@
   import { journeyState } from '../../store/journeyStore.uts'
   import { themeState, setThemeMode, themeClass } from '../../store/themeStore.uts'
   import { quietStart, quietEnd, setQuietRange } from '../../utils/quiet.uts'
+  import { notifyEnabled, notifyPermission, setNotifyEnabled } from '../../utils/webNotify.uts'
 
   type TOpt = { value: string, label: string }
 
@@ -128,6 +132,7 @@
   const month = ref<string>('')
   const intervalDays = ref<string>('')
   const darkMode = ref<boolean>(themeState.resolved == 'dark')
+  const webNotify = ref<boolean>(notifyEnabled())
   const quietStartTime = ref<string>(quietStart())
   const quietEndTime = ref<string>(quietEnd())
   const pwdVisible = ref<boolean>(false)
@@ -226,6 +231,13 @@
   function onDark(e: UniSwitchChangeEvent) {
     darkMode.value = e.detail.value
     setThemeMode(e.detail.value ? 'dark' : 'light')
+  }
+  function onWebNotify(e: UniSwitchChangeEvent) {
+    webNotify.value = e.detail.value
+    setNotifyEnabled(e.detail.value)
+    if (e.detail.value && notifyPermission() != 'granted') {
+      uni.showToast({ title: '请在浏览器地址栏允许通知', icon: 'none' })
+    }
   }
   async function load() {
     try {

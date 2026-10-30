@@ -326,6 +326,17 @@ test('宝宝相册：路由与入口已接通', () => {
   assert.ok(album.includes('removePhoto'), '相册未接删除')
 })
 
+test('系统触达（Web）：通知开关与每日待办推送', () => {
+  const util = fs.readFileSync(path.join(ROOT, 'utils/webNotify.uts'), 'utf-8')
+  assert.ok(util.includes('requestPermission'), '缺少通知授权')
+  assert.ok(util.includes('lb_web_notify_date'), '缺少每日去重')
+  const settings = fs.readFileSync(path.join(ROOT, 'pages/me/settings.uvue'), 'utf-8')
+  assert.ok(settings.includes('onWebNotify'), '设置页缺少通知开关')
+  const index = fs.readFileSync(path.join(ROOT, 'pages/index/index.uvue'), 'utf-8')
+  assert.ok(index.includes('notifyToday'), '首页未触发待办通知')
+  assert.ok(index.includes('isQuietNow'), '通知未遵守免打扰')
+})
+
 /* ---------------- 可读性下限（小字号不得回流） ---------------- */
 
 test('最小字号不低于 24rpx（正文与辅助文案一致）', () => {

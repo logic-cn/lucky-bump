@@ -112,6 +112,7 @@
   import { track } from '../../utils/track.uts'
   import { recentUrls, rememberRecent, recentRank } from '../../utils/recentGrid.uts'
   import { flushOffline } from '../../utils/offlineQueue.uts'
+  import { notifyToday } from '../../utils/webNotify.uts'
 
   type QuickItem = { icon: string, label: string, url: string }
 
@@ -237,6 +238,11 @@
       if (j == null) { uni.reLaunch({ url: '/pages/onboarding/onboarding' }); return }
       const res = await loadToday()
       todos.value = res.getArray<UTSJSONObject>('todos') ?? []
+      // 浏览器通知开启时，每日首次打开推送一条待办摘要（免打扰时段不推送）
+      if (todos.value.length > 0 && !isQuietNow()) {
+        const first = todos.value[0].getString('title') ?? ''
+        notifyToday('幸孕记 · 今日待办', `今天有 ${todos.value.length} 条待办${first.length > 0 ? '：' + first : ''}`)
+      }
       const latest = res.getJSON('latest')
       if (latest != null) {
         const parts: string[] = []

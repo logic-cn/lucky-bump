@@ -1,0 +1,45 @@
+/**
+ * Web 端浏览器通知（系统级推送在当前环境不可用时，Web 用户的可用触达通道）
+ * 仅当用户主动开启且浏览器已授权时，每日首次打开推送一条今日待办摘要。
+ */
+const KEY = 'lb_web_notify'
+const DATE_KEY = 'lb_web_notify_date'
+
+export function notifyEnabled(): boolean {
+  return (uni.getStorageSync(KEY) as string) == '1'
+}
+
+export function notifyPermission(): string {
+  // #ifdef WEB
+  const g: any = globalThis as any
+  const N: any = g.Notification
+  return N == null ? 'unsupported' : `${N.permission}`
+  // #endif
+  // #ifndef WEB
+  return 'unsupported'
+  // #endif
+}
+
+export function setNotifyEnabled(on: boolean): void {
+  uni.setStorageSync(KEY, on ? '1' : '0')
+  // #ifdef WEB
+  const g: any = globalThis as any
+  const N: any = g.Notification
+  if (on && N != null && N.permission == 'default') N.requestPermission()
+  // #endif
+}
+
+/** 每日最多一次；失败静默，不能影响主流程 */
+export function notifyToday(title: string, body: string): void {
+  if (!notifyEnabled()) return
+  // #ifdef WEB
+  const g: any = globalThis as any
+  const N: any = g.Notification
+  if (N == null || N.permission != 'granted') return
+  const d = new Date()
+  const today = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`
+  if ((uni.getStorageSync(DATE_KEY) as string) == today) return
+  uni.setStorageSync(DATE_KEY, today)
+  const n: any = new N(title, { body: body })
+  // #endif
+}
