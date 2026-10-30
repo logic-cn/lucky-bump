@@ -131,3 +131,24 @@ test('C4：exportAll 不得导出他人 strict 数据', async () => {
   assert.equal(strictEvents.length, 1, 'C4 未修复：导出应只保留本人 strict 记录（期望 1 条，实际 ' + strictEvents.length + ' 条）')
   assert.equal(strictEvents[0].date, '2026-10-06', 'C4：导出中残留了他人的 strict 记录')
 })
+
+test('日记：mediaIds 落库并随列表返回', async () => {
+  const { rt, jid, victimToken } = await twoUsers()
+  const add = await rt.callObject('lucky-record', 'addDiary', {
+    journeyId: jid, text: '今天第一次听到胎心', mood: 'great',
+    mediaIds: ['cloud://a.jpg', 'cloud://b.jpg']
+  }, { token: victimToken })
+  assert.equal(add.errCode, 0, JSON.stringify(add))
+  const list = await rt.callObject('lucky-record', 'listDiaries', { journeyId: jid }, { token: victimToken })
+  assert.equal(list.errCode, 0, JSON.stringify(list))
+  assert.deepEqual(list.diaries[0].media_ids, ['cloud://a.jpg', 'cloud://b.jpg'], '照片 fileID 应落库')
+})
+
+test('日记：mediaIds 超过 9 张时截断', async () => {
+  const { rt, jid, victimToken } = await twoUsers()
+  const ids = Array.from({ length: 12 }, (_, i) => `cloud://${i}.jpg`)
+  const add = await rt.callObject('lucky-record', 'addDiary', { journeyId: jid, text: '照片超量', mediaIds: ids }, { token: victimToken })
+  assert.equal(add.errCode, 0)
+  const list = await rt.callObject('lucky-record', 'listDiaries', { journeyId: jid }, { token: victimToken })
+  assert.equal(list.diaries[0].media_ids.length, 9, '最多保存 9 张')
+})

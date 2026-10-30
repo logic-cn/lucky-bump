@@ -2,7 +2,17 @@
   <view class="page" :class="themeClass()">
     <view class="card lb-rise">
       <text class="label">今天想记录点什么</text>
-      <textarea class="ta" v-model="text" placeholder="今天宝宝胎动很活跃…（支持纯文字，照片能力随 V1.1 上线）" placeholder-class="ph" :maxlength="2000" />
+      <textarea class="ta" v-model="text" placeholder="今天宝宝胎动很活跃…" placeholder-class="ph" :maxlength="2000" />
+      <text class="label">照片（最多 9 张）</text>
+      <view class="photo-row">
+        <view class="photo" v-for="(p, i) in previews" :key="i">
+          <image class="photo-img" :src="p" mode="aspectFill" />
+          <text class="photo-del" @click="removePhoto(i)">✕</text>
+        </view>
+        <view class="photo photo-add" v-if="previews.length < 9" hover-class="lb-press" hover-stay-time="120" @click="choosePhoto">
+          <text class="photo-add-text">{{ uploading ? '…' : '＋' }}</text>
+        </view>
+      </view>
       <text class="label">此刻心情</text>
       <view class="mood-row">
         <view class="mood-item" v-for="(m, i) in moods" :key="i" hover-class="lb-press" hover-stay-time="120">
@@ -35,6 +45,9 @@
   const mood = ref<string>('normal')
   const saving = ref<boolean>(false)
   const diaries = ref<UTSJSONObject[]>([])
+  const mediaIds = ref<string[]>([])
+  const previews = ref<string[]>([])
+  const uploading = ref<boolean>(false)
   const moods = ref<Mood[]>([
     { value: 'great', emoji: '🥰' }, { value: 'good', emoji: '😊' },
     { value: 'normal', emoji: '🙂' }, { value: 'low', emoji: '😔' }, { value: 'bad', emoji: '😢' }
@@ -43,6 +56,41 @@
   function moodEmoji(m: string): string {
     for (let i = 0; i < moods.value.length; i++) { if (moods.value[i].value == m) return moods.value[i].emoji }
     return '🙂'
+  }
+
+  /** 日记照片：选择 → 上传 uniCloud 存储 → 记录 fileID（列表用本地临时路径预览） */
+  function choosePhoto() {
+    uni.chooseImage({
+      count: 9 - previews.value.length,
+      success: async (res) => {
+        const paths = res.tempFilePaths
+        uploading.value = true
+        try {
+          for (let i = 0; i < paths.length; i++) {
+            const cloudPath = `diaries/${journeyState.journeyId}/${Date.now()}_${i}.jpg`
+            const up = await uploadOne(paths[i], cloudPath)
+            mediaIds.value.push(up)
+            previews.value.push(paths[i])
+          }
+        } catch (e) {
+          uni.showToast({ title: (e as Error).message, icon: 'none' })
+        } finally { uploading.value = false }
+      }
+    })
+  }
+  function uploadOne(filePath: string, cloudPath: string): Promise<string> {
+    return new Promise<string>((resolve, reject) => {
+      uniCloud.uploadFile({
+        filePath: filePath,
+        cloudPath: cloudPath,
+        success: (res) => { resolve(res.fileID) },
+        fail: (err) => { reject(new Error(err.errMsg ?? '上传失败')) }
+      } as UploadFileOptions)
+    })
+  }
+  function removePhoto(i: number) {
+    mediaIds.value.splice(i, 1)
+    previews.value.splice(i, 1)
   }
 
   async function load() {
@@ -56,8 +104,10 @@
     if (text.value.trim().length == 0) { uni.showToast({ title: '写点什么吧', icon: 'none' }); return }
     saving.value = true
     try {
-      await luckyRecord('addDiary', { journeyId: journeyState.journeyId, text: text.value, mood: mood.value } as UTSJSONObject)
+      await luckyRecord('addDiary', { journeyId: journeyState.journeyId, text: text.value, mood: mood.value, mediaIds: mediaIds.value } as UTSJSONObject)
       text.value = ''
+      mediaIds.value = []
+      previews.value = []
       uni.showToast({ title: '已保存 ✓', icon: 'success' })
       load()
     } catch (e) {
@@ -79,6 +129,12 @@
   .mood-item { transition: all 160ms ease-out; }
   .mood { font-size: 48rpx; padding: 8rpx; transition: all 160ms ease-out; }
   .mood-active { background-color: var(--lb-primary-soft); border-radius: 24rpx; }
+  .photo-row { flex-direction: row; flex-wrap: wrap; }
+  .photo { width: 140rpx; height: 140rpx; border-radius: 20rpx; margin: 0 12rpx 12rpx 0; }
+  .photo-img { width: 140rpx; height: 140rpx; border-radius: 20rpx; }
+  .photo-del { position: absolute; top: 4rpx; right: 10rpx; font-size: 28rpx; color: #FFFFFF; background-color: rgba(0,0,0,0.45); border-radius: 20rpx; padding: 0 8rpx; }
+  .photo-add { background-color: var(--lb-fill); align-items: center; justify-content: center; }
+  .photo-add-text { font-size: 48rpx; color: var(--lb-text-3); }
   .btn-save { width: 702rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 32rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
   .list { width: 702rpx; margin-top: 40rpx; }
   .list-title { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 16rpx; }
