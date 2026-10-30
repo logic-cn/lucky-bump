@@ -32,6 +32,7 @@
     { "path": "pages/baby/growth", "style": { "navigationBarTitleText": "成长记录" } },
     { "path": "pages/baby/vaccines", "style": { "navigationBarTitleText": "疫苗接种" } },
     { "path": "pages/data/charts", "style": { "navigationBarTitleText": "指标曲线" } },
+    { "path": "pages/data/export-report", "style": { "navigationBarTitleText": "打印报告" } },
     { "path": "pages/data/timeline", "style": { "navigationBarTitleText": "时间线" } },
     { "path": "pages/me/family", "style": { "navigationBarTitleText": "家庭组" } },
     { "path": "pages/me/privacy", "style": { "navigationBarTitleText": "隐私与安全" } },

@@ -282,6 +282,15 @@ test('工具页：待产包清单可勾选持久化，辅食计划含安全红�
   assert.ok(paths.includes('pages/tools/solid-food'), 'pages.json 未注册辅食计划页')
 })
 
+test('数据出口：打印/PDF 报告页已注册并提供打印入口', () => {
+  const src = fs.readFileSync(path.join(ROOT, 'pages/data/export-report.uvue'), 'utf-8')
+  assert.ok(src.includes('exportSummary'), '缺少摘要数据来源')
+  assert.ok(src.includes('g.print()'), '缺少打印调用')
+  assert.ok(src.includes('<lbc-error'), '加载失败不可重试')
+  const pagesJson = JSON.parse(fs.readFileSync(path.join(ROOT, 'pages.json'), 'utf-8'))
+  assert.ok(pagesJson.pages.some(p => p.path == 'pages/data/export-report'), 'pages.json 未注册打印报告页')
+})
+
 /* ---------------- 可读性下限（小字号不得回流） ---------------- */
 
 test('最小字号不低于 24rpx（正文与辅助文案一致）', () => {

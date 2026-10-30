@@ -16,6 +16,11 @@
         <view class="nav-body"><text class="nav-text">导出我的数据</text><text class="nav-sub">数据属于你，随时带走</text></view>
         <text class="nav-arrow">›</text>
       </view>
+      <view class="nav-row" hover-class="lb-press" hover-stay-time="120" @click="go('/pages/data/export-report')">
+        <text class="nav-icon">🖨</text>
+        <view class="nav-body"><text class="nav-text">打印 / 导出 PDF</text><text class="nav-sub">汇总摘要，可保存或发给医生</text></view>
+        <text class="nav-arrow">›</text>
+      </view>
     </view>
     <text class="foot lb-rise-1">记录的意义，是看见时间里的变化</text>
   

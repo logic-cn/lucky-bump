@@ -1,0 +1,83 @@
+<template>
+  <view class="page" :class="themeClass()">
+    <view class="card lb-rise" v-if="summary.length > 0">
+      <text class="card-title">幸孕记 · 健康记录摘要</text>
+      <text class="meta">生成时间 {{ generatedAt }}</text>
+      <text class="body">{{ summary }}</text>
+      <text class="note">报告由你的记录自动汇总，仅供本人与医生参考，不构成诊断。</text>
+    </view>
+
+    <lbc-error v-if="loadFailed" :message="errorMsg" @retry="load" />
+
+    <button class="btn-save lb-rise-1" hover-class="lb-press" hover-stay-time="120" :disabled="summary.length == 0" @click="doPrint">打印 / 另存为 PDF</button>
+    <text class="hint lb-rise-2">在浏览器打印对话框中选择"另存为 PDF"即可保存；App 端请使用数据页的导出功能。</text>
+  </view>
+</template>
+
+<script setup lang="ts">
+  import { ref } from 'vue'
+  import { onPageReady } from '../../utils/pageLifecycle.uts'
+  import { luckyData } from '../../utils/request.uts'
+  import { journeyState } from '../../store/journeyStore.uts'
+  import { themeClass } from '../../store/themeStore.uts'
+
+  const summary = ref<string>('')
+  const generatedAt = ref<string>('')
+  const loadFailed = ref<boolean>(false)
+  const errorMsg = ref<string>('')
+
+  function stamp(): string {
+    const d = new Date()
+    const p = (n: number): string => n < 10 ? '0' + n : '' + n
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
+  }
+
+  async function load() {
+    try {
+      const res = await luckyData('exportSummary', { journeyId: journeyState.journeyId } as UTSJSONObject)
+      summary.value = res.getString('summary') ?? ''
+      generatedAt.value = stamp()
+      loadFailed.value = false
+    } catch (e) {
+      loadFailed.value = true
+      errorMsg.value = (e as Error).message
+    }
+  }
+
+  function doPrint() {
+    // #ifdef WEB
+    const g: any = globalThis as any
+    if (g.print != null) {
+      g.print()
+      return
+    }
+    // #endif
+    uni.showToast({ title: '请在 Web 端打印导出', icon: 'none' })
+  }
+
+  onPageReady(() => { load() })
+</script>
+
+<style>
+  @import '../../theme.scss';
+  .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
+  .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 40rpx; margin-top: 24rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
+  .card-title { font-size: 32rpx; font-weight: bold; color: var(--lb-text-1); }
+  .meta { font-size: 24rpx; color: var(--lb-text-3); margin-top: 10rpx; }
+  .body { font-size: 26rpx; color: var(--lb-text-1); line-height: 46rpx; margin-top: 24rpx; }
+  .note { font-size: 24rpx; color: var(--lb-text-3); line-height: 38rpx; margin-top: 24rpx; }
+  .btn-save { width: 702rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 32rpx; }
+  .hint { font-size: 24rpx; color: var(--lb-text-3); line-height: 38rpx; margin-top: 20rpx; text-align: center; }
+
+  @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+  @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
+  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms both; }
+  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both; }
+  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms both; }
+  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-fade { animation: lb-fade 200ms ease-out both; }
+  .lb-press { opacity: 0.72; transform: scale(0.98); }
+</style>
