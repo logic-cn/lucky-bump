@@ -3,7 +3,9 @@
     <view class="card lb-rise">
       <text class="label">今天的体重（kg）</text>
       <input class="num-input" type="number" v-model="kg" placeholder="58.2" placeholder-class="ph" />
-      <text class="hint" v-if="gainRange.length == 2">孕期推荐增重 {{ gainRange[0] }}-{{ gainRange[1] }}kg（按孕前 BMI 估算，参考 IOM 口径）</text>
+      <text class="hint" v-if="profileReady">孕期推荐增重 {{ gainRange[0] }}-{{ gainRange[1] }}kg（{{ bmiText }}，参考 IOM 口径）</text>
+      <text class="hint" v-else>孕期推荐增重 11.5-16kg（按正常 BMI 口径，完善身体档案可个性化）</text>
+      <text class="link" v-if="!profileReady" @click="goProfile">去完善身高与孕前体重 ›</text>
     </view>
     <button class="btn-save lb-rise-1" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</button>
     <text class="ok-text lb-fade" v-if="saved">已记录 ✓</text>
@@ -13,19 +15,41 @@
 <script setup lang="ts">
   import { ref } from 'vue'
   import { onLoad } from '@dcloudio/uni-app'
-  import { luckyRecord } from '../../utils/request.uts'
+  import { luckyRecord, luckyId } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
 
   const kg = ref<string>('')
   const saving = ref<boolean>(false)
   const saved = ref<boolean>(false)
-  const gainRange = ref<string[]>([])
+  const gainRange = ref<string[]>(['11.5', '16'])
+  const profileReady = ref<boolean>(false)
+  const bmiText = ref<string>('')
 
-  onLoad(() => {
-    // 孕前 BMI 待接入用户档案，暂以正常 BMI 口径展示推荐区间（docs/03 M2.2）
-    gainRange.value = ['11.5', '16']
-  })
+  /** 按孕前 BMI 选择 IOM 推荐增重区间（docs/03 M2.2） */
+  async function loadProfile() {
+    try {
+      const p = await luckyId('getProfile', {} as UTSJSONObject)
+      const info = p.getJSON('userInfo')
+      if (info == null) return
+      const h = info.getNumber('heightCm') ?? 0
+      const w = info.getNumber('prePregnancyWeightKg') ?? 0
+      if (h <= 0 || w <= 0) return
+      const m = h / 100
+      const bmi = w / (m * m)
+      bmiText.value = `孕前 BMI ${Math.round(bmi * 10) / 10}`
+      if (bmi < 18.5) gainRange.value = ['12.5', '18']
+      else if (bmi < 25) gainRange.value = ['11.5', '16']
+      else if (bmi < 30) gainRange.value = ['7', '11.5']
+      else gainRange.value = ['5', '9']
+      profileReady.value = true
+    } catch (e) { /* 未完善档案时使用通用区间 */ }
+  }
+  function goProfile() {
+    uni.navigateTo({ url: '/pages/me/settings' })
+  }
+
+  onLoad(() => { loadProfile() })
 
   async function save() {
     const kgVal = parseFloat(kg.value)
@@ -51,6 +75,7 @@
   .unit { font-size: 30rpx; color: var(--lb-text-3); margin-left: 16rpx; }
   .ph { color: var(--lb-text-3); }
   .hint { font-size: 22rpx; color: var(--lb-text-3); margin-top: 32rpx; }
+  .link { font-size: 22rpx; color: var(--lb-primary); margin-top: 16rpx; }
   .btn-save { width: 702rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 48rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
   .ok-text { color: var(--lb-success); font-size: 28rpx; margin-top: 24rpx; }
 

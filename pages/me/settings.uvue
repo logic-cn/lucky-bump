@@ -55,6 +55,20 @@
     </view>
 
     <view class="card lb-rise-3">
+      <text class="card-title">身体档案</text>
+      <view class="p-row">
+        <text class="p-label">身高（cm）</text>
+        <input class="mini-input" type="number" v-model="heightCm" placeholder="如 165" placeholder-class="ph" />
+      </view>
+      <view class="p-row">
+        <text class="p-label">孕前体重（kg）</text>
+        <input class="mini-input" type="number" v-model="preWeightKg" placeholder="如 52" placeholder-class="ph" />
+      </view>
+      <button class="btn-save" hover-class="lb-press" hover-stay-time="120" :disabled="profileSaving" @click="saveProfile">{{ profileSaving ? '保存中…' : '保存身体档案' }}</button>
+      <text class="hint">用于孕期增重推荐区间与 BMI 判断（docs/03 M2.2），仅本人可见</text>
+    </view>
+
+    <view class="card lb-rise-3">
       <text class="card-title">账号安全</text>
       <view class="p-row" hover-class="lb-press" hover-stay-time="120" @click="openPwd">
         <text class="p-label">修改密码</text>
@@ -103,6 +117,35 @@
   const pwdSaving = ref<boolean>(false)
   const oldPwd = ref<string>('')
   const newPwd = ref<string>('')
+  const heightCm = ref<string>('')
+  const preWeightKg = ref<string>('')
+  const profileSaving = ref<boolean>(false)
+
+  async function loadProfile() {
+    try {
+      const p = await luckyId('getProfile', {} as UTSJSONObject)
+      const info = p.getJSON('userInfo')
+      if (info != null) {
+        const h = info.getNumber('heightCm') ?? 0
+        const w = info.getNumber('prePregnancyWeightKg') ?? 0
+        heightCm.value = h > 0 ? `${h}` : ''
+        preWeightKg.value = w > 0 ? `${w}` : ''
+      }
+    } catch (e) { /* 未登录或网络异常时保持空值 */ }
+  }
+  async function saveProfile() {
+    const h = parseFloat(heightCm.value)
+    const w = parseFloat(preWeightKg.value)
+    if (!(h >= 120 && h <= 220)) { uni.showToast({ title: '请输入有效身高（120-220cm）', icon: 'none' }); return }
+    if (!(w >= 30 && w <= 200)) { uni.showToast({ title: '请输入有效体重（30-200kg）', icon: 'none' }); return }
+    profileSaving.value = true
+    try {
+      await luckyId('updateProfile', { heightCm: h, prePregnancyWeightKg: w } as UTSJSONObject)
+      uni.showToast({ title: '已保存', icon: 'success' })
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    } finally { profileSaving.value = false }
+  }
   function openPwd() {
     oldPwd.value = ''
     newPwd.value = ''
@@ -179,7 +222,7 @@
   }
 
   // tabBar 页面在启动时预挂载，onLoad 时全局旅程态可能未就绪；onShow 每次切入时重新加载
-  onLoad(() => { load() })
+  onLoad(() => { load(); loadProfile() })
   onShow(() => { load() })
 </script>
 
@@ -206,6 +249,7 @@
   .p-row { flex-direction: row; align-items: center; justify-content: space-between; padding: 12rpx 0; }
   .p-label { font-size: 26rpx; color: var(--lb-text-1); }
   .p-value { font-size: 26rpx; color: var(--lb-text-3); }
+  .mini-input { width: 200rpx; height: 64rpx; background-color: var(--lb-fill); border-radius: 16rpx; padding: 0 20rpx; font-size: 26rpx; color: var(--lb-text-1); text-align: right; }
 
   .mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--lb-mask); justify-content: center; align-items: center; }
   .dialog { width: 560rpx; background-color: var(--lb-card); border-radius: 24rpx; padding: 40rpx 32rpx 24rpx 32rpx; }

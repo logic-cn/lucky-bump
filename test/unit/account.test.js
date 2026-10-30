@@ -71,3 +71,14 @@ test('应用锁：verifyPassword 密码错误 / 未登录均拒绝', async () =>
   const anon = await rt.callObject('lucky-id', 'verifyPassword', { password: 'password123' })
   assert.equal(anon.errCode, 'TOKEN_INVALID', '无 token 不得解锁')
 })
+
+test('身体档案：身高与孕前体重可保存并读回', async () => {
+  const rt = createRuntime()
+  const r = await reg(rt, 'profile01')
+  const up = await rt.callObject('lucky-id', 'updateProfile', { heightCm: 165, prePregnancyWeightKg: 52 }, { token: r.token })
+  assert.equal(up.errCode, 0, JSON.stringify(up))
+  const p = await rt.callObject('lucky-id', 'getProfile', {}, { token: r.token })
+  assert.equal(p.errCode, 0, JSON.stringify(p))
+  assert.equal(p.userInfo.heightCm, 165)
+  assert.equal(p.userInfo.prePregnancyWeightKg, 52)
+})
