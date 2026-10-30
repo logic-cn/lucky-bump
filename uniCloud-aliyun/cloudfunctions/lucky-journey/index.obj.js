@@ -123,6 +123,47 @@ function publicView(j, now = Date.now()) {
   }
 }
 
+/* ---------------- 内部：产褥期日程 ---------------- */
+
+/** 产后随访项：42 天复查 + EPDS 2/4/6 周（docs/03 M4） */
+const POSTPARTUM_FOLLOW_UPS = [
+  { title: '产后 42 天复查', dueDay: 42, leadDays: 3, urgent: true },
+  { title: '产后情绪自评（2 周）', dueDay: 14, leadDays: 1, urgent: false },
+  { title: '产后情绪自评（4 周）', dueDay: 28, leadDays: 1, urgent: false },
+  { title: '产后情绪自评（6 周）', dueDay: 42, leadDays: 1, urgent: false }
+]
+
+/**
+ * 分娩登记后切换日程：未完成的产检排程标记 skipped，并按分娩日期生成随访提醒。
+ * 幂等：同名提醒已存在则跳过（重复登记/补录不会产生重复待办）。
+ */
+async function createPostpartumPlan(dbase, uid, journeyId, deliveryTs) {
+  const now = Date.now()
+  // 1) 产检排程退场（已完成的保留记录，未完成的置为 skipped）
+  const oldPlan = await dbase.collection('lb-schedule-items').where({ journey_id: journeyId, kind: 'prenatal' }).get()
+  let cleared = 0
+  for (const it of oldPlan.data) {
+    if (it.status === 'done') continue
+    await dbase.collection('lb-schedule-items').doc(it._id).update({ status: 'skipped' })
+    cleared++
+  }
+  // 2) 生成随访提醒（absolute 规则，锚定分娩日期）
+  const existing = await dbase.collection('lb-reminder-rules').where({ journey_id: journeyId }).get()
+  const titles = new Set(existing.data.map(r => r.title))
+  let created = 0
+  for (const f of POSTPARTUM_FOLLOW_UPS) {
+    if (titles.has(f.title)) continue
+    await dbase.collection('lb-reminder-rules').add({
+      user_id: uid, journey_id: journeyId, type: 'absolute',
+      title: f.title, anchor_date: fmtDate(deliveryTs + f.dueDay * DAY),
+      week: 0, month: 0, interval_days: 1, lead_days: f.leadDays,
+      urgent: f.urgent, enabled: true, auto: true, created_at: now
+    })
+    created++
+  }
+  return { clearedPrenatal: cleared, followUps: created }
+}
+
 module.exports = {
   /** 创建旅程。mode: ttc(备孕)/pregnant(已怀孕)/parenting(已有宝宝，需补分娩登记) */
   async createJourney(params = {}) {
@@ -271,8 +312,10 @@ module.exports = {
     }
     const patch = { delivery_date: dd, delivery_mode: params.deliveryMode || 'vaginal', delivery_hospital: String(params.hospital || '').slice(0, 40), baby_ids: ids, stage_code: 'POSTPARTUM', updated_at: Date.now() }
     await dbase.collection(col).doc(j._id).update(patch)
+    // 产褥期日程：产检排程退场，换成 42 天复查 + EPDS 2/4/6 周随访（docs/03 M4.1 / M4.3）
+    const postpartum = await createPostpartumPlan(dbase, uid, j._id, dd)
     const nj = Object.assign({}, j, patch)
-    return auth.ok({ babyIds: ids, view: publicView(nj), birthCard: { stage: 'POSTPARTUM', deliveredAt: fmtDate(dd) } })
+    return auth.ok({ babyIds: ids, view: publicView(nj), postpartum, birthCard: { stage: 'POSTPARTUM', deliveredAt: fmtDate(dd) } })
   },
 
   /** 当前旅程的宝宝列表（多胎/多宝） */
