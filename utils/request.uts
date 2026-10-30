@@ -23,6 +23,13 @@ function deepToUts(v: any | null): any | null {
 }
 // #endif
 
+// 底层网络错误（如 web 端 request:fail）直接透出会出现在界面文案里，统一转成用户可读提示
+function friendlyNetMessage(raw: string | null): string {
+  if (raw == null || raw.length == 0) return '网络异常，请稍后再试'
+  if (raw.indexOf('request:fail') == 0 || raw.indexOf('Failed to fetch') == 0) return '网络异常，请检查网络后重试'
+  return raw
+}
+
 export function callCloud(objName: string, method: string, params: UTSJSONObject): Promise<UTSJSONObject> {
   return new Promise<UTSJSONObject>((resolve, reject) => {
     uniCloud.callFunction({
@@ -55,7 +62,7 @@ export function callCloud(objName: string, method: string, params: UTSJSONObject
         reject(new Error(msg))
       },
       fail: (err) => {
-        reject(new Error(err.errMsg ?? '网络异常，请稍后再试'))
+        reject(new Error(friendlyNetMessage(err.errMsg)))
       }
     })
   })

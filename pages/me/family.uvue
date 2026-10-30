@@ -1,6 +1,8 @@
 <template>
   <view class="page" :class="themeClass()">
-    <view class="card lb-rise">
+    <lbc-error v-if="loadFailed" :message="errorMsg" @retry="load" />
+
+    <view class="card lb-rise" v-if="!loadFailed">
       <text class="card-title">家庭成员（{{ members.length }}）</text>
       <view class="m-row" v-for="(m, i) in members" :key="i">
         <view class="m-avatar"><text class="m-avatar-text">{{ (m.getString('nickname') ?? '?').slice(0, 1) }}</text></view>
@@ -14,7 +16,7 @@
       </view>
     </view>
 
-    <view class="card lb-rise-1" v-if="isOwner">
+    <view class="card lb-rise-1" v-if="isOwner && !loadFailed">
       <text class="card-title">邀请家人</text>
       <text class="hint">爸爸成为"记录者"后可共同记录喂养、夜奶与产检；长辈默认只读。</text>
       <view class="btn-row">
@@ -26,19 +28,19 @@
       </view>
     </view>
 
-    <view class="card lb-rise-2" v-if="!isOwner && joinCodeMode">
+    <view class="card lb-rise-2" v-if="!isOwner && joinCodeMode && !loadFailed">
       <text class="card-title">加入家庭</text>
       <input class="input" v-model="joinCode" placeholder="输入邀请码" placeholder-class="ph" />
       <button class="btn-save" hover-class="lb-press" hover-stay-time="120" @click="join">加入</button>
     </view>
-    <view class="card lb-rise-2" v-if="!isOwner && !joinCodeMode">
+    <view class="card lb-rise-2" v-if="!isOwner && !joinCodeMode && !loadFailed">
       <text class="hint">你是受邀加入的成员，感谢一起记录宝宝的成长 🌟</text>
       <view class="link-wrap" hover-class="lb-press" hover-stay-time="120">
         <text class="link" @click="joinCodeMode = true">我要用邀请码加入其他家庭</text>
       </view>
     </view>
 
-    <view class="card lb-rise-3" v-if="isOwner">
+    <view class="card lb-rise-3" v-if="isOwner && !loadFailed">
       <text class="card-title">数据组授权（记录者）</text>
       <view class="p-row" v-for="(g, i) in groups" :key="i">
         <text class="p-label">{{ g.label }}</text>
@@ -80,6 +82,8 @@
   const inviteCode = ref<string>('')
   const joinCode = ref<string>('')
   const joinCodeMode = ref<boolean>(false)
+  const loadFailed = ref<boolean>(false)
+  const errorMsg = ref<string>('')
   const groups = ref<GOpt[]>([
     { value: 'prenatal', label: '产检与就诊', allow: true },
     { value: 'reports', label: '检查报告', allow: true },
@@ -106,7 +110,12 @@
           if (allow != null) groups.value[i].allow = allow
         }
       }
-    } catch (e) { /* 忽略 */ }
+      loadFailed.value = false
+    } catch (e) {
+      // 失败时不能按"非 owner"渲染，否则会诱导成员误入加入流程
+      loadFailed.value = true
+      errorMsg.value = (e as Error).message
+    }
   }
   async function invite(role: string) {
     try {

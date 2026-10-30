@@ -1,6 +1,8 @@
 <template>
   <view class="page" :class="themeClass()">
-    <view class="card lb-rise" v-if="items.length == 0">
+    <lbc-error v-if="loadFailed" :message="errorMsg" @retry="load" />
+
+    <view class="card lb-rise" v-if="items.length == 0 && !loadFailed">
       <text class="empty">还没有产检排程</text>
       <text class="hint">按国内常规产检指南自动生成（28 周前每 4 周、28-35 周每 2 周、36 周起每周）</text>
       <button class="btn-save" hover-class="lb-press" hover-stay-time="120" :disabled="generating" @click="generate">{{ generating ? '生成中…' : '一键生成产检排程' }}</button>
@@ -34,6 +36,8 @@
   const items = ref<UTSJSONObject[]>([])
   const generating = ref<boolean>(false)
   const highRiskNote = ref<string>('')
+  const loadFailed = ref<boolean>(false)
+  const errorMsg = ref<string>('')
 
   function statusText(s: string): string {
     if (s == 'done') return '已完成'
@@ -52,7 +56,12 @@
       const res = await luckyCare('listPlan', { journeyId: journeyState.journeyId } as UTSJSONObject)
       items.value = res.getArray<UTSJSONObject>('items') ?? []
       highRiskNote.value = res.getString('highRiskNote') ?? ''
-    } catch (e) { /* 忽略 */ }
+      loadFailed.value = false
+    } catch (e) {
+      // 失败不能落成"还没有排程"，否则会诱导用户重复生成
+      loadFailed.value = true
+      errorMsg.value = (e as Error).message
+    }
   }
   async function generate() {
     generating.value = true

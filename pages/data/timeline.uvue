@@ -11,7 +11,8 @@
       </view>
       <text class="content">{{ contentText(e) }}</text>
     </view>
-    <view class="card lb-rise-1" v-if="events.length == 0">
+    <lbc-error v-if="loadFailed" :message="errorMsg" @retry="load" />
+    <view class="card lb-rise-1" v-if="events.length == 0 && !loadFailed">
       <text class="empty">时间线还是空的</text>
       <text class="hint">每一条记录，都会长成回忆</text>
     </view>
@@ -35,13 +36,19 @@
   ])
 
   const events = ref<UTSJSONObject[]>([])
+  const loadFailed = ref<boolean>(false)
+  const errorMsg = ref<string>('')
 
   async function load() {
     try {
       const res = await luckyData('timeline', { journeyId: journeyState.journeyId, limit: 80 } as UTSJSONObject)
       // strict 敏感记录（同房/量表）在非 owner 视角由服务端过滤；owner 视角本地脱敏显示
       events.value = res.getArray<UTSJSONObject>('events') ?? []
-    } catch (e) { /* 忽略 */ }
+      loadFailed.value = false
+    } catch (e) {
+      loadFailed.value = true
+      errorMsg.value = (e as Error).message
+    }
   }
   function timeText(e: UTSJSONObject): string {
     const ts = e.getNumber('ts') ?? 0

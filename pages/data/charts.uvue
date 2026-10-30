@@ -6,7 +6,9 @@
       </view>
     </view>
 
-    <view class="card lb-rise-1" v-if="points.length == 0">
+    <lbc-error v-if="loadFailed" :message="errorMsg" @retry="load" />
+
+    <view class="card lb-rise-1" v-if="points.length == 0 && !loadFailed">
       <text class="empty">还没有 {{ metricLabel }} 记录</text>
       <text class="hint">去"记录"页添加第一条吧</text>
     </view>
@@ -52,6 +54,8 @@
     { value: 'mood', label: '情绪' }
   ] as MOpt[])
   const points = ref<Pt[]>([] as Pt[])
+  const loadFailed = ref<boolean>(false)
+  const errorMsg = ref<string>('')
 
   const metricLabel = computed((): string => {
     for (let i = 0; i < metricList.value.length; i++) { if (metricList.value[i].value == code.value) return metricList.value[i].label }
@@ -81,7 +85,12 @@
         pts.push({ date: arr[i].getString('date') ?? '', y, display })
       }
       points.value = pts
-    } catch (e) { /* 忽略 */ }
+      loadFailed.value = false
+    } catch (e) {
+      // 失败时不能落到"还没有记录"，否则用户会误以为数据丢失
+      loadFailed.value = true
+      errorMsg.value = (e as Error).message
+    }
   }
 
   // 首屏与 tab 切回统一走 onPageReady（uni-app x 5.34 页面钩子不触发，见 utils/pageLifecycle.uts）

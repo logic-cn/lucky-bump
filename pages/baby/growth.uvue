@@ -27,6 +27,8 @@
       <text class="hint">百分位为参考趋势，不构成诊断；早产宝宝请按矫正月龄与医生沟通</text>
     </view>
 
+    <lbc-error v-if="historyFailed" message="历史测量记录加载失败" @retry="load" />
+
     <view class="card lb-rise-3" v-if="samples.length > 0">
       <text class="card-title">历史测量</text>
       <view class="s-row" v-for="(s, i) in samples" :key="i">
@@ -56,6 +58,7 @@
   const resultMonthAge = ref<number>(0)
   const alerts = ref<string[]>([])
   const samples = ref<SRow[]>([])
+  const historyFailed = ref<boolean>(false)
 
   function pctStr(key: string): string {
     const p = (result.value as UTSJSONObject | null)?.getJSON('percentiles') as UTSJSONObject | null
@@ -83,7 +86,10 @@
         })
       }
       samples.value = rows
-    } catch (e) { /* 忽略 */ }
+      historyFailed.value = false
+    } catch (e) {
+      historyFailed.value = true
+    }
   }
   async function save() {
     const w = parseFloat(weightKg.value)

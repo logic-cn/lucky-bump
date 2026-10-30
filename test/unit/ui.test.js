@@ -192,3 +192,29 @@ test('页面显示生命周期使用组合式 onPageShow（禁止选项式 onSho
   }
   assert.deepEqual(offenders, [], `uni-app x 组合式页面应使用 onPageShow：\n${offenders.join('\n')}`)
 })
+
+/* ---------------- 加载失败可重试（禁止静默空态） ---------------- */
+
+test('数据主视图加载失败必须显式可重试（禁止静默空态）', () => {
+  // 这些页面的空态与"加载失败"在视觉上完全一致，静默 catch 会让用户误以为数据丢失
+  const PAGES = [
+    'pages/data/charts.uvue',
+    'pages/data/timeline.uvue',
+    'pages/care/schedule.uvue',
+    'pages/me/family.uvue',
+    'pages/baby/baby-home.uvue',
+    'pages/baby/growth.uvue'
+  ]
+  const offenders = []
+  for (const p of PAGES) {
+    const src = fs.readFileSync(path.join(ROOT, p), 'utf-8')
+    if (!src.includes('<lbc-error')) offenders.push(`${p} 未使用 lbc-error 错误块`)
+    if (!/Failed\.value\s*=\s*true/.test(src)) offenders.push(`${p} 未在 catch 中置失败标记`)
+    if (!src.includes('@retry="load"')) offenders.push(`${p} 错误块未绑定重试`)
+  }
+  assert.deepEqual(offenders, [], `以下页面缺少可重试错误态:\n${offenders.join('\n')}`)
+
+  const comp = fs.readFileSync(path.join(ROOT, 'components/lbc-error/lbc-error.uvue'), 'utf-8')
+  assert.ok(comp.includes("defineEmits(['retry'])"), 'lbc-error 必须抛出 retry 事件（vapor 不支持选项式 methods）')
+  assert.ok(comp.includes('var(--lb-'), 'lbc-error 颜色须走主题令牌')
+})

@@ -1,6 +1,8 @@
 <template>
   <view class="page" :class="themeClass()">
-    <view class="card lb-rise" v-if="babies.length == 0">
+    <lbc-error v-if="loadFailed" :message="errorMsg" @retry="load" />
+
+    <view class="card lb-rise" v-if="babies.length == 0 && !loadFailed">
       <text class="empty">还没有宝宝档案</text>
       <button class="btn-save" hover-class="lb-press" hover-stay-time="120" @click="goRegister">去登记分娩</button>
     </view>
@@ -47,6 +49,8 @@
   const babies = ref<UTSJSONObject[]>([])
   const summary = ref<UTSJSONObject | null>(null)
   const currentBabyId = ref<string>('')
+  const loadFailed = ref<boolean>(false)
+  const errorMsg = ref<string>('')
 
   const sumFeedCount = computed((): number => ((summary.value as UTSJSONObject | null)?.getJSON('feeding') as UTSJSONObject | null)?.getNumber('count')?.toInt() ?? 0)
   const sumMl = computed((): number => ((summary.value as UTSJSONObject | null)?.getJSON('feeding') as UTSJSONObject | null)?.getNumber('totalMl')?.toInt() ?? 0)
@@ -79,7 +83,12 @@
       } else {
         loadSummary()
       }
-    } catch (e) { /* 忽略 */ }
+      loadFailed.value = false
+    } catch (e) {
+      // 失败时不能落成"还没有宝宝档案"，否则用户会以为档案丢了
+      loadFailed.value = true
+      errorMsg.value = (e as Error).message
+    }
   }
   async function loadSummary() {
     if (currentBabyId.value.length == 0) { summary.value = null; return }

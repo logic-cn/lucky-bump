@@ -1,0 +1,29 @@
+<template>
+  <view class="lbc-error lb-rise">
+    <text class="lbc-error-title">加载失败</text>
+    <text class="lbc-error-msg">{{ props.message.length > 0 ? props.message : '网络不太稳定，请稍后重试' }}</text>
+    <view class="lbc-error-btn" hover-class="lb-press" hover-stay-time="120" @click="onRetry">
+      <text class="lbc-error-btn-text">重试</text>
+    </view>
+  </view>
+</template>
+
+<script setup lang="ts">
+  // 统一的可重试错误块：替换原先静默 catch 导致的"空数据"误导。
+  // 注意：vapor 运行时对选项式 methods 支持不完整，自定义事件必须用组合式 defineEmits。
+  const props = defineProps({ message: { type: String, default: '' } })
+  const emit = defineEmits(['retry'])
+
+  function onRetry() { emit('retry') }
+</script>
+
+<style>
+  .lbc-error { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 40rpx; margin-top: 24rpx; align-items: center; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
+  .lbc-error-title { font-size: 30rpx; font-weight: bold; color: var(--lb-text-1); }
+  .lbc-error-msg { font-size: 24rpx; color: var(--lb-text-2); line-height: 38rpx; margin-top: 12rpx; text-align: center; }
+  .lbc-error-btn { background-color: var(--lb-primary-soft); border-radius: 999rpx; padding: 16rpx 48rpx; margin-top: 28rpx; transition: all 160ms ease-out; }
+  .lbc-error-btn-text { font-size: 26rpx; font-weight: bold; color: var(--lb-primary-deep); }
+  @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
+  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-press { opacity: 0.72; transform: scale(0.98); }
+</style>
