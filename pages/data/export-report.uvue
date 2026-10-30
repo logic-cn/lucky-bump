@@ -10,7 +10,8 @@
     <lbc-error v-if="loadFailed" :message="errorMsg" @retry="load" />
 
     <button class="btn-save lb-rise-1" hover-class="lb-press" hover-stay-time="120" :disabled="summary.length == 0" @click="doPrint">打印 / 另存为 PDF</button>
-    <text class="hint lb-rise-2">在浏览器打印对话框中选择"另存为 PDF"即可保存；App 端请使用数据页的导出功能。</text>
+    <button class="btn-ghost lb-rise-1" hover-class="lb-press" hover-stay-time="120" :disabled="csvLoading" @click="downloadCsv">{{ csvLoading ? '生成中…' : '下载 CSV（Excel）' }}</button>
+    <text class="hint lb-rise-2">在浏览器打印对话框中选择"另存为 PDF"即可保存；CSV 可直接用 Excel 打开。App 端请使用数据页的导出功能。</text>
   </view>
 </template>
 
@@ -18,6 +19,7 @@
   import { ref } from 'vue'
   import { onPageReady } from '../../utils/pageLifecycle.uts'
   import { luckyData } from '../../utils/request.uts'
+  import { luckyRecord } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
 
@@ -25,6 +27,7 @@
   const generatedAt = ref<string>('')
   const loadFailed = ref<boolean>(false)
   const errorMsg = ref<string>('')
+  const csvLoading = ref<boolean>(false)
 
   function stamp(): string {
     const d = new Date()
@@ -55,6 +58,95 @@
     uni.showToast({ title: '请在 Web 端打印导出', icon: 'none' })
   }
 
+  function codeLabel(code: string): string {
+    if (code == 'weight') return '体重'
+    if (code == 'blood_pressure') return '血压'
+    if (code == 'blood_glucose') return '血糖'
+    if (code == 'fetal_movement') return '胎动'
+    if (code == 'symptom') return '症状'
+    if (code == 'mood') return '情绪'
+    return code
+  }
+
+  function metricText(code: string, v: UTSJSONObject | null): string {
+    if (v == null) return ''
+    if (code == 'weight') return `${v.getNumber('kg') ?? ''} kg`
+    if (code == 'blood_pressure') {
+      let s = `${v.getNumber('sbp') ?? ''}/${v.getNumber('dbp') ?? ''} mmHg`
+      const hr = v.getNumber('hr')
+      if (hr != null) s += ` 心率 ${hr}`
+      return s
+    }
+    if (code == 'blood_glucose') {
+      const slot = v.getString('slot') ?? ''
+      const label = slot == 'fasting' ? '空腹' : (slot == '1h' ? '餐后 1h' : (slot == '2h' ? '餐后 2h' : '随机'))
+      return `${label} ${v.getNumber('mmol') ?? ''} mmol/L`
+    }
+    if (code == 'fetal_movement') return `${v.getNumber('count') ?? ''} 次`
+    if (code == 'symptom') {
+      const arr = v.getArray('codes') ?? []
+      const parts: string[] = []
+      for (let i = 0; i < arr.length; i++) parts.push(`${arr[i]}`)
+      return parts.join('、')
+    }
+    if (code == 'mood') return `${v.getNumber('score') ?? ''} 分`
+    return ''
+  }
+
+  function csvCell(s: string): string {
+    return `"${s.replace(/"/g, '""')}"`
+  }
+
+  async function buildCsv(): Promise<string> {
+    const res = await luckyRecord('listMetrics', { journeyId: journeyState.journeyId, limit: 500 } as UTSJSONObject)
+    const records = res.getArray<UTSJSONObject>('records') ?? []
+    const dres = await luckyRecord('listDiaries', { journeyId: journeyState.journeyId } as UTSJSONObject)
+    const diaries = dres.getArray<UTSJSONObject>('diaries') ?? []
+    const lines: string[] = ['日期,类型,数值,备注']
+    // 记录按时间正序，方便 Excel 画图
+    for (let i = records.length - 1; i >= 0; i--) {
+      const r = records[i]
+      const code = r.getString('code') ?? ''
+      const value = r.getJSON('value') as UTSJSONObject | null
+      lines.push(`${csvCell(r.getString('date') ?? '')},${csvCell(codeLabel(code))},${csvCell(metricText(code, value))},`)
+    }
+    for (let i = diaries.length - 1; i >= 0; i--) {
+      const d = diaries[i]
+      lines.push(`${csvCell(d.getString('date') ?? '')},${csvCell('日记')},${csvCell(d.getString('mood') ?? '')},${csvCell(d.getString('text') ?? '')}`)
+    }
+    return lines.join('\n')
+  }
+
+  async function downloadCsv() {
+    if (csvLoading.value) return
+    csvLoading.value = true
+    try {
+      const csv = await buildCsv()
+      // #ifdef WEB
+      const g: any = globalThis as any
+      const doc: any = g.document
+      const blob = new g.Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' })
+      const url = g.URL.createObjectURL(blob)
+      const a = doc.createElement('a')
+      a.href = url
+      a.download = `幸孕记-记录-${stamp().slice(0, 10)}.csv`
+      doc.body.appendChild(a)
+      a.click()
+      doc.body.removeChild(a)
+      g.URL.revokeObjectURL(url)
+      uni.showToast({ title: 'CSV 已开始下载', icon: 'none' })
+      // #endif
+      // #ifndef WEB
+      uni.setClipboardData({
+        data: csv,
+        success: () => { uni.showToast({ title: 'CSV 已复制到剪贴板', icon: 'none' }) }
+      })
+      // #endif
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    } finally { csvLoading.value = false }
+  }
+
   onPageReady(() => { load() })
 </script>
 
@@ -67,6 +159,7 @@
   .body { font-size: 26rpx; color: var(--lb-text-1); line-height: 46rpx; margin-top: 24rpx; }
   .note { font-size: 24rpx; color: var(--lb-text-3); line-height: 38rpx; margin-top: 24rpx; }
   .btn-save { width: 702rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 32rpx; }
+  .btn-ghost { width: 702rpx; height: 88rpx; line-height: 88rpx; background-color: var(--lb-fill); color: var(--lb-text-2); font-size: 28rpx; border-radius: 48rpx; margin-top: 20rpx; }
   .hint { font-size: 24rpx; color: var(--lb-text-3); line-height: 38rpx; margin-top: 20rpx; text-align: center; }
 
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
