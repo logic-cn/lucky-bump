@@ -23,6 +23,14 @@ async function accessRole(uid, journeyId) {
 }
 function dateOf(ts) { return new Date(ts).toISOString().slice(0, 10) }
 
+/** 家庭成员访问留痕（按人/动作/天去重，避免每次进首页都写一条） */
+async function logAccess(uid, journeyId, action, date) {
+  const dup = await db().collection('lb-audit-logs')
+    .where({ journey_id: journeyId, user_id: uid, action, date }).limit(1).get()
+  if (dup.data.length > 0) return
+  await db().collection('lb-audit-logs').add({ journey_id: journeyId, user_id: uid, action, date, ts: Date.now() })
+}
+
 /** 曲线主数值提取 */
 function primaryOf(code, value) {
   if (!value) return null
@@ -61,8 +69,9 @@ module.exports = {
   async today(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await accessibleJourney.call(this, uid, params.journeyId)
-    if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
+    const access = await auth.resolveJourneyAccess(db.call(this), uid, params.journeyId)
+    if (!access.role || !access.journey) return auth.fail('NOT_FOUND', '旅程不存在')
+    const j = access.journey
     // 产品红线：哀伤模式零孕育类待办（docs/03）；保持返回结构完整，前端依赖 journey/latest 字段
     if (j.stage_code === 'MOURNING') {
       return auth.ok({
@@ -112,6 +121,10 @@ module.exports = {
       let sleepMinutes = 0
       for (const s of sleeps.data) sleepMinutes += Math.max(0, +s.duration_min || 0)
       momCard = { date: todayStr, feedings: feed.total || 0, diapers: diaper.total || 0, sleepMinutes }
+    }
+    // 留痕：仅家庭成员访问记录，主人本人操作不写（docs/03 M7.2）
+    if (access.memberRole && access.memberRole !== 'owner') {
+      await logAccess(uid, j._id, 'today', dateOf(now))
     }
     return auth.ok({
       journey: {
@@ -216,5 +229,27 @@ module.exports = {
     if (latestBp.data[0]) lines.push(`最近血压：${latestBp.data[0].value.sbp}/${latestBp.data[0].value.dbp} mmHg（${latestBp.data[0].date}）`)
     lines.push(`导出时间：${dateOf(Date.now())}`)
     return auth.ok({ summary: lines.join('\n'), exportedAt: Date.now(), journeyId: j._id })
+  },
+
+  /** 访问留痕列表：仅旅程主人可见（docs/03 M7.2「谁在什么时间看了什么」） */
+  async listAuditLogs(params = {}) {
+    const uid = await requireUser.call(this)
+    if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
+    const { journey } = await auth.resolveJourneyAccess(db.call(this), uid, params.journeyId)
+    if (!journey || journey.user_id !== uid) return auth.fail('NOT_FOUND', '仅旅程主人可查看访问记录')
+    const logs = await db.call(this).collection('lb-audit-logs')
+      .where({ journey_id: journey._id }).orderBy('ts', 'desc').limit(30).get()
+    // 昵称来自家庭组成员表，便于主人识别"谁看过"
+    const fams = await db.call(this).collection('lb-families').where({ journey_id: journey._id }).get()
+    const nameMap = {}
+    for (const f of fams.data) {
+      const ms = await db.call(this).collection('lb-family-members').where({ family_id: f._id }).get()
+      for (const m of ms.data) nameMap[m.user_id] = m.nickname || '家人'
+    }
+    return auth.ok({
+      logs: logs.data.map(l => ({
+        nickname: nameMap[l.user_id] || '家人', action: l.action, date: l.date, ts: l.ts
+      }))
+    })
   }
 }

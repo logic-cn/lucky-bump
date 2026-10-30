@@ -198,3 +198,36 @@ test('备孕旅程不返回妈妈卡', async () => {
   assert.equal(t.errCode, 0, JSON.stringify(t))
   assert.equal(t.momCard, null, '非产后阶段不应显示妈妈卡')
 })
+
+test('访问留痕：家庭成员看首页会被记录，主人可查、成员不可查', async () => {
+  const { rt, jid, victimToken, attackerToken } = await twoUsers()
+  const fam = await rt.callObject('lucky-family', 'getFamily', { journeyId: jid }, { token: victimToken })
+  assert.equal(fam.errCode, 0, JSON.stringify(fam))
+  const inv = await rt.callObject('lucky-family', 'invite', { journeyId: jid, role: 'viewer' }, { token: victimToken })
+  const join = await rt.callObject('lucky-family', 'join', { code: inv.code, nickname: '爸爸' }, { token: attackerToken })
+  assert.equal(join.errCode, 0, JSON.stringify(join))
+
+  // 成员访问首页 → 留痕
+  await rt.callObject('lucky-data', 'today', { journeyId: jid }, { token: attackerToken })
+  const own = await rt.callObject('lucky-data', 'listAuditLogs', { journeyId: jid }, { token: victimToken })
+  assert.equal(own.errCode, 0, JSON.stringify(own))
+  assert.equal(own.logs.length, 1, '应有一条成员访问记录')
+  assert.equal(own.logs[0].nickname, '爸爸')
+  assert.equal(own.logs[0].action, 'today')
+
+  // 成员本人不可查留痕
+  const denied = await rt.callObject('lucky-data', 'listAuditLogs', { journeyId: jid }, { token: attackerToken })
+  assert.equal(denied.errCode, 'NOT_FOUND')
+
+  // 同一天重复访问不重复记录
+  await rt.callObject('lucky-data', 'today', { journeyId: jid }, { token: attackerToken })
+  const again = await rt.callObject('lucky-data', 'listAuditLogs', { journeyId: jid }, { token: victimToken })
+  assert.equal(again.logs.length, 1, '同一人同一天同一动作应去重')
+})
+
+test('访问留痕：主人自己看首页不产生记录', async () => {
+  const { rt, jid, victimToken } = await twoUsers()
+  await rt.callObject('lucky-data', 'today', { journeyId: jid }, { token: victimToken })
+  const own = await rt.callObject('lucky-data', 'listAuditLogs', { journeyId: jid }, { token: victimToken })
+  assert.equal(own.logs.length, 0, '本人访问不应写留痕')
+})

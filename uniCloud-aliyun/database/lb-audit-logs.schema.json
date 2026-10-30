@@ -1,0 +1,39 @@
+{
+  "required": [
+    "journey_id",
+    "user_id",
+    "action",
+    "ts"
+  ],
+  "properties": {
+    "journey_id": {
+      "bsonType": "string",
+      "title": "旅程"
+    },
+    "user_id": {
+      "bsonType": "string",
+      "title": "访问者"
+    },
+    "action": {
+      "bsonType": "string",
+      "title": "动作",
+      "enum": [
+        "today"
+      ]
+    },
+    "date": {
+      "bsonType": "string",
+      "title": "日期（按天去重）"
+    },
+    "ts": {
+      "bsonType": "long",
+      "title": "时间戳"
+    }
+  },
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  }
+}

@@ -11,6 +11,16 @@
       <text class="hint">建议开启：你的记录里有最私密的旅程。</text>
     </view>
     <view class="card lb-rise-1">
+      <text class="card-title">谁看过我的数据</text>
+      <text class="hint" v-if="auditLogs.length == 0">暂无家庭成员访问记录；本人操作不记录</text>
+      <view class="a-row" v-for="(a, i) in auditLogs" :key="i">
+        <text class="a-name">{{ a.getString('nickname') ?? '家人' }}</text>
+        <text class="a-time">{{ a.getString('date') ?? '' }} · 查看首页</text>
+      </view>
+      <text class="hint">留痕仅记录家庭成员的数据页访问，用于知情与追溯（docs/03 M7.2）</text>
+    </view>
+
+    <view class="card lb-rise-1">
       <text class="card-title">敏感记录组（默认仅本人）</text>
       <text class="hint">以下内容永远只有你自己可见，产品级不可授权、不可恢复为共享：</text>
       <text class="s-item">💗 同房记录</text>
@@ -49,12 +59,23 @@
 
 <script setup lang="ts">
   import { ref } from 'vue'
-  import { luckyId } from '../../utils/request.uts'
+  import { onLoad } from '@dcloudio/uni-app'
+  import { luckyId, luckyData } from '../../utils/request.uts'
   import { clearToken } from '../../store/appStore.uts'
   import { isBiometricAvailable } from '../../utils/biometric.uts'
   import { themeClass } from '../../store/themeStore.uts'
+  import { journeyState } from '../../store/journeyStore.uts'
 
   const bioAvailable = isBiometricAvailable()
+  const auditLogs = ref<UTSJSONObject[]>([])
+
+  async function loadAudit() {
+    try {
+      const res = await luckyData('listAuditLogs', { journeyId: journeyState.journeyId } as UTSJSONObject)
+      auditLogs.value = res.getArray<UTSJSONObject>('logs') ?? []
+    } catch (e) { /* 非主人或未登录时静默 */ }
+  }
+  onLoad(() => { loadAudit() })
 
   // 安全读取：key 首次不存在时 getStorageSync 返回 null，不能强转 as boolean
   const rawLock = uni.getStorageSync('lb_app_lock')
@@ -110,6 +131,9 @@
   .p-row { flex-direction: row; align-items: center; justify-content: space-between; padding: 12rpx 0; }
   .p-label { font-size: 26rpx; color: var(--lb-text-1); flex: 1; }
   .s-item { font-size: 26rpx; color: var(--lb-text-2); padding: 6rpx 0; }
+  .a-row { flex-direction: row; justify-content: space-between; padding: 10rpx 0; border-bottom-width: 1px; border-bottom-color: var(--lb-line); }
+  .a-name { font-size: 26rpx; color: var(--lb-text-1); }
+  .a-time { font-size: 24rpx; color: var(--lb-text-3); }
   .hint { font-size: 22rpx; color: var(--lb-text-3); margin: 8rpx 0 16rpx 0; }
   .nav-row { flex-direction: row; align-items: center; padding: 20rpx 0; transition: all 160ms ease-out; }
   .nav-text { flex: 1; font-size: 26rpx; color: var(--lb-primary); }
