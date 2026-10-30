@@ -87,6 +87,8 @@ module.exports = {
     const horizon = now + 14 * DAY
     const todos = []
     const rules = await db.call(this).collection('lb-reminder-rules').where({ journey_id: j._id, enabled: true }).get()
+    const dones = await db.call(this).collection('lb-reminder-done').where({ journey_id: j._id }).limit(200).get()
+    const doneKeys = new Set(dones.data.map(d => `${d.rule_id}|${d.due_date}`))
     const anchor = j.lmp_date || (j.edd ? j.edd - 280 * DAY : 0)
     for (const r of rules.data) {
       let due = 0
@@ -94,7 +96,11 @@ module.exports = {
       else if (r.type === 'by_week' && anchor) due = anchor + r.week * 7 * DAY
       else if (r.type === 'by_month' && j.delivery_date) due = j.delivery_date + r.month * 30.4375 * DAY
       else if (r.type === 'recurring') due = (r.last_fired || now) + r.interval_days * DAY
-      if (due && due - r.lead_days * DAY <= horizon) todos.push({ source: 'rule', ruleId: r._id, title: r.title, dueTs: due, dueDate: dateOf(due), urgent: r.urgent, kind: 'reminder' })
+      if (due && due - r.lead_days * DAY <= horizon) {
+        const dueDate = dateOf(due)
+        if (doneKeys.has(`${r._id}|${dueDate}`)) continue
+        todos.push({ source: 'rule', ruleId: r._id, title: r.title, dueTs: due, dueDate, urgent: r.urgent, kind: 'reminder' })
+      }
     }
     const plans = await db.call(this).collection('lb-schedule-items').where({ journey_id: j._id, status: 'upcoming' }).orderBy('plan_date', 'asc').limit(10).get()
     for (const p of plans.data) {

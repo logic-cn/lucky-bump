@@ -21,6 +21,9 @@
           <text class="todo-sub">{{ todoDateText(t) }}</text>
         </view>
         <text class="arrow">›</text>
+        <view class="todo-check" v-if="t.getString('source') == 'rule'" hover-class="lb-press" hover-stay-time="120" @click="completeTodo(t)">
+          <text class="todo-check-text">✓</text>
+        </view>
       </view>
     </view>
     <view class="card lb-rise-1" v-else>
@@ -107,6 +110,7 @@
   import { appState } from '../../store/appStore.uts'
   import { journeyState, weekText, stageText, loadCurrentJourney, loadToday } from '../../store/journeyStore.uts'
   import { luckyRecord } from '../../utils/request.uts'
+  import { luckyReminder } from '../../utils/request.uts'
   import { themeClass } from '../../store/themeStore.uts'
   import { isQuietNow } from '../../utils/quiet.uts'
   import { track } from '../../utils/track.uts'
@@ -198,6 +202,25 @@
     track('reminder_done', { kind: kind } as UTSJSONObject)
     if (kind.indexOf('prenatal') == 0) uni.navigateTo({ url: '/pages/care/schedule' })
     else if (kind == 'vaccine') uni.navigateTo({ url: '/pages/baby/vaccines' })
+  }
+  async function completeTodo(t: UTSJSONObject) {
+    const ruleId = t.getString('ruleId') ?? ''
+    const dueDate = t.getString('dueDate') ?? ''
+    if (ruleId.length == 0) return
+    try {
+      await luckyReminder('completeTodo', { journeyId: journeyState.journeyId, ruleId: ruleId, dueDate: dueDate } as UTSJSONObject)
+      const next: UTSJSONObject[] = []
+      for (let i = 0; i < todos.value.length; i++) {
+        const r = todos.value[i]
+        const sameRule = (r.getString('ruleId') ?? '') == ruleId
+        const sameDate = (r.getString('dueDate') ?? '') == dueDate
+        if (!(sameRule && sameDate)) next.push(r)
+      }
+      todos.value = next
+      uni.showToast({ title: '已完成 ✓', icon: 'none' })
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    }
   }
   function todoDateText(t: UTSJSONObject): string {
     const due = t.getString('dueDate') ?? ''
@@ -343,6 +366,8 @@
   .todo-body { flex: 1; }
   .todo-title { font-size: 28rpx; color: var(--lb-text-1); }
   .todo-sub { font-size: 24rpx; color: var(--lb-text-3); margin-top: 4rpx; }
+  .todo-check { width: 56rpx; height: 56rpx; border-radius: 28rpx; background-color: var(--lb-primary-soft); align-items: center; justify-content: center; margin-left: 12rpx; transition: all 160ms ease-out; }
+  .todo-check-text { font-size: 26rpx; color: var(--lb-primary-deep); }
   .arrow { font-size: 36rpx; color: var(--lb-arrow); }
   .empty-text { font-size: 26rpx; color: var(--lb-text-3); }
   .grid { flex-direction: row; flex-wrap: wrap; }
