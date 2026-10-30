@@ -38,7 +38,9 @@
     { "path": "pages/me/settings", "style": { "navigationBarTitleText": "设置" } },
     { "path": "pages/me/about", "style": { "navigationBarTitleText": "关于与免责声明" } },
     { "path": "pages/me/agreement", "style": { "navigationBarTitleText": "用户协议" } },
-    { "path": "pages/me/privacy-policy", "style": { "navigationBarTitleText": "隐私政策" } }
+    { "path": "pages/me/privacy-policy", "style": { "navigationBarTitleText": "隐私政策" } },
+    { "path": "pages/tools/hospital-bag", "style": { "navigationBarTitleText": "待产包清单" } },
+    { "path": "pages/tools/solid-food", "style": { "navigationBarTitleText": "辅食计划" } }
   ],
   "globalStyle": {
     "navigationBarTextStyle": "black",

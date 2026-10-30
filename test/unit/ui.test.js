@@ -265,6 +265,23 @@ test('知识板块具备本周要点、搜索、收藏与工具速查', () => {
   assert.ok(page.includes('search-input'), '缺少搜索框')
 })
 
+test('工具页：待产包清单可勾选持久化，辅食计划含安全红线', () => {
+  const bag = fs.readFileSync(path.join(ROOT, 'pages/tools/hospital-bag.uvue'), 'utf-8')
+  assert.ok(bag.includes('lb_bag_checked'), '待产包缺少本地进度存储')
+  assert.ok(bag.includes('progressPct'), '缺少完成进度')
+  assert.ok(bag.includes('toggle('), '清单不可勾选')
+
+  const food = fs.readFileSync(path.join(ROOT, 'pages/tools/solid-food.uvue'), 'utf-8')
+  assert.ok(food.includes('1 岁前不加盐'), '辅食页缺少 1 岁前不加盐糖蜂蜜提示')
+  assert.ok(food.includes('窒息风险'), '辅食页缺少窒息风险提示')
+  assert.ok(food.includes('不提供诊断'), '缺少免责说明')
+
+  const pagesJson = JSON.parse(fs.readFileSync(path.join(ROOT, 'pages.json'), 'utf-8'))
+  const paths = pagesJson.pages.map(p => p.path)
+  assert.ok(paths.includes('pages/tools/hospital-bag'), 'pages.json 未注册待产包页')
+  assert.ok(paths.includes('pages/tools/solid-food'), 'pages.json 未注册辅食计划页')
+})
+
 /* ---------------- 可读性下限（小字号不得回流） ---------------- */
 
 test('最小字号不低于 24rpx（正文与辅助文案一致）', () => {

@@ -66,7 +66,8 @@
           { icon: '🦶', label: '胎动', url: '/pages/record/fetal-movement' },
           { icon: '⏱', label: '宫缩计时', url: '/pages/record/contraction-timer' },
           { icon: '🌸', label: '症状情绪', url: '/pages/record/symptom' },
-          { icon: '📔', label: '日记', url: '/pages/record/diary' }
+          { icon: '📔', label: '日记', url: '/pages/record/diary' },
+          { icon: '🎒', label: '待产包', url: '/pages/tools/hospital-bag' }
         ]
         const postpartum: RItem[] = [
           { icon: '🩸', label: '恶露', url: '/pages/record/lochia' },
@@ -78,6 +79,7 @@
           { icon: '🧷', label: '尿布', url: '/pages/baby/diaper' },
           { icon: '😴', label: '睡眠', url: '/pages/baby/sleep' },
           { icon: '📏', label: '成长', url: '/pages/baby/growth' },
+          { icon: '🥣', label: '辅食计划', url: '/pages/tools/solid-food' },
           { icon: '💉', label: '疫苗', url: '/pages/baby/vaccines' }
         ]
         if (s == 'PRECONCEPTION') groups.push({ title: '备孕', items: orderByRecent(ttc) })

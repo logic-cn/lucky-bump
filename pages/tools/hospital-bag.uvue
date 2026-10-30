@@ -1,0 +1,139 @@
+<template>
+  <view class="page" :class="themeClass()">
+    <view class="card lb-rise">
+      <text class="card-title">待产包清单</text>
+      <text class="progress-text">已准备 {{ checked.length }} / {{ total }} 项</text>
+      <view class="bar"><view class="bar-fill" :style="{ width: progressPct + '%' }" /></view>
+      <text class="hint">36 周前备好；证件与产检资料单独装袋，交给家人也知道放哪</text>
+    </view>
+
+    <view class="card lb-rise-1" v-for="(g, gi) in groups" :key="gi">
+      <text class="group-title">{{ g.title }}</text>
+      <view class="row" v-for="(it, i) in g.items" :key="i" hover-class="lb-press" hover-stay-time="120" @click="toggle(it.key)">
+        <view class="check" :class="isChecked(it.key) ? 'check-on' : ''">
+          <text class="check-mark" v-if="isChecked(it.key)">✓</text>
+        </view>
+        <text class="row-label" :class="isChecked(it.key) ? 'row-label-done' : ''">{{ it.label }}</text>
+      </view>
+    </view>
+
+    <text class="reset lb-rise-3" @click="reset">重置清单</text>
+  </view>
+</template>
+
+<script setup lang="ts">
+  import { computed, ref } from 'vue'
+  import { onPageReady } from '../../utils/pageLifecycle.uts'
+  import { themeClass } from '../../store/themeStore.uts'
+
+  type BagItem = { key: string, label: string }
+  type BagGroup = { title: string, items: BagItem[] }
+
+  const STORAGE_KEY = 'lb_bag_checked'
+  const groups: BagGroup[] = [
+    {
+      title: '证件与资料',
+      items: [
+        { key: 'id', label: '身份证 / 医保卡' },
+        { key: 'book', label: '产检本 / 母子健康手册' },
+        { key: 'insurance', label: '生育保险材料' },
+        { key: 'cash', label: '银行卡与少量现金' }
+      ]
+    },
+    {
+      title: '妈妈用品',
+      items: [
+        { key: 'pajama', label: '待产裙 / 睡衣 2 套' },
+        { key: 'bra', label: '哺乳内衣 2 件' },
+        { key: 'underwear', label: '一次性内裤 5-8 条' },
+        { key: 'pad', label: '产褥垫 10 片' },
+        { key: 'sanitary', label: '卫生巾 / 安心裤' },
+        { key: 'slipper', label: '防滑拖鞋' },
+        { key: 'toilet', label: '洗漱包与毛巾' },
+        { key: 'pump', label: '吸奶器' },
+        { key: 'nipple', label: '乳头修护霜' },
+        { key: 'cup', label: '带吸管的水杯' }
+      ]
+    },
+    {
+      title: '宝宝用品',
+      items: [
+        { key: 'diaper', label: '新生儿纸尿裤 NB 一包' },
+        { key: 'wrap', label: '包被 / 浴巾 2 条' },
+        { key: 'clothes', label: '和尚服 3-4 件' },
+        { key: 'hat', label: '帽子与袜子' },
+        { key: 'wipe', label: '湿巾与护臀膏' },
+        { key: 'bottle', label: '奶瓶（奶粉按需备用）' }
+      ]
+    },
+    {
+      title: '其他',
+      items: [
+        { key: 'charger', label: '手机充电器与长线' },
+        { key: 'snack', label: '能量零食与巧克力' },
+        { key: 'bag', label: '装脏衣服的袋子' }
+      ]
+    }
+  ]
+
+  const checked = ref<string[]>([])
+  const total = computed((): number => {
+    let n = 0
+    for (let i = 0; i < groups.length; i++) n += groups[i].items.length
+    return n
+  })
+  const progressPct = computed((): number => total.value == 0 ? 0 : Math.round(checked.value.length / total.value * 100))
+
+  function load() {
+    const raw = uni.getStorageSync(STORAGE_KEY) as string
+    checked.value = raw == null || raw.length == 0 ? ([] as string[]) : raw.split(',')
+  }
+  function isChecked(key: string): boolean { return checked.value.indexOf(key) >= 0 }
+  function toggle(key: string) {
+    const next: string[] = []
+    for (let i = 0; i < checked.value.length; i++) {
+      if (checked.value[i] != key) next.push(checked.value[i])
+    }
+    if (checked.value.indexOf(key) < 0) next.push(key)
+    checked.value = next
+    uni.setStorageSync(STORAGE_KEY, next.join(','))
+  }
+  function reset() {
+    checked.value = []
+    uni.setStorageSync(STORAGE_KEY, '')
+    uni.showToast({ title: '已重置', icon: 'none' })
+  }
+
+  onPageReady(() => { load() })
+</script>
+
+<style>
+  @import '../../theme.scss';
+  .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
+  .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 36rpx; margin-top: 24rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
+  .card-title { font-size: 32rpx; font-weight: bold; color: var(--lb-text-1); }
+  .progress-text { font-size: 26rpx; color: var(--lb-text-2); margin-top: 12rpx; }
+  .bar { width: 100%; height: 16rpx; background-color: var(--lb-fill); border-radius: 8rpx; margin-top: 16rpx; }
+  .bar-fill { height: 16rpx; background-color: var(--lb-primary); border-radius: 8rpx; transition: all 240ms ease-out; }
+  .hint { font-size: 24rpx; color: var(--lb-text-3); line-height: 38rpx; margin-top: 16rpx; }
+  .group-title { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 8rpx; }
+  .row { flex-direction: row; align-items: center; padding: 18rpx 0; border-bottom-width: 1px; border-bottom-color: var(--lb-line); transition: all 160ms ease-out; }
+  .check { width: 44rpx; height: 44rpx; border-radius: 22rpx; border-width: 2px; border-style: solid; border-color: var(--lb-line-deep); background-color: var(--lb-fill); align-items: center; justify-content: center; margin-right: 20rpx; }
+  .check-on { background-color: var(--lb-primary); border-color: var(--lb-primary); }
+  .check-mark { font-size: 26rpx; color: #FFFFFF; }
+  .row-label { flex: 1; font-size: 26rpx; color: var(--lb-text-1); }
+  .row-label-done { color: var(--lb-text-3); text-decoration: line-through; }
+  .reset { font-size: 24rpx; color: var(--lb-text-3); margin: 32rpx 0 48rpx 0; }
+
+  @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+  @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
+  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms both; }
+  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both; }
+  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms both; }
+  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-fade { animation: lb-fade 200ms ease-out both; }
+  .lb-press { opacity: 0.72; transform: scale(0.98); }
+</style>

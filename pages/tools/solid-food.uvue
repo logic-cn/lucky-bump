@@ -1,0 +1,79 @@
+<template>
+  <view class="page" :class="themeClass()">
+    <view class="chips lb-rise">
+      <view class="chip" v-for="(m, i) in months" :key="i" :class="month == m ? 'chip-active' : ''" hover-class="lb-press" hover-stay-time="120" @click="month = m">
+        <text class="chip-text" :class="month == m ? 'chip-text-active' : ''">{{ m }} 月龄</text>
+      </view>
+    </view>
+
+    <view class="card lb-rise-1">
+      <text class="card-title">{{ month }} 月龄辅食要点</text>
+      <text class="section">食物质地</text>
+      <text class="body">{{ current.texture }}</text>
+      <text class="section">可以尝试</text>
+      <text class="body">{{ current.foods }}</text>
+      <text class="section">喂养提示</text>
+      <text class="body">{{ current.tips }}</text>
+    </view>
+
+    <view class="card lb-rise-2">
+      <text class="card-title">安全红线</text>
+      <text class="red">1 岁前不加盐、糖与蜂蜜；不喝米汤代替奶</text>
+      <text class="red">整颗坚果、果冻、整颗葡萄有窒息风险，务必切碎或避免</text>
+      <text class="red">出现皮疹、呕吐、呼吸急促等过敏表现，立即停止并就医</text>
+    </view>
+
+    <view class="card lb-rise-3">
+      <text class="gray">内容参考中国居民膳食指南与婴幼儿喂养通用建议，具体以儿保医生意见为准；本页不提供诊断。</text>
+    </view>
+  </view>
+</template>
+
+<script setup lang="ts">
+  import { computed, ref } from 'vue'
+  import { themeClass } from '../../store/themeStore.uts'
+
+  type Plan = { texture: string, foods: string, tips: string }
+
+  const months = ref<number[]>([6, 7, 8, 9, 10, 11, 12])
+  const month = ref<number>(6)
+  const plans: Map<number, Plan> = new Map([
+    [6, { texture: '泥糊状、细腻', foods: '含铁米粉、南瓜泥、胡萝卜泥、苹果泥', tips: '一次只加一种新食物，观察 3 天；奶仍是主要营养来源' }],
+    [7, { texture: '稠泥到细末', foods: '蛋黄、肉泥、豆腐泥、绿叶菜泥', tips: '每天 1-2 餐辅食，坐餐椅、用小勺，不追喂' }],
+    [8, { texture: '碎末状、可抓握', foods: '软烂面条、肉末、手指食物（蒸软的胡萝卜条）', tips: '鼓励抓握自主进食，全程有人看护，防呛咳' }],
+    [9, { texture: '软烂小块', foods: '软饭、碎菜、鱼泥、全蛋', tips: '逐步过渡到每天 3 餐，保持奶量，观察大便与过敏' }],
+    [10, { texture: '小块、稍带嚼劲', foods: '软饭、碎肉、豆制品、时令蔬果', tips: '练习用杯喝水，允许弄脏，不强迫吃完' }],
+    [11, { texture: '接近家庭食物', foods: '少盐少糖的家常菜切碎、软烂主食', tips: '与家人同桌进食，固定餐点，零食与正餐间隔' }],
+    [12, { texture: '家庭食物，切碎煮软', foods: '三餐两点、蛋、肉、菜、水果均衡', tips: '1 岁前不加盐糖蜂蜜；开始学习自己用勺' }]
+  ])
+
+  const current = computed((): Plan => plans.get(month.value) ?? { texture: '', foods: '', tips: '' })
+</script>
+
+<style>
+  @import '../../theme.scss';
+  .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
+  .chips { flex-direction: row; flex-wrap: wrap; width: 702rpx; }
+  .chip { background-color: var(--lb-card); border-radius: 999rpx; padding: 14rpx 26rpx; margin: 6rpx 10rpx 6rpx 0; transition: all 160ms ease-out; }
+  .chip-active { background-color: var(--lb-primary); }
+  .chip-text { font-size: 24rpx; color: var(--lb-text-2); }
+  .chip-text-active { color: #FFFFFF; font-weight: bold; }
+  .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 36rpx; margin-top: 24rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
+  .card-title { font-size: 30rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 12rpx; }
+  .section { font-size: 24rpx; font-weight: bold; color: var(--lb-primary-deep); margin-top: 20rpx; }
+  .body { font-size: 26rpx; color: var(--lb-text-2); line-height: 44rpx; margin-top: 8rpx; }
+  .red { font-size: 24rpx; color: var(--lb-danger); line-height: 44rpx; }
+  .gray { font-size: 24rpx; color: var(--lb-text-3); line-height: 42rpx; }
+
+  @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+  @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
+  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms both; }
+  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both; }
+  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms both; }
+  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-fade { animation: lb-fade 200ms ease-out both; }
+  .lb-press { opacity: 0.72; transform: scale(0.98); }
+</style>
