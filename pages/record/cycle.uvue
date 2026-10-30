@@ -1,27 +1,87 @@
 <template>
   <view class="page" :class="themeClass()">
+    <!-- 今天快记 -->
     <view class="card lb-rise">
-      <text class="label">月经来了？</text>
+      <text class="card-title">今天</text>
       <view class="btn-row">
-        <button class="btn-half btn-primary-bg" @click="markPeriod('start')">经期开始</button>
-        <button class="btn-half btn-gray" @click="markPeriod('end')">经期结束</button>
-      </view>
-      <text class="label">基础体温（晨起未活动时，°C）</text>
-      <view class="input-row">
-        <input class="num-input" type="number" v-model="bbt" placeholder="36.5" placeholder-class="ph" />
-        <button class="btn-small" :disabled="saving" @click="saveBbt">记录</button>
+        <button class="btn-half btn-primary-bg" hover-class="lb-press" hover-stay-time="120" @click="markToday('start')">今天经期开始</button>
+        <button class="btn-half btn-gray" hover-class="lb-press" hover-stay-time="120" @click="markToday('end')">今天经期结束</button>
       </view>
     </view>
 
-    <view class="card lb-rise-1" v-if="prediction != null">
-      <text class="card-title">周期预测</text>
-      <text class="pred-text" v-if="predRegular">平均周期 {{ predAvgLen }} 天 · 排卵日约 {{ predOvu }}</text>
-      <text class="pred-text" v-else>周期不太规律（波动 > 7 天），建议坚持记录排卵试纸和体温提高准确度</text>
+    <!-- 周期日历：点任意日期可补记 -->
+    <view class="card lb-rise-1">
+      <view class="cal-head">
+        <view class="cal-nav" hover-class="lb-press" hover-stay-time="120" @click="shiftMonth(-1)"><text class="cal-nav-text">‹</text></view>
+        <text class="cal-title">{{ viewLabel }}</text>
+        <view class="cal-nav" hover-class="lb-press" hover-stay-time="120" @click="shiftMonth(1)"><text class="cal-nav-text">›</text></view>
+      </view>
+      <view class="cal-week">
+        <text class="cal-wd" v-for="(w, i) in weekdays" :key="i">{{ w }}</text>
+      </view>
+      <view class="cal-grid">
+        <view class="cal-cell" v-for="(c, i) in cells" :key="i" @click="pickDate(c)">
+          <view class="cal-day" :class="cellClass(c)" hover-class="lb-press" hover-stay-time="120">
+            <text class="cal-day-text" :class="c.ovulation ? 'cal-text-light' : (c.today ? 'cal-day-today' : '')">{{ c.empty ? '' : c.day }}</text>
+          </view>
+        </view>
+      </view>
+      <view class="cal-legend">
+        <view class="lg"><view class="lg-dot lg-period" /><text class="lg-text">经期</text></view>
+        <view class="lg"><view class="lg-dot lg-predicted" /><text class="lg-text">预测</text></view>
+        <view class="lg"><view class="lg-dot lg-fertile" /><text class="lg-text">易孕</text></view>
+        <view class="lg"><view class="lg-dot lg-ovulation" /><text class="lg-text">排卵</text></view>
+      </view>
+      <text class="cal-tip">点日期可补记经期；预测仅供记录参考，不构成避孕或诊断建议</text>
+    </view>
+
+    <!-- 选中日期补记 -->
+    <view class="card lb-rise-1" v-if="selectedDate.length > 0">
+      <text class="card-title">{{ selectedDate }} 补记</text>
+      <view class="flow-row" v-if="selectedKind == 'start'">
+        <text class="label-inline">经量</text>
+        <view class="flow-chip" v-for="(f, i) in flows" :key="i" :class="flow == f.value ? 'flow-chip-active' : ''" hover-class="lb-press" hover-stay-time="120" @click="flow = f.value">
+          <text class="flow-text" :class="flow == f.value ? 'flow-text-active' : ''">{{ f.label }}</text>
+        </view>
+      </view>
+      <view class="btn-row">
+        <button class="btn-half btn-primary-bg" hover-class="lb-press" hover-stay-time="120" :disabled="saving" @click="markOn('start')">{{ saving ? '保存中…' : '这天经期开始' }}</button>
+        <button class="btn-half btn-gray" hover-class="lb-press" hover-stay-time="120" :disabled="saving" @click="markOn('end')">这天经期结束</button>
+      </view>
+      <text class="link-text" @click="selectedDate = ''">取消选择</text>
+    </view>
+
+    <!-- 周期概览 -->
+    <view class="card lb-rise-2" v-if="cycles.length > 0 && prediction != null">
+      <text class="card-title">周期概览</text>
+      <view class="stat-row">
+        <view class="stat"><text class="stat-num">{{ predAvgLen }}</text><text class="stat-cap">平均周期（天）</text></view>
+        <view class="stat"><text class="stat-num">{{ lastPeriodLen }}</text><text class="stat-cap">最近经期（天）</text></view>
+        <view class="stat"><text class="stat-num">{{ cycles.length }}</text><text class="stat-cap">已记录周期</text></view>
+      </view>
+      <text class="pred-text" v-if="predRegular">周期规律，预测更可信</text>
+      <text class="pred-text" v-else>周期波动超过 7 天，建议坚持记录排卵试纸与体温</text>
       <text class="pred-sub">易孕窗口：{{ predFrom }} 至 {{ predTo }}</text>
       <text class="pred-sub">预测下次月经：{{ predNext }}</text>
+      <view class="abnormal" v-if="abnormalTips.length > 0">
+        <text class="abnormal-title">值得关注</text>
+        <text class="abnormal-text" v-for="(t, i) in abnormalTips" :key="i">· {{ t }}</text>
+        <text class="abnormal-note">以上仅为记录统计提示，不构成诊断；持续异常请及时就医</text>
+      </view>
     </view>
 
-    <view class="card lb-rise-2" v-if="events.length > 0">
+    <!-- 基础体温 -->
+    <view class="card lb-rise-2">
+      <text class="card-title">基础体温</text>
+      <text class="label">晨起未活动时，°C</text>
+      <view class="input-row">
+        <input class="num-input" type="number" v-model="bbt" placeholder="36.5" placeholder-class="ph" />
+        <button class="btn-small" hover-class="lb-press" hover-stay-time="120" :disabled="saving" @click="saveBbt">记录</button>
+      </view>
+    </view>
+
+    <!-- 最近记录 -->
+    <view class="card lb-rise-3" v-if="events.length > 0">
       <text class="card-title">最近记录</text>
       <view class="ev-row" v-for="(e, i) in events" :key="i">
         <text class="ev-date">{{ e.getString('date') ?? '' }}</text>
@@ -38,27 +98,178 @@
   import { journeyState } from '../../store/journeyStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
   import { track } from '../../utils/track.uts'
+  import { todayDateStr, dateToTs } from '../../utils/recordDate.uts'
 
+  type Flow = { value: string, label: string }
+  type Cell = { day: number, date: string, empty: boolean, today: boolean, period: boolean, predicted: boolean, fertile: boolean, ovulation: boolean }
+
+  const DAY = 86400000
+  const weekdays = ref<string[]>(['一', '二', '三', '四', '五', '六', '日'])
+  const flows = ref<Flow[]>([{ value: 'light', label: '少' }, { value: 'medium', label: '中' }, { value: 'heavy', label: '多' }] as Flow[])
   const bbt = ref('')
   const saving = ref(false)
   const events = ref<UTSJSONObject[]>([])
+  const cycles = ref<UTSJSONObject[]>([])
   const prediction = ref<UTSJSONObject | null>(null)
+  const selectedDate = ref<string>('')
+  const selectedKind = ref<string>('start')
+  const flow = ref<string>('medium')
+  const now = new Date()
+  const calYear = ref<number>(now.getFullYear())
+  const calMonth = ref<number>(now.getMonth() + 1)
 
-  const predAvgLen = computed((): string => String(prediction.value?.getNumber('avgCycleLength') ?? 28))
+  function pad2(n: number): string { return n < 10 ? '0' + n : '' + n }
+  function dateOfTs(ts: number): string { return new Date(ts).toISOString().slice(0, 10) }
+  function predictionString(key: string): string { return (prediction.value as UTSJSONObject | null)?.getString(key) ?? '' }
+  function fertileEdge(key: string): string {
+    const fw = (prediction.value as UTSJSONObject | null)?.getJSON('fertileWindow')
+    return (fw as UTSJSONObject | null)?.getString(key) ?? ''
+  }
+
+  const viewLabel = computed((): string => `${calYear.value} 年 ${calMonth.value} 月`)
+  const predAvgLen = computed((): string => String(prediction.value?.getNumber('avgCycleLength')?.toInt() ?? 28))
   const predRegular = computed((): boolean => prediction.value?.getBoolean('regular') ?? false)
-  const predOvu = computed((): string => prediction.value?.getString('ovulationDate') ?? '-')
-  const predFrom = computed((): string => {
-    const fw = prediction.value?.getJSON('fertileWindow')
-    return fw != null ? (fw as UTSJSONObject).getString('from') ?? '-' : '-'
+  const predOvu = computed((): string => predictionString('ovulationDate').length > 0 ? predictionString('ovulationDate') : '-')
+  const predFrom = computed((): string => fertileEdge('from').length > 0 ? fertileEdge('from') : '-')
+  const predTo = computed((): string => fertileEdge('to').length > 0 ? fertileEdge('to') : '-')
+  const predNext = computed((): string => predictionString('nextPeriodDate').length > 0 ? predictionString('nextPeriodDate') : '-')
+
+  /** 经期覆盖的日期（按周期起止逐日展开，单段最多 10 天） */
+  const periodDays = computed((): string[] => {
+    const list: string[] = []
+    for (let i = 0; i < cycles.value.length; i++) {
+      const start = cycles.value[i].getNumber('start_date') ?? 0
+      const end = cycles.value[i].getNumber('end_date') ?? 0
+      if (start <= 0) continue
+      const span = end > 0 ? Math.min(10, Math.round((end - start) / DAY) + 1) : 1
+      for (let k = 0; k < span; k++) list.push(dateOfTs(start + k * DAY))
+    }
+    // 事件里的经期日期兜底（周期表未覆盖时）
+    for (let i = 0; i < events.value.length; i++) {
+      const t = events.value[i].getString('type') ?? ''
+      const d = events.value[i].getString('date') ?? ''
+      if ((t == 'period_start' || t == 'period_end') && d.length > 0 && list.indexOf(d) < 0) list.push(d)
+    }
+    return list
   })
-  const predTo = computed((): string => {
-    const fw = prediction.value?.getJSON('fertileWindow')
-    return fw != null ? (fw as UTSJSONObject).getString('to') ?? '-' : '-'
+
+  const lastPeriodLen = computed((): number => {
+    for (let i = cycles.value.length - 1; i >= 0; i--) {
+      const start = cycles.value[i].getNumber('start_date') ?? 0
+      const end = cycles.value[i].getNumber('end_date') ?? 0
+      if (start > 0 && end > 0) return Math.round((end - start) / DAY) + 1
+    }
+    return 0
   })
-  const predNext = computed((): string => prediction.value?.getString('nextPeriodDate') ?? '-')
+
+  /** 异常提示：周期过短/过长、经期过长（只做统计提示，不下诊断） */
+  const abnormalTips = computed((): string[] => {
+    const tips: string[] = []
+    for (let i = 1; i < cycles.value.length; i++) {
+      const prev = cycles.value[i - 1].getNumber('start_date') ?? 0
+      const cur = cycles.value[i].getNumber('start_date') ?? 0
+      if (prev <= 0 || cur <= 0) continue
+      const len = Math.round((cur - prev) / DAY)
+      if (len < 21) tips.push(`第 ${i + 1} 个周期仅 ${len} 天（短于 21 天）`)
+      else if (len > 35) tips.push(`第 ${i + 1} 个周期 ${len} 天（长于 35 天）`)
+      if (tips.length >= 2) break
+    }
+    const lp = lastPeriodLen.value
+    if (lp > 7) tips.push(`最近经期持续 ${lp} 天（超过 7 天）`)
+    return tips
+  })
+
+  const cells = computed((): Cell[] => {
+    const out: Cell[] = []
+    const y = calYear.value
+    const m = calMonth.value
+    const offset = (new Date(y, m - 1, 1).getDay() + 6) % 7
+    const blank: Cell = { day: 0, date: '', empty: true, today: false, period: false, predicted: false, fertile: false, ovulation: false }
+    for (let i = 0; i < offset; i++) out.push(blank)
+    const days = new Date(y, m, 0).getDate()
+    const todayStr = todayDateStr()
+    const nextPeriod = predictionString('nextPeriodDate')
+    const ovu = predictionString('ovulationDate')
+    const fFrom = fertileEdge('from')
+    const fTo = fertileEdge('to')
+    for (let d = 1; d <= days; d++) {
+      const ds = `${y}-${pad2(m)}-${pad2(d)}`
+      out.push({
+        day: d, date: ds, empty: false, today: ds == todayStr,
+        period: periodDays.value.indexOf(ds) >= 0,
+        predicted: nextPeriod.length > 0 && ds == nextPeriod,
+        fertile: fFrom.length > 0 && ds >= fFrom && ds <= fTo,
+        ovulation: ovu.length > 0 && ds == ovu
+      })
+    }
+    return out
+  })
+
+  function cellClass(c: Cell): string {
+    if (c.empty) return 'cal-day-empty'
+    if (c.period) return 'cal-day-period'
+    if (c.ovulation) return 'cal-day-ovulation'
+    if (c.fertile) return 'cal-day-fertile'
+    if (c.predicted) return 'cal-day-predicted'
+    return 'cal-day-normal'
+  }
+
+  function shiftMonth(delta: number) {
+    let m = calMonth.value + delta
+    let y = calYear.value
+    if (m < 1) { m = 12; y -= 1 }
+    if (m > 12) { m = 1; y += 1 }
+    calMonth.value = m
+    calYear.value = y
+  }
+
+  function pickDate(c: Cell) {
+    if (c.empty) return
+    selectedDate.value = c.date
+    selectedKind.value = 'start'
+  }
+
+  function markToday(kind: string) {
+    selectedDate.value = todayDateStr()
+    selectedKind.value = kind
+    if (kind == 'end') markOn('end')
+  }
+
+  async function markOn(kind: string) {
+    if (selectedDate.value.length == 0) return
+    saving.value = true
+    try {
+      const value = kind == 'start' ? ({ flow: flow.value } as UTSJSONObject) : ({} as UTSJSONObject)
+      await luckyRecord('addCycleEvent', {
+        journeyId: journeyState.journeyId,
+        type: kind == 'start' ? 'period_start' : 'period_end',
+        date: selectedDate.value, ts: dateToTs(selectedDate.value), value
+      } as UTSJSONObject)
+      track('record_create', { type: 'cycle' } as UTSJSONObject)
+      uni.setStorageSync('lb_has_record', true)
+      uni.showToast({ title: '已记录 ✓', icon: 'success' })
+      selectedDate.value = ''
+      load()
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    } finally { saving.value = false }
+  }
+
+  async function load() {
+    try {
+      const res = await luckyRecord('listCycleEvents', { journeyId: journeyState.journeyId } as UTSJSONObject)
+      events.value = res.getArray<UTSJSONObject>('events') ?? []
+      cycles.value = res.getArray<UTSJSONObject>('cycles') ?? []
+      prediction.value = res.getJSON('prediction')
+    } catch (e) { /* 首屏失败保持空态，不误导 */ }
+  }
 
   function eventText(type: string, value: any): string {
-    if (type == 'period_start') return '🌸 经期开始'
+    if (type == 'period_start') {
+      const f = (value as UTSJSONObject)?.getString('flow') ?? ''
+      const fl = f == 'light' ? '（少）' : f == 'heavy' ? '（多）' : f == 'medium' ? '（中）' : ''
+      return `🌸 经期开始${fl}`
+    }
     if (type == 'period_end') return '经期结束'
     if (type == 'ovulation_test') {
       const r = (value as UTSJSONObject)?.getString('result') ?? ''
@@ -68,24 +279,6 @@
     if (type == 'intercourse') return '💗 同房（仅自己可见）'
     if (type == 'pregnancy_test') return '🤰 验孕记录'
     return type
-  }
-
-  async function load() {
-    try {
-      const res = await luckyRecord('listCycleEvents', { journeyId: journeyState.journeyId } as UTSJSONObject)
-      events.value = res.getArray<UTSJSONObject>('events') ?? []
-      prediction.value = res.getJSON('prediction')
-    } catch (e) { /* 忽略 */ }
-  }
-
-  async function markPeriod(kind: string) {
-    try {
-      await luckyRecord('addCycleEvent', { journeyId: journeyState.journeyId, type: kind == 'start' ? 'period_start' : 'period_end' } as UTSJSONObject)
-      track('record_create', { type: 'cycle' } as UTSJSONObject)
-      uni.setStorageSync('lb_has_record', true)
-      uni.showToast({ title: '已记录 ✓', icon: 'success' })
-      load()
-    } catch (e) { uni.showToast({ title: (e as Error).message, icon: 'none' }) }
   }
 
   async function saveBbt() {
@@ -108,7 +301,7 @@
   .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
   .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 40rpx; margin-top: 24rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
   .card-title { font-size: 30rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 20rpx; }
-  .label { font-size: 28rpx; color: var(--lb-text-1); margin: 24rpx 0 16rpx 0; }
+  .label { font-size: 28rpx; color: var(--lb-text-1); margin: 16rpx 0 16rpx 0; }
   .btn-row { flex-direction: row; }
   .btn-half { flex: 1; height: 88rpx; line-height: 88rpx; font-size: 28rpx; border-radius: 48rpx; margin: 0 8rpx; }
   .btn-primary-bg { background-color: var(--lb-primary); color: #FFFFFF; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
@@ -117,11 +310,56 @@
   .num-input { flex: 1; height: 88rpx; background-color: var(--lb-fill); border-radius: 24rpx; padding: 0 24rpx; font-size: 30rpx; color: var(--lb-text-1); margin-right: 16rpx; }
   .ph { color: var(--lb-text-3); }
   .btn-small { width: 140rpx; height: 88rpx; line-height: 88rpx; background-color: var(--lb-primary-soft); color: var(--lb-primary-deep); font-size: 26rpx; border-radius: 24rpx; }
-  .pred-text { font-size: 28rpx; color: var(--lb-text-1); }
+  .pred-text { font-size: 28rpx; color: var(--lb-text-1); margin-top: 16rpx; }
   .pred-sub { font-size: 24rpx; color: var(--lb-text-2); margin-top: 12rpx; }
   .ev-row { flex-direction: row; padding: 16rpx 0; border-bottom-width: 1px; border-bottom-color: var(--lb-line); }
   .ev-date { width: 200rpx; font-size: 24rpx; color: var(--lb-text-3); }
   .ev-type { font-size: 26rpx; color: var(--lb-text-1); }
+
+  .cal-head { flex-direction: row; align-items: center; justify-content: space-between; margin-bottom: 20rpx; }
+  .cal-nav { width: 72rpx; height: 72rpx; align-items: center; justify-content: center; border-radius: 24rpx; background-color: var(--lb-fill); transition: all 160ms ease-out; }
+  .cal-nav-text { font-size: 36rpx; color: var(--lb-text-2); }
+  .cal-title { font-size: 30rpx; font-weight: bold; color: var(--lb-text-1); }
+  .cal-week { flex-direction: row; margin-bottom: 8rpx; }
+  .cal-wd { width: 88rpx; text-align: center; font-size: 24rpx; color: var(--lb-text-3); }
+  .cal-grid { flex-direction: row; flex-wrap: wrap; }
+  .cal-cell { width: 88rpx; align-items: center; padding: 4rpx 0; }
+  .cal-day { width: 68rpx; height: 68rpx; border-radius: 34rpx; align-items: center; justify-content: center; transition: all 160ms ease-out; }
+  .cal-day-text { font-size: 26rpx; color: var(--lb-text-2); }
+  .cal-text-light { color: #FFFFFF; font-weight: bold; }
+  .cal-day-today { color: var(--lb-primary); font-weight: bold; }
+  .cal-day-empty { background-color: transparent; }
+  .cal-day-normal { background-color: transparent; }
+  .cal-day-period { background-color: var(--lb-primary-soft); }
+  .cal-day-predicted { background-color: var(--lb-warning-soft); }
+  .cal-day-fertile { background-color: var(--lb-secondary-soft); }
+  .cal-day-ovulation { background-color: var(--lb-primary); }
+  .cal-legend { flex-direction: row; flex-wrap: wrap; margin-top: 20rpx; }
+  .lg { flex-direction: row; align-items: center; margin-right: 24rpx; }
+  .lg-dot { width: 18rpx; height: 18rpx; border-radius: 9rpx; margin-right: 8rpx; }
+  .lg-period { background-color: var(--lb-primary-soft); }
+  .lg-predicted { background-color: var(--lb-warning-soft); }
+  .lg-fertile { background-color: var(--lb-secondary-soft); }
+  .lg-ovulation { background-color: var(--lb-primary); }
+  .lg-text { font-size: 24rpx; color: var(--lb-text-3); }
+  .cal-tip { font-size: 24rpx; color: var(--lb-text-3); margin-top: 16rpx; line-height: 38rpx; }
+
+  .flow-row { flex-direction: row; align-items: center; flex-wrap: wrap; margin-bottom: 12rpx; }
+  .label-inline { font-size: 24rpx; color: var(--lb-text-3); margin-right: 16rpx; }
+  .flow-chip { background-color: var(--lb-fill); border-radius: 999rpx; padding: 12rpx 28rpx; margin: 6rpx 12rpx 6rpx 0; transition: all 160ms ease-out; }
+  .flow-chip-active { background-color: var(--lb-primary-soft); }
+  .flow-text { font-size: 24rpx; color: var(--lb-text-2); }
+  .flow-text-active { color: var(--lb-primary-deep); font-weight: bold; }
+  .link-text { font-size: 24rpx; color: var(--lb-text-3); margin-top: 20rpx; text-align: center; }
+
+  .stat-row { flex-direction: row; margin-top: 8rpx; }
+  .stat { flex: 1; align-items: center; }
+  .stat-num { font-size: 40rpx; font-weight: bold; color: var(--lb-primary-deep); }
+  .stat-cap { font-size: 24rpx; color: var(--lb-text-3); margin-top: 8rpx; }
+  .abnormal { background-color: var(--lb-warning-soft); border-radius: 24rpx; padding: 24rpx; margin-top: 24rpx; }
+  .abnormal-title { font-size: 26rpx; font-weight: bold; color: var(--lb-warning); }
+  .abnormal-text { font-size: 26rpx; color: var(--lb-text-1); margin-top: 8rpx; line-height: 38rpx; }
+  .abnormal-note { font-size: 24rpx; color: var(--lb-text-3); margin-top: 12rpx; line-height: 36rpx; }
 
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }

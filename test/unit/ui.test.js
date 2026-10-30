@@ -241,6 +241,16 @@ test('低频指标支持补录日期（体重/血压/血糖）', () => {
   }
 })
 
+test('经期管理具备日历补记、经量与异常提示', () => {
+  const src = fs.readFileSync(path.join(ROOT, 'pages/record/cycle.uvue'), 'utf-8')
+  assert.ok(src.includes('cal-grid'), '缺少日历网格')
+  assert.ok(src.includes('pickDate('), '日历不可点选补记')
+  assert.ok(src.includes('date: selectedDate.value'), '补记未携带所选日期')
+  assert.ok(src.includes("flow: flow.value"), '经期开始未记录经量')
+  assert.ok(src.includes('abnormalTips'), '缺少周期异常提示')
+  assert.ok(src.includes('不构成诊断'), '异常提示缺少免责说明')
+})
+
 /* ---------------- 可读性下限（小字号不得回流） ---------------- */
 
 test('最小字号不低于 24rpx（正文与辅助文案一致）', () => {
