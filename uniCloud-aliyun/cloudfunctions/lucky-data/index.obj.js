@@ -167,5 +167,41 @@ module.exports = {
       out[c] = auth.visibilityFilter(r.data, uid)
     }
     return auth.ok({ exportedAt: Date.now(), journeyId: j._id, data: out })
+  },
+
+  /**
+   * 可读摘要（JSON 之外的人类可读版本，docs/03 M6.4）：仅旅程主人可取。
+   * 返回纯文本，前端直接展示/复制，不引入 PDF 生成依赖。
+   */
+  async exportSummary(params = {}) {
+    const uid = await requireUser.call(this)
+    if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
+    const { role, journey } = await auth.resolveJourneyAccess(db.call(this), uid, params.journeyId)
+    if (!journey) return auth.fail('NOT_FOUND', '旅程不存在')
+    if (role !== 'owner') return auth.fail('NOT_FOUND', '仅旅程主人可导出全量数据')
+    const j = journey
+    const counts = [
+      ['lb-daily-logs', '指标'], ['lb-diaries', '日记'], ['lb-prenatal-visits', '产检'],
+      ['lb-feedings', '喂养'], ['lb-diaper-changes', '尿布'], ['lb-sleep-sessions', '睡眠'],
+      ['lb-growth-samples', '成长'], ['lb-vaccinations', '疫苗'], ['lb-milestones', '里程碑']
+    ]
+    const parts = []
+    for (const [c, label] of counts) {
+      const r = await db.call(this).collection(c).where({ journey_id: j._id }).count()
+      if ((r.total || 0) > 0) parts.push(`${label} ${r.total} 条`)
+    }
+    // strict 红线：摘要中的指标只取本人记录
+    const latestWeight = await db.call(this).collection('lb-daily-logs').where({ journey_id: j._id, code: 'weight', user_id: uid }).orderBy('ts', 'desc').limit(1).get()
+    const latestBp = await db.call(this).collection('lb-daily-logs').where({ journey_id: j._id, code: 'blood_pressure', user_id: uid }).orderBy('ts', 'desc').limit(1).get()
+    const lines = [
+      '幸孕记 · 数据摘要',
+      `旅程：${j.title || '未命名'}（${stageOf(j)}）`,
+      `预产期：${j.edd ? dateOf(j.edd) : '未设置'}　分娩日：${j.delivery_date ? dateOf(j.delivery_date) : '未登记'}`,
+      `记录总量：${parts.length > 0 ? parts.join(' · ') : '暂无记录'}`
+    ]
+    if (latestWeight.data[0]) lines.push(`最近体重：${latestWeight.data[0].value.kg}kg（${latestWeight.data[0].date}）`)
+    if (latestBp.data[0]) lines.push(`最近血压：${latestBp.data[0].value.sbp}/${latestBp.data[0].value.dbp} mmHg（${latestBp.data[0].date}）`)
+    lines.push(`导出时间：${dateOf(Date.now())}`)
+    return auth.ok({ summary: lines.join('\n'), exportedAt: Date.now(), journeyId: j._id })
   }
 }

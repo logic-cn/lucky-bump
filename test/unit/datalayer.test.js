@@ -152,3 +152,16 @@ test('日记：mediaIds 超过 9 张时截断', async () => {
   const list = await rt.callObject('lucky-record', 'listDiaries', { journeyId: jid }, { token: victimToken })
   assert.equal(list.diaries[0].media_ids.length, 9, '最多保存 9 张')
 })
+
+test('导出摘要：仅主人可取，包含记录统计与最近指标', async () => {
+  const { rt, jid, victimToken, attackerToken } = await twoUsers()
+  await rt.callObject('lucky-record', 'addDiary', { journeyId: jid, text: '摘要测试' }, { token: victimToken })
+  const own = await rt.callObject('lucky-data', 'exportSummary', { journeyId: jid }, { token: victimToken })
+  assert.equal(own.errCode, 0, JSON.stringify(own))
+  assert.ok(own.summary.includes('指标 1 条'), '应包含指标记录统计：' + own.summary)
+  assert.ok(own.summary.includes('日记 1 条'), '应包含日记记录统计：' + own.summary)
+  assert.ok(own.summary.includes('最近体重：55.5kg'), '应包含最近体重')
+
+  const denied = await rt.callObject('lucky-data', 'exportSummary', { journeyId: jid }, { token: attackerToken })
+  assert.equal(denied.errCode, 'NOT_FOUND', '非主人不得导出摘要')
+})

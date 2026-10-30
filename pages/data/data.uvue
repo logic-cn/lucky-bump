@@ -26,6 +26,7 @@
         <text class="dlg-title">{{ infoTitle }}</text>
         <text class="dlg-content">{{ infoContent }}</text>
         <view class="dlg-actions">
+          <text class="dlg-btn dlg-btn-ghost" @click="copySummary">复制摘要</text>
           <text class="dlg-btn dlg-btn-ok" @click="infoVisible = false">知道了</text>
         </view>
       </view>
@@ -48,12 +49,19 @@
   async function goExport() {
     try {
       await luckyData('exportAll', { journeyId: journeyState.journeyId } as UTSJSONObject)
-      infoTitle.value = '导出成功'
-      infoContent.value = '数据包已生成。V1.1 将支持打包下载到本机与网盘（当前可在云函数控制台获取）。'
+      const sum = await luckyData('exportSummary', { journeyId: journeyState.journeyId } as UTSJSONObject)
+      infoTitle.value = '数据已就绪'
+      infoContent.value = sum.getString('summary') ?? ''
       infoVisible.value = true
     } catch (e) {
       uni.showToast({ title: (e as Error).message, icon: 'none' })
     }
+  }
+  function copySummary() {
+    uni.setClipboardData({
+      data: infoContent.value,
+      success: () => { uni.showToast({ title: '摘要已复制', icon: 'none' }) }
+    })
   }
 </script>
 
@@ -73,9 +81,10 @@
   .mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--lb-mask); justify-content: center; align-items: center; }
   .dialog { width: 560rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 40rpx 32rpx 24rpx 32rpx; }
   .dlg-title { font-size: 32rpx; font-weight: bold; color: var(--lb-text-1); text-align: center; }
-  .dlg-content { font-size: 27rpx; color: var(--lb-text-2); margin-top: 20rpx; text-align: center; line-height: 40rpx; }
-  .dlg-actions { flex-direction: row; justify-content: center; margin-top: 36rpx; }
-  .dlg-btn { width: 300rpx; height: 80rpx; line-height: 80rpx; text-align: center; font-size: 29rpx; color: #FFFFFF; background-image: linear-gradient(135deg, #F0709D, #DC3D75); border-radius: 999rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
+  .dlg-content { font-size: 27rpx; color: var(--lb-text-2); margin-top: 20rpx; text-align: left; line-height: 44rpx; }
+  .dlg-actions { flex-direction: row; justify-content: space-between; margin-top: 36rpx; }
+  .dlg-btn { width: 250rpx; height: 80rpx; line-height: 80rpx; text-align: center; font-size: 29rpx; color: #FFFFFF; background-image: linear-gradient(135deg, #F0709D, #DC3D75); border-radius: 999rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
+  .dlg-btn-ghost { color: var(--lb-text-2); background-image: none; background-color: var(--lb-fill); box-shadow: none; }
 
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
