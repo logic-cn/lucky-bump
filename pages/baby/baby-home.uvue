@@ -39,7 +39,7 @@
 
 <script setup lang="ts">
   import { computed, ref } from 'vue'
-  import { onLoad } from '@dcloudio/uni-app'
+  import { onPageReady } from '../../utils/pageLifecycle.uts'
   import { luckyJourney, luckyBaby } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
@@ -88,7 +88,7 @@
     } catch (e) { summary.value = null }
   }
 
-  onLoad(() => { load() })
+  onPageReady(() => { load() })
 </script>
 
 <style>

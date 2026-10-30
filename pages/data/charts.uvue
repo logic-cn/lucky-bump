@@ -35,7 +35,7 @@
 
 <script setup lang="ts">
   import { computed, ref } from 'vue'
-  import { onLoad, onPageShow } from '@dcloudio/uni-app'
+  import { onPageReady } from '../../utils/pageLifecycle.uts'
   import { luckyData } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
@@ -84,9 +84,8 @@
     } catch (e) { /* 忽略 */ }
   }
 
-  // tabBar 页面在启动时预挂载，onLoad 时全局旅程态可能未就绪；onPageShow 每次切入时重新加载
-  onLoad(() => { load() })
-  onPageShow(() => { load() })
+  // 首屏与 tab 切回统一走 onPageReady（uni-app x 5.34 页面钩子不触发，见 utils/pageLifecycle.uts）
+  onPageReady(() => { load() })
 </script>
 
 <style>

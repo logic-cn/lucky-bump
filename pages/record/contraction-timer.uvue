@@ -35,7 +35,8 @@
 
 <script setup lang="ts">
   import { computed, ref } from 'vue'
-  import { onLoad, onPageShow, onUnload } from '@dcloudio/uni-app'
+  import { onUnload } from '@dcloudio/uni-app'
+  import { onPageReady } from '../../utils/pageLifecycle.uts'
   import { luckyRecord } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
@@ -165,8 +166,7 @@
     }
   }
 
-  onLoad(() => { load() })
-  onPageShow(() => { restoreActive() })
+  onPageReady(() => { load(); restoreActive() })
   onUnload(() => { if (running.value) clearInterval(tickTimer) })
 </script>
 

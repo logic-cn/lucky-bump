@@ -4,7 +4,7 @@
     <view class="hero-card lb-rise">
       <view class="hero-row">
         <text class="hero-week" :lines="1">{{ weekLabel }}</text>
-        <text class="hero-stage" v-if="stageLabel.length > 0">{{ stageLabel }}</text>
+        <text class="hero-stage" v-if="stageLabel.length > 0 && stageLabel != weekLabel">{{ stageLabel }}</text>
       </view>
       <text class="hero-sub" v-if="showBabySize">宝宝现在约 {{ babySizeText }}，距预产期还有 {{ journeyState.daysToEdd }} 天</text>
       <text class="hero-sub" v-else-if="isPostpartum">产后第 {{ journeyState.postpartumDays }} 天 · 照顾好你自己也是宝宝的事</text>
@@ -71,7 +71,7 @@
 
 <script setup lang="ts">
   import { computed, ref } from 'vue'
-  import { onPageShow } from '@dcloudio/uni-app'
+  import { onPageReady } from '../../utils/pageLifecycle.uts'
   import { appState } from '../../store/appStore.uts'
   import { journeyState, weekText, stageText, loadCurrentJourney, loadToday } from '../../store/journeyStore.uts'
   import { luckyRecord } from '../../utils/request.uts'
@@ -213,7 +213,7 @@
     }
   }
 
-  onPageShow(() => {
+  onPageReady(() => {
     refresh()
   })
 </script>

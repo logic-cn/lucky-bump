@@ -1,0 +1,34 @@
+import { onMounted, onActivated } from 'vue'
+
+/**
+ * 页面生命周期适配层。
+ *
+ * 背景：HBuilderX 5.34 vapor 运行时下，uni-app x 的页面钩子 onLoad / onPageShow
+ * 未绑定到运行时读取的页面实例（getCurrentPages()[0].$vm.$onShow 为空），
+ * 导致首屏加载与 tab 切回刷新全部失效（docs/08 §8.13）。
+ * 兜底：用 Vue 的 onMounted（首屏）与 onActivated（tab 切回）驱动同一回调；
+ * 以 300ms 去重，避免两者在首次挂载时重复执行。
+ *
+ * 新页面统一使用 onPageReady，不要直接依赖 onLoad/onPageShow。
+ */
+export function onPageReady(cb: () => void): void {
+  let lastRun = 0
+  const run = (): void => {
+    const now = Date.now()
+    if (now - lastRun < 300) return
+    lastRun = now
+    cb()
+  }
+  onMounted(run)
+  onActivated(run)
+}
+
+/** 读取当前页面 query（替代 onLoad(options)，用于 care/visit 等带参页面） */
+export function currentPageQuery(): UTSJSONObject {
+  const pages = getCurrentPages()
+  if (pages.length == 0) return new UTSJSONObject({})
+  const page = pages[pages.length - 1]
+  const anyPage = page as any
+  const raw = anyPage.options != null ? anyPage.options : anyPage.$page != null ? anyPage.$page.options : null
+  return raw == null ? new UTSJSONObject({}) : (raw as UTSJSONObject)
+}

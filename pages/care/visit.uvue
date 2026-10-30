@@ -54,7 +54,7 @@
 
 <script setup lang="ts">
   import { ref } from 'vue'
-  import { onLoad } from '@dcloudio/uni-app'
+  import { onPageReady, currentPageQuery } from '../../utils/pageLifecycle.uts'
   import { luckyCare } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
@@ -151,9 +151,10 @@
     } finally { saving.value = false }
   }
 
-  onLoad((options: OnLoadOptions) => {
-    scheduleId.value = options['scheduleId'] ?? ''
-    const w = options['week'] ?? ''
+  onPageReady(() => {
+    const options = currentPageQuery()
+    scheduleId.value = options.getString('scheduleId') ?? ''
+    const w = options.getString('week') ?? ''
     if (w.length > 0) week.value = w
     loadVisits()
   })

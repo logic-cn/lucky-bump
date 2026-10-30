@@ -63,7 +63,7 @@
 
 <script setup lang="ts">
   import { ref } from 'vue'
-  import { onLoad } from '@dcloudio/uni-app'
+  import { onPageReady } from '../../utils/pageLifecycle.uts'
   import { luckyFamily } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
@@ -146,7 +146,7 @@
     }
   }
 
-  onLoad(() => { load() })
+  onPageReady(() => { load() })
 </script>
 
 <style>

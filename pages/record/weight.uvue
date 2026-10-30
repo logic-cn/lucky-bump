@@ -14,7 +14,7 @@
 
 <script setup lang="ts">
   import { ref } from 'vue'
-  import { onLoad } from '@dcloudio/uni-app'
+  import { onPageReady } from '../../utils/pageLifecycle.uts'
   import { luckyRecord, luckyId } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
@@ -49,7 +49,7 @@
     uni.navigateTo({ url: '/pages/me/settings' })
   }
 
-  onLoad(() => { loadProfile() })
+  onPageReady(() => { loadProfile() })
 
   async function save() {
     const kgVal = parseFloat(kg.value)

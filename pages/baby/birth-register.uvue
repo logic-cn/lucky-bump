@@ -51,7 +51,7 @@
 
 <script setup lang="ts">
   import { ref } from 'vue'
-  import { onLoad } from '@dcloudio/uni-app'
+  import { onPageReady } from '../../utils/pageLifecycle.uts'
   import { luckyJourney } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
@@ -136,7 +136,7 @@
     } finally { saving.value = false }
   }
 
-  onLoad(() => {
+  onPageReady(() => {
     fetusCount.value = journeyState.fetusCount > 0 ? journeyState.fetusCount : 1
   })
 </script>

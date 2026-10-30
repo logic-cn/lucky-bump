@@ -60,7 +60,7 @@
 
 <script setup lang="ts">
   import { ref } from 'vue'
-  import { onLoad } from '@dcloudio/uni-app'
+  import { onPageReady } from '../../utils/pageLifecycle.uts'
   import { luckyId, luckyData } from '../../utils/request.uts'
   import { clearToken } from '../../store/appStore.uts'
   import { isBiometricAvailable } from '../../utils/biometric.uts'
@@ -76,7 +76,7 @@
       auditLogs.value = res.getArray<UTSJSONObject>('logs') ?? []
     } catch (e) { /* 非主人或未登录时静默 */ }
   }
-  onLoad(() => { loadAudit() })
+  onPageReady(() => { loadAudit() })
 
   // 安全读取：key 首次不存在时 getStorageSync 返回 null，不能强转 as boolean
   const rawLock = uni.getStorageSync('lb_app_lock')
