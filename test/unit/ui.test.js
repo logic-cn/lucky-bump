@@ -247,6 +247,8 @@ test('经期管理具备日历补记、经量与异常提示', () => {
   assert.ok(src.includes("flow: flow.value"), '经期开始未记录经量')
   assert.ok(src.includes('abnormalTips'), '缺少周期异常提示')
   assert.ok(src.includes('不构成诊断'), '异常提示缺少免责说明')
+  assert.ok(src.includes('deleteCycleEvent'), '缺少经期记录删除（纠错）')
+  assert.ok(src.includes('askDelete'), '缺少删除确认入口')
 })
 
 test('知识板块具备本周要点、搜索、收藏与工具速查', () => {

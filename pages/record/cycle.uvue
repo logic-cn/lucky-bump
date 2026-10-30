@@ -86,6 +86,19 @@
       <view class="ev-row" v-for="(e, i) in events" :key="i">
         <text class="ev-date">{{ e.getString('date') ?? '' }}</text>
         <text class="ev-type">{{ eventText(e.getString('type') ?? '', e.getJSON('value')) }}</text>
+        <text class="ev-del" v-if="e.getBoolean('mine') == true" @click="askDelete(e.getString('_id') ?? '')">删除</text>
+      </view>
+    </view>
+
+    <!-- 删除确认 -->
+    <view class="mask lb-fade" v-if="delVisible">
+      <view class="dialog lb-pop">
+        <text class="dlg-title">删除这条记录？</text>
+        <text class="dlg-content">删除后无法恢复；经期开始/结束会同步修正周期统计。</text>
+        <view class="dlg-actions">
+          <text class="dlg-btn" @click="delVisible = false">取消</text>
+          <text class="dlg-btn dlg-btn-ok" @click="doDelete">删除</text>
+        </view>
       </view>
     </view>
   </view>
@@ -114,6 +127,8 @@
   const selectedDate = ref<string>('')
   const selectedKind = ref<string>('start')
   const flow = ref<string>('medium')
+  const delVisible = ref<boolean>(false)
+  const delId = ref<string>('')
   const now = new Date()
   const calYear = ref<number>(now.getFullYear())
   const calMonth = ref<number>(now.getMonth() + 1)
@@ -281,6 +296,22 @@
     return type
   }
 
+  function askDelete(id: string) {
+    if (id.length == 0) return
+    delId.value = id
+    delVisible.value = true
+  }
+  async function doDelete() {
+    delVisible.value = false
+    try {
+      await luckyRecord('deleteCycleEvent', { journeyId: journeyState.journeyId, eventId: delId.value } as UTSJSONObject)
+      uni.showToast({ title: '已删除', icon: 'none' })
+      load()
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    }
+  }
+
   async function saveBbt() {
     const t = parseFloat(bbt.value)
     if (!(t >= 34 && t <= 42)) { uni.showToast({ title: '请输入有效体温', icon: 'none' }); return }
@@ -312,9 +343,10 @@
   .btn-small { width: 140rpx; height: 88rpx; line-height: 88rpx; background-color: var(--lb-primary-soft); color: var(--lb-primary-deep); font-size: 26rpx; border-radius: 24rpx; }
   .pred-text { font-size: 28rpx; color: var(--lb-text-1); margin-top: 16rpx; }
   .pred-sub { font-size: 24rpx; color: var(--lb-text-2); margin-top: 12rpx; }
-  .ev-row { flex-direction: row; padding: 16rpx 0; border-bottom-width: 1px; border-bottom-color: var(--lb-line); }
-  .ev-date { width: 200rpx; font-size: 24rpx; color: var(--lb-text-3); }
-  .ev-type { font-size: 26rpx; color: var(--lb-text-1); }
+  .ev-row { flex-direction: row; align-items: center; padding: 16rpx 0; border-bottom-width: 1px; border-bottom-color: var(--lb-line); }
+  .ev-date { width: 190rpx; font-size: 24rpx; color: var(--lb-text-3); }
+  .ev-type { flex: 1; font-size: 26rpx; color: var(--lb-text-1); }
+  .ev-del { font-size: 24rpx; color: var(--lb-danger); padding: 10rpx; }
 
   .cal-head { flex-direction: row; align-items: center; justify-content: space-between; margin-bottom: 20rpx; }
   .cal-nav { width: 72rpx; height: 72rpx; align-items: center; justify-content: center; border-radius: 24rpx; background-color: var(--lb-fill); transition: all 160ms ease-out; }
@@ -360,6 +392,14 @@
   .abnormal-title { font-size: 26rpx; font-weight: bold; color: var(--lb-warning); }
   .abnormal-text { font-size: 26rpx; color: var(--lb-text-1); margin-top: 8rpx; line-height: 38rpx; }
   .abnormal-note { font-size: 24rpx; color: var(--lb-text-3); margin-top: 12rpx; line-height: 36rpx; }
+
+  .mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--lb-mask); justify-content: center; align-items: center; }
+  .dialog { width: 560rpx; background-color: var(--lb-card); border-radius: 24rpx; padding: 40rpx 32rpx 24rpx 32rpx; }
+  .dlg-title { font-size: 32rpx; font-weight: bold; color: var(--lb-text-1); text-align: center; }
+  .dlg-content { font-size: 26rpx; color: var(--lb-text-2); margin-top: 20rpx; text-align: center; line-height: 40rpx; }
+  .dlg-actions { flex-direction: row; justify-content: space-between; margin-top: 32rpx; }
+  .dlg-btn { width: 230rpx; height: 80rpx; line-height: 80rpx; text-align: center; font-size: 29rpx; color: var(--lb-text-2); background-color: var(--lb-fill); border-radius: 40rpx; }
+  .dlg-btn-ok { color: #FFFFFF; background-color: var(--lb-primary); }
 
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }

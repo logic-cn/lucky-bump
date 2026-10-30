@@ -274,3 +274,24 @@ test('离线能力探测：capabilities 声明幂等支持', async () => {
   assert.equal(cap.errCode, 0, JSON.stringify(cap))
   assert.equal(cap.offlineQueue, true)
 })
+
+test('经期纠错：删除经期开始会同步移除周期记录', async () => {
+  const rt = createRuntime()
+  const reg = await rt.callObject('lucky-id', 'register', { username: 'cycleDel', password: 'password123' })
+  assert.equal(reg.errCode, 0, JSON.stringify(reg))
+  const mk = await rt.callObject('lucky-journey', 'createJourney', { mode: 'ttc' }, { token: reg.token })
+  const jid = mk.journeyId
+  const add = await rt.callObject('lucky-record', 'addCycleEvent', {
+    journeyId: jid, type: 'period_start', date: '2026-10-01', value: { flow: 'medium' }
+  }, { token: reg.token })
+  assert.equal(add.errCode, 0, JSON.stringify(add))
+  const before = await rt.callObject('lucky-record', 'listCycleEvents', { journeyId: jid }, { token: reg.token })
+  assert.equal(before.cycles.length, 1, '经期开始应生成一条周期')
+  assert.equal(before.events[0].mine, true, '本人记录应标记 mine')
+
+  const del = await rt.callObject('lucky-record', 'deleteCycleEvent', { journeyId: jid, eventId: add.recordId }, { token: reg.token })
+  assert.equal(del.errCode, 0, JSON.stringify(del))
+  const after = await rt.callObject('lucky-record', 'listCycleEvents', { journeyId: jid }, { token: reg.token })
+  assert.equal(after.events.length, 0, '事件应被删除')
+  assert.equal(after.cycles.length, 0, '对应周期记录应同步删除')
+})

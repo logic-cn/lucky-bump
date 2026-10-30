@@ -285,8 +285,35 @@ module.exports = {
     const res = await db.call(this).collection(EVENTS).where({ journey_id: j._id }).orderBy('ts', 'desc').limit(200).get()
     const cycles = await db.call(this).collection(CYCLES).where({ user_id: uid, journey_id: j._id }).orderBy('start_date', 'asc').get()
     // strict 红线：只保留本人（安全审计 C3/C4）
-    const events = auth.visibilityFilter(res.data, uid)
+    const events = auth.visibilityFilter(res.data, uid).map(e => Object.assign({}, e, { mine: e.user_id === uid }))
     return auth.ok({ events, cycles: cycles.data, prediction: predictCycle(cycles.data, events) })
+  },
+
+  /**
+   * 删除周期事件（用于补记纠错）。
+   * 经期开始：同步删除对应周期记录；经期结束：把对应周期的 end_date 清空。
+   * 权限：旅程管理员可删全部，其他成员只能删自己创建的记录。
+   */
+  async deleteCycleEvent(params = {}) {
+    const uid = await requireUser.call(this)
+    if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
+    const j = await accessibleJourney.call(this, uid, params.journeyId, 'write')
+    if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
+    const r = await db.call(this).collection(EVENTS).doc(String(params.eventId)).get()
+    const ev = r.data[0]
+    if (!ev || ev.journey_id !== j._id) return auth.fail('NOT_FOUND', '记录不存在')
+    const role = await accessRole.call(this, uid, params.journeyId)
+    if (role !== 'admin' && ev.user_id !== uid) return auth.fail('PERMISSION_DENIED', '只能删除自己创建的记录')
+    const day = parseDate(ev.date)
+    if (ev.type === 'period_start' && Number.isFinite(day)) {
+      await db.call(this).collection(CYCLES).where({ journey_id: j._id, start_date: day }).remove()
+    }
+    if (ev.type === 'period_end' && Number.isFinite(day)) {
+      const cyc = await db.call(this).collection(CYCLES).where({ journey_id: j._id, end_date: day }).limit(1).get()
+      if (cyc.data[0]) await db.call(this).collection(CYCLES).doc(cyc.data[0]._id).update({ end_date: 0 })
+    }
+    await db.call(this).collection(EVENTS).doc(ev._id).remove()
+    return auth.ok({ deleted: true })
   },
 
   /** 计时器开始（宫缩/亲喂/吸奶） */
