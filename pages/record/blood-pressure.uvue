@@ -1,21 +1,28 @@
 <template>
   <view class="page" :class="themeClass()">
     <view class="card lb-rise">
+      <text class="label">记录日期</text>
+      <picker mode="date" :value="recordDate" @change="onDateChange">
+        <view class="date-box" hover-class="lb-press" hover-stay-time="120">
+          <text class="date-text">{{ recordDate }}{{ isTodayDate ? '（今天）' : '' }}</text>
+        </view>
+      </picker>
       <text class="label">血压（mmHg）</text>
       <view class="bp-row">
         <view class="bp-col">
-          <input class="bp-input" type="number" v-model="sbp" placeholder="120" placeholder-class="ph" />
+          <input class="bp-input" type="number" v-model="sbp" :focus="focusInput" :placeholder="sbpPlaceholder" placeholder-class="ph" />
           <text class="bp-cap">收缩压</text>
         </view>
         <text class="bp-slash">/</text>
         <view class="bp-col">
-          <input class="bp-input" type="number" v-model="dbp" placeholder="80" placeholder-class="ph" />
+          <input class="bp-input" type="number" v-model="dbp" :placeholder="dbpPlaceholder" placeholder-class="ph" />
           <text class="bp-cap">舒张压</text>
         </view>
       </view>
       <input class="hr-input" type="number" v-model="hr" placeholder="心率（选填），如 72" placeholder-class="ph" />
     </view>
     <button class="btn-save lb-rise-1" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</button>
+    <text class="ok-text lb-fade" v-if="saved">已记录 ✓ · 可继续记录下一条</text>
 
     <view class="redline lb-rise-2" v-if="redlineLevel.length > 0" :class="redlineLevel == 'critical' ? 'redline-critical' : 'redline-warn'">
       <text class="redline-title">{{ redlineLevel == 'critical' ? '⚠️ 请立即就医' : '⚠️ 需要关注' }}</text>
@@ -27,10 +34,12 @@
 </template>
 
 <script setup lang="ts">
-  import { ref } from 'vue'
+  import { computed, ref } from 'vue'
+  import { onPageReady } from '../../utils/pageLifecycle.uts'
   import { luckyRecord } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
+  import { todayDateStr, dateToTs, isToday } from '../../utils/recordDate.uts'
 
   const sbp = ref<string>('')
   const dbp = ref<string>('')
@@ -39,6 +48,29 @@
   const redlineLevel = ref<string>('')
   const redlineMsg = ref<string>('')
   const redlineAction = ref<string>('')
+  const recordDate = ref<string>(todayDateStr())
+  const focusInput = ref<boolean>(true)
+  const saved = ref<boolean>(false)
+  const lastSbp = ref<string>('')
+  const lastDbp = ref<string>('')
+
+  const isTodayDate = computed((): boolean => isToday(recordDate.value))
+  const sbpPlaceholder = computed((): string => lastSbp.value.length > 0 ? `上次 ${lastSbp.value}` : '120')
+  const dbpPlaceholder = computed((): string => lastDbp.value.length > 0 ? `上次 ${lastDbp.value}` : '80')
+
+  function onDateChange(e: UniPickerChangeEvent) {
+    recordDate.value = (e.detail.value as string) ?? recordDate.value
+    saved.value = false
+  }
+
+  onPageReady(() => {
+    const last = (uni.getStorageSync('lb_last_bp') as string) ?? ''
+    if (last.length > 0) {
+      const parts = last.split('/')
+      lastSbp.value = parts.length > 0 ? parts[0] : ''
+      lastDbp.value = parts.length > 1 ? parts[1] : ''
+    }
+  })
 
   async function save() {
     const sbpVal = parseInt(sbp.value)
@@ -51,7 +83,10 @@
     if (hrVal >= 30 && hrVal <= 220) value['hr'] = hrVal
     saving.value = true
     try {
-      const res = await luckyRecord('addMetric', { journeyId: journeyState.journeyId, code: 'blood_pressure', value } as UTSJSONObject)
+      const res = await luckyRecord('addMetric', {
+        journeyId: journeyState.journeyId, code: 'blood_pressure', value,
+        date: recordDate.value, ts: dateToTs(recordDate.value)
+      } as UTSJSONObject)
       const rl = res.getJSON('redline')
       if (rl != null) {
         const r = rl as UTSJSONObject
@@ -59,8 +94,15 @@
         redlineMsg.value = r.getString('message') ?? ''
         redlineAction.value = r.getString('action') ?? ''
       } else {
-        uni.showToast({ title: '已记录 ✓', icon: 'success' })
-        setTimeout(() => { uni.navigateBack() }, 600)
+        uni.setStorageSync('lb_last_bp', `${sbpVal}/${dbpVal}`)
+        lastSbp.value = `${sbpVal}`
+        lastDbp.value = `${dbpVal}`
+        saved.value = true
+        sbp.value = ''
+        dbp.value = ''
+        hr.value = ''
+        focusInput.value = false
+        setTimeout(() => { focusInput.value = true }, 50)
       }
     } catch (e) {
       uni.showToast({ title: (e as Error).message, icon: 'none' })
@@ -73,6 +115,9 @@
   .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
   .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 48rpx 40rpx; align-items: center; margin-top: 40rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
   .label { font-size: 30rpx; color: var(--lb-text-1); margin-bottom: 40rpx; }
+  .date-box { width: 620rpx; height: 88rpx; background-color: var(--lb-fill); border-radius: 24rpx; align-items: center; justify-content: center; margin-bottom: 32rpx; transition: all 160ms ease-out; }
+  .date-text { font-size: 28rpx; color: var(--lb-text-1); }
+  .ok-text { color: var(--lb-success); font-size: 28rpx; margin-top: 24rpx; }
   .bp-row { flex-direction: row; align-items: flex-end; }
   .bp-col { align-items: center; }
   .bp-input { width: 200rpx; height: 140rpx; font-size: 88rpx; font-weight: bold; color: var(--lb-text-1); text-align: center; border-bottom-width: 2px; border-bottom-color: var(--lb-primary); }

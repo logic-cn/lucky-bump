@@ -220,13 +220,25 @@ test('数据主视图加载失败必须显式可重试（禁止静默空态）',
 })
 
 test('记录宫格按最近使用排序（本地记忆，不上云）', () => {
-  const src = fs.readFileSync(path.join(ROOT, 'pages/record/record.uvue'), 'utf-8')
-  assert.ok(src.includes("lb_recent_grid"), '缺少最近使用存储键')
-  assert.ok(/function remember\(url: string\)/.test(src), '缺少打开记录时的记忆逻辑')
-  assert.ok(/orderByRecent\(/.test(src), '缺少组内最近使用排序')
-  // 每个分组都必须经过排序，避免只改了一组
-  const pushes = src.match(/items: (orderByRecent\([a-z]+\)|\[\{ icon: '🏥')/g) || []
-  assert.ok(pushes.length >= 4, '记录分组未全部接入最近使用排序')
+  const util = fs.readFileSync(path.join(ROOT, 'utils/recentGrid.uts'), 'utf-8')
+  assert.ok(util.includes("'lb_recent_grid'"), '缺少最近使用存储键')
+  assert.ok(util.includes('rememberRecent'), '缺少打开记录时的记忆逻辑')
+  const pages = ['pages/record/record.uvue', 'pages/index/index.uvue']
+  for (const p of pages) {
+    const src = fs.readFileSync(path.join(ROOT, p), 'utf-8')
+    assert.ok(/orderByRecent\(/.test(src), `${p} 缺少最近使用排序`)
+    assert.ok(/rememberRecent\(/.test(src), `${p} 未记忆点击`)
+  }
+})
+
+test('低频指标支持补录日期（体重/血压/血糖）', () => {
+  const pages = ['pages/record/weight.uvue', 'pages/record/blood-pressure.uvue', 'pages/record/blood-glucose.uvue']
+  for (const p of pages) {
+    const src = fs.readFileSync(path.join(ROOT, p), 'utf-8')
+    assert.ok(src.includes('picker mode="date"'), `${p} 缺少日期选择`)
+    assert.ok(src.includes('dateToTs('), `${p} 未把日期转为 ts 传给服务端`)
+    assert.ok(src.includes('recordDate.value'), `${p} 未使用所选日期`)
+  }
 })
 
 /* ---------------- 可读性下限（小字号不得回流） ---------------- */

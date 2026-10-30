@@ -1,0 +1,28 @@
+/**
+ * 宫格"最近使用"本地记忆
+ * 只存记录页 URL（不含逗号），按逗号分隔写入本地；不上云，换设备不迁移。
+ */
+const RECENT_KEY = 'lb_recent_grid'
+const MAX_RECENT = 6
+
+export function recentUrls(): string[] {
+  const raw = uni.getStorageSync(RECENT_KEY) as string
+  return raw == null || raw.length == 0 ? ([] as string[]) : raw.split(',')
+}
+
+/** 记录一次点击并返回最新顺序（最近在前，最多 6 个） */
+export function rememberRecent(url: string): string[] {
+  const prev = recentUrls()
+  const list: string[] = [url]
+  for (let i = 0; i < prev.length && list.length < MAX_RECENT; i++) {
+    if (prev[i] != url) list.push(prev[i])
+  }
+  uni.setStorageSync(RECENT_KEY, list.join(','))
+  return list
+}
+
+/** 排序权重：未使用过的统一排在使用过的之后 */
+export function recentRank(url: string, list: string[]): number {
+  const k = list.indexOf(url)
+  return k < 0 ? 999 : k
+}

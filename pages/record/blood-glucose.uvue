@@ -1,6 +1,12 @@
 <template>
   <view class="page" :class="themeClass()">
     <view class="card lb-rise">
+      <text class="label">记录日期</text>
+      <picker mode="date" :value="recordDate" @change="onDateChange">
+        <view class="date-box" hover-class="lb-press" hover-stay-time="120">
+          <text class="date-text">{{ recordDate }}{{ isTodayDate ? '（今天）' : '' }}</text>
+        </view>
+      </picker>
       <text class="label">测量时段</text>
       <view class="slots">
         <view class="slot" v-for="(s, i) in slots" :key="i" :class="slot == s.value ? 'slot-active' : ''" hover-class="lb-press" hover-stay-time="120" @click="slot = s.value">
@@ -9,12 +15,13 @@
       </view>
       <text class="label">血糖值（mmol/L）</text>
       <view class="input-row">
-        <input class="num-input" type="number" v-model="mmol" placeholder="5.2" placeholder-class="ph" />
+        <input class="num-input" type="number" v-model="mmol" :focus="focusInput" :placeholder="glucosePlaceholder" placeholder-class="ph" />
         <text class="unit">mmol/L</text>
       </view>
       <text class="hint">糖耐参考切点：空腹 ≥5.1 / 餐后1h ≥10.0 / 餐后2h ≥8.5，超出将提示与医生确认（不构成诊断）</text>
     </view>
     <button class="btn-save lb-rise-1" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</button>
+    <text class="ok-text lb-fade" v-if="saved">已记录 ✓ · 可继续记录下一条</text>
 
     <view class="redline lb-rise-2" v-if="redlineMsg.length > 0">
       <text class="redline-title">⚠️ 需要关注</text>
@@ -25,10 +32,12 @@
 </template>
 
 <script setup lang="ts">
-  import { ref } from 'vue'
+  import { computed, ref } from 'vue'
+  import { onPageReady } from '../../utils/pageLifecycle.uts'
   import { luckyRecord } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
+  import { todayDateStr, dateToTs, isToday } from '../../utils/recordDate.uts'
 
   type Slot = { value: string, label: string }
 
@@ -43,21 +52,45 @@
   const saving = ref<boolean>(false)
   const redlineMsg = ref<string>('')
   const redlineAction = ref<string>('')
+  const recordDate = ref<string>(todayDateStr())
+  const focusInput = ref<boolean>(true)
+  const saved = ref<boolean>(false)
+  const lastGlucose = ref<string>('')
+
+  const isTodayDate = computed((): boolean => isToday(recordDate.value))
+  const glucosePlaceholder = computed((): string => lastGlucose.value.length > 0 ? `上次 ${lastGlucose.value}` : '5.2')
+
+  function onDateChange(e: UniPickerChangeEvent) {
+    recordDate.value = (e.detail.value as string) ?? recordDate.value
+    saved.value = false
+  }
+
+  onPageReady(() => {
+    lastGlucose.value = (uni.getStorageSync('lb_last_glucose') as string) ?? ''
+  })
 
   async function save() {
     const mmolVal = parseFloat(mmol.value)
     if (!(mmolVal >= 1 && mmolVal <= 35)) { uni.showToast({ title: '请输入有效血糖值', icon: 'none' }); return }
     saving.value = true
     try {
-      const res = await luckyRecord('addMetric', { journeyId: journeyState.journeyId, code: 'blood_glucose', value: { slot: slot.value, mmol: mmolVal } } as UTSJSONObject)
+      const res = await luckyRecord('addMetric', {
+        journeyId: journeyState.journeyId, code: 'blood_glucose',
+        value: { slot: slot.value, mmol: mmolVal },
+        date: recordDate.value, ts: dateToTs(recordDate.value)
+      } as UTSJSONObject)
       const rl = res.getJSON('redline')
       if (rl != null) {
         const r = rl as UTSJSONObject
         redlineMsg.value = r.getString('message') ?? ''
         redlineAction.value = r.getString('action') ?? ''
       } else {
-        uni.showToast({ title: '已记录 ✓', icon: 'success' })
-        setTimeout(() => { uni.navigateBack() }, 600)
+        lastGlucose.value = `${mmolVal}`
+        uni.setStorageSync('lb_last_glucose', lastGlucose.value)
+        saved.value = true
+        mmol.value = ''
+        focusInput.value = false
+        setTimeout(() => { focusInput.value = true }, 50)
       }
     } catch (e) {
       uni.showToast({ title: (e as Error).message, icon: 'none' })
@@ -70,6 +103,9 @@
   .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
   .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 48rpx 40rpx; align-items: center; margin-top: 40rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
   .label { font-size: 30rpx; color: var(--lb-text-1); margin-bottom: 24rpx; }
+  .date-box { width: 620rpx; height: 88rpx; background-color: var(--lb-fill); border-radius: 24rpx; align-items: center; justify-content: center; margin-bottom: 32rpx; transition: all 160ms ease-out; }
+  .date-text { font-size: 28rpx; color: var(--lb-text-1); }
+  .ok-text { color: var(--lb-success); font-size: 28rpx; margin-top: 24rpx; }
   .slots { flex-direction: row; flex-wrap: wrap; justify-content: center; margin-bottom: 40rpx; }
   .slot { background-color: var(--lb-fill); border-radius: 36rpx; padding: 16rpx 32rpx; margin: 8rpx; transition: all 160ms ease-out; }
   .slot-active { background-color: var(--lb-primary-soft); }

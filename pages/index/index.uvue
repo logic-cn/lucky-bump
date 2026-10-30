@@ -110,8 +110,11 @@
   import { themeClass } from '../../store/themeStore.uts'
   import { isQuietNow } from '../../utils/quiet.uts'
   import { track } from '../../utils/track.uts'
+  import { recentUrls, rememberRecent, recentRank } from '../../utils/recentGrid.uts'
 
   type QuickItem = { icon: string, label: string, url: string }
+
+  const recent = ref<string[]>([])
 
   const todos = ref<UTSJSONObject[]>([])
   const babySizeText = ref('')
@@ -134,6 +137,25 @@
   const showBabySize = computed((): boolean => journeyState.stage == 'T1' || journeyState.stage == 'T2' || journeyState.stage == 'T3')
   const isPostpartum = computed((): boolean => journeyState.deliveryDate.length > 0)
   const isTtc = computed((): boolean => journeyState.stage == 'PRECONCEPTION')
+  // 快捷记录宫格按最近使用前置；未用过的保持原有顺序
+  function orderByRecent(items: QuickItem[]): QuickItem[] {
+    if (recent.value.length == 0) return items
+    const used: QuickItem[] = []
+    const rest: QuickItem[] = []
+    for (let i = 0; i < items.length; i++) {
+      if (recentRank(items[i].url, recent.value) < 999) used.push(items[i]); else rest.push(items[i])
+    }
+    for (let i = 0; i < used.length; i++) {
+      for (let j = i + 1; j < used.length; j++) {
+        if (recentRank(used[j].url, recent.value) < recentRank(used[i].url, recent.value)) {
+          const t = used[i]
+          used[i] = used[j]
+          used[j] = t
+        }
+      }
+    }
+    return used.concat(rest)
+  }
   const quickItems = computed((): QuickItem[] => {
     const s = journeyState.stage
     const items: QuickItem[] = []
@@ -158,10 +180,13 @@
       items.push({ icon: '🩸', label: '血糖', url: '/pages/record/blood-glucose' })
       items.push({ icon: '🏥', label: '产检', url: '/pages/care/schedule' })
     }
-    return items
+    return orderByRecent(items)
   })
 
-  function goRecord(url: string) { uni.navigateTo({ url }) }
+  function goRecord(url: string) {
+    recent.value = rememberRecent(url)
+    uni.navigateTo({ url })
+  }
   function dismissInviteTip() {
     inviteTipVisible.value = false
     uni.setStorageSync('lb_family_tip_dismissed', true)
@@ -283,6 +308,7 @@
   }
 
   onPageReady(() => {
+    recent.value = recentUrls()
     refresh()
   })
 </script>

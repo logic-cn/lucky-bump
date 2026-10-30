@@ -19,40 +19,31 @@
   import { onPageReady } from '../../utils/pageLifecycle.uts'
   import { journeyState } from '../../store/journeyStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
+  import { recentUrls, rememberRecent, recentRank } from '../../utils/recentGrid.uts'
 
   type RItem = { icon: string, label: string, url: string }
   type RGroup = { title: string, items: RItem[] }
 
-  // 最近使用：本地记录打开过的记录页（逗号分隔存 URL，URL 不含逗号）
+  // 最近使用：本地记录打开过的记录页
   const recent = ref<string[]>([])
 
-  function loadRecent() {
-    const raw = uni.getStorageSync('lb_recent_grid') as string
-    recent.value = raw == null || raw.length == 0 ? ([] as string[]) : raw.split(',')
-  }
-  function remember(url: string) {
-    const list: string[] = [url]
-    for (let i = 0; i < recent.value.length && list.length < 6; i++) {
-      if (recent.value[i] != url) list.push(recent.value[i])
-    }
-    recent.value = list
-    uni.setStorageSync('lb_recent_grid', list.join(','))
-  }
-  function rank(url: string): number {
-    const k = recent.value.indexOf(url)
-    return k < 0 ? 999 : k
-  }
+  function loadRecent() { recent.value = recentUrls() }
+  function remember(url: string) { recent.value = rememberRecent(url) }
   // 组内稳定排序：用过的按最近先后前置，未用过的保持原有顺序
   function orderByRecent(items: RItem[]): RItem[] {
     if (recent.value.length == 0) return items
     const used: RItem[] = []
     const rest: RItem[] = []
     for (let i = 0; i < items.length; i++) {
-      if (rank(items[i].url) < 999) used.push(items[i]); else rest.push(items[i])
+      if (recentRank(items[i].url, recent.value) < 999) used.push(items[i]); else rest.push(items[i])
     }
     for (let i = 0; i < used.length; i++) {
       for (let j = i + 1; j < used.length; j++) {
-        if (rank(used[j].url) < rank(used[i].url)) { const t = used[i]; used[i] = used[j]; used[j] = t }
+        if (recentRank(used[j].url, recent.value) < recentRank(used[i].url, recent.value)) {
+          const t = used[i]
+          used[i] = used[j]
+          used[j] = t
+        }
       }
     }
     return used.concat(rest)

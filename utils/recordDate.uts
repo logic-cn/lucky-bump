@@ -1,0 +1,22 @@
+/** 记录页共用的日期工具：支持补录历史数据 */
+
+function pad(n: number): string { return n < 10 ? '0' + n : '' + n }
+
+/** 本地今天的 YYYY-MM-DD */
+export function todayDateStr(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+/**
+ * 日期 → 时间戳：取当地正午，避免时区导致记录落到前一天/后一天。
+ * 服务端按 UTC 日期归档，+08 正午对应同一 UTC 日期。
+ */
+export function dateToTs(date: string): number {
+  const ts = Date.parse(`${date}T12:00:00+08:00`)
+  return ts > 0 ? ts : Date.now()
+}
+
+export function isToday(date: string): boolean {
+  return date == todayDateStr()
+}

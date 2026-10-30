@@ -1,24 +1,32 @@
 <template>
   <view class="page" :class="themeClass()">
     <view class="card lb-rise">
-      <text class="label">今天的体重（kg）</text>
-      <input class="num-input" type="number" v-model="kg" placeholder="58.2" placeholder-class="ph" />
+      <text class="label">记录日期</text>
+      <picker mode="date" :value="recordDate" @change="onDateChange">
+        <view class="date-box" hover-class="lb-press" hover-stay-time="120">
+          <text class="date-text">{{ recordDate }}{{ isTodayDate ? '（今天）' : '' }}</text>
+        </view>
+      </picker>
+      <text class="label">体重（kg）</text>
+      <input class="num-input" type="number" v-model="kg" :focus="focusInput" :placeholder="weightPlaceholder" placeholder-class="ph" />
       <text class="hint" v-if="profileReady">孕期推荐增重 {{ gainRange[0] }}-{{ gainRange[1] }}kg（{{ bmiText }} · IOM 口径）</text>
       <text class="hint" v-else>孕期推荐增重 11.5-16kg（正常 BMI 口径）</text>
       <text class="link" v-if="!profileReady" @click="goProfile">去完善身高与孕前体重 ›</text>
     </view>
     <button class="btn-save lb-rise-1" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</button>
-    <text class="ok-text lb-fade" v-if="saved">已记录 ✓</text>
+    <text class="ok-text lb-fade" v-if="saved">已记录 ✓ · 可继续记录下一条</text>
+    <text class="link" v-if="saved" @click="goCharts">查看体重曲线 ›</text>
   </view>
 </template>
 
 <script setup lang="ts">
-  import { ref } from 'vue'
+  import { computed, ref } from 'vue'
   import { onPageReady } from '../../utils/pageLifecycle.uts'
   import { luckyRecord, luckyId } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
   import { track } from '../../utils/track.uts'
+  import { todayDateStr, dateToTs, isToday } from '../../utils/recordDate.uts'
 
   const kg = ref<string>('')
   const saving = ref<boolean>(false)
@@ -26,6 +34,18 @@
   const gainRange = ref<string[]>(['11.5', '16'])
   const profileReady = ref<boolean>(false)
   const bmiText = ref<string>('')
+  const recordDate = ref<string>(todayDateStr())
+  const focusInput = ref<boolean>(true)
+  const lastWeight = ref<string>('')
+
+  const isTodayDate = computed((): boolean => isToday(recordDate.value))
+  const weightPlaceholder = computed((): string => lastWeight.value.length > 0 ? `上次 ${lastWeight.value}` : '58.2')
+
+  function onDateChange(e: UniPickerChangeEvent) {
+    recordDate.value = (e.detail.value as string) ?? recordDate.value
+    saved.value = false
+  }
+  function goCharts() { uni.navigateTo({ url: '/pages/data/charts' }) }
 
   /** 按孕前 BMI 选择 IOM 推荐增重区间（docs/03 M2.2） */
   async function loadProfile() {
@@ -50,18 +70,29 @@
     uni.navigateTo({ url: '/pages/me/settings' })
   }
 
-  onPageReady(() => { loadProfile() })
+  onPageReady(() => {
+    lastWeight.value = (uni.getStorageSync('lb_last_weight') as string) ?? ''
+    loadProfile()
+  })
 
   async function save() {
     const kgVal = parseFloat(kg.value)
     if (!(kgVal >= 30 && kgVal <= 300)) { uni.showToast({ title: '请输入有效体重（30-300kg）', icon: 'none' }); return }
     saving.value = true
     try {
-      await luckyRecord('addMetric', { journeyId: journeyState.journeyId, code: 'weight', value: { kg: kgVal } } as UTSJSONObject)
+      await luckyRecord('addMetric', {
+        journeyId: journeyState.journeyId, code: 'weight',
+        value: { kg: kgVal }, date: recordDate.value, ts: dateToTs(recordDate.value)
+      } as UTSJSONObject)
       track('record_create', { type: 'weight' } as UTSJSONObject)
       uni.setStorageSync('lb_has_record', true)
+      lastWeight.value = `${kgVal}`
+      uni.setStorageSync('lb_last_weight', lastWeight.value)
       saved.value = true
-      setTimeout(() => { uni.navigateBack() }, 600)
+      // 保存后留在页内，便于连续补录；清空输入并重新聚焦
+      kg.value = ''
+      focusInput.value = false
+      setTimeout(() => { focusInput.value = true }, 50)
     } catch (e) {
       uni.showToast({ title: (e as Error).message, icon: 'none' })
     } finally { saving.value = false }
@@ -73,6 +104,8 @@
   .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
   .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 48rpx 40rpx; align-items: center; margin-top: 40rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
   .label { font-size: 30rpx; color: var(--lb-text-1); margin-bottom: 32rpx; }
+  .date-box { width: 620rpx; height: 88rpx; background-color: var(--lb-fill); border-radius: 24rpx; align-items: center; justify-content: center; margin-bottom: 32rpx; transition: all 160ms ease-out; }
+  .date-text { font-size: 28rpx; color: var(--lb-text-1); }
   .input-row { flex-direction: row; align-items: center; }
   .num-input { width: 320rpx; height: 140rpx; font-size: 88rpx; font-weight: bold; color: var(--lb-text-1); text-align: center; border-bottom-width: 2px; border-bottom-color: var(--lb-primary); }
   .unit { font-size: 30rpx; color: var(--lb-text-3); margin-left: 16rpx; }
