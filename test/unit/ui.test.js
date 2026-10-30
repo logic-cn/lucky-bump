@@ -241,3 +241,10 @@ test('最小字号不低于 24rpx（正文与辅助文案一致）', () => {
   }
   assert.deepEqual(offenders, [], `以下位置字号过小:\n${offenders.join('\n')}`)
 })
+
+test('web 端 showToast 有可用兜底（内置 Toast 在 vapor 下渲染失败）', () => {
+  const src = fs.readFileSync(path.join(ROOT, 'main.uts'), 'utf-8')
+  assert.ok(src.includes('installWebToast'), '缺少 web toast 安装入口')
+  assert.ok(src.includes('uniAny.showToast ='), '未覆写 uni.showToast')
+  assert.ok(src.includes('lb-web-toast'), '缺少 toast 容器标记')
+})

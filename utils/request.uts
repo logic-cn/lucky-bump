@@ -23,10 +23,11 @@ function deepToUts(v: any | null): any | null {
 }
 // #endif
 
-// 底层网络错误（如 web 端 request:fail）直接透出会出现在界面文案里，统一转成用户可读提示
-function friendlyNetMessage(raw: string | null): string {
-  if (raw == null || raw.length == 0) return '网络异常，请稍后再试'
+// 底层网络错误（如 web 端 request:fail）与服务端资源告警直接透出会出现在界面文案里，统一转成用户可读提示
+function friendlyMessage(raw: string | null): string {
+  if (raw == null || raw.length == 0) return '服务暂时不可用，请稍后重试'
   if (raw.indexOf('request:fail') == 0 || raw.indexOf('Failed to fetch') == 0) return '网络异常，请检查网络后重试'
+  if (raw.indexOf('resource exhausted') >= 0 || raw.indexOf('FC invoke failed') >= 0) return '服务暂时不可用，请稍后重试'
   return raw
 }
 
@@ -54,7 +55,7 @@ export function callCloud(objName: string, method: string, params: UTSJSONObject
           return
         }
         const code = result.getString('errCode') ?? 'UNKNOWN'
-        const msg = result.getString('errMsg') ?? '请求失败'
+        const msg = friendlyMessage(result.getString('errMsg'))
         if (code.indexOf('TOKEN_') == 0) {
           clearToken()
           uni.reLaunch({ url: '/pages/account/login' })
@@ -62,7 +63,7 @@ export function callCloud(objName: string, method: string, params: UTSJSONObject
         reject(new Error(msg))
       },
       fail: (err) => {
-        reject(new Error(friendlyNetMessage(err.errMsg)))
+        reject(new Error(friendlyMessage(err.errMsg)))
       }
     })
   })
