@@ -3,8 +3,8 @@
     <view class="card lb-rise">
       <text class="label">今天的体重（kg）</text>
       <input class="num-input" type="number" v-model="kg" placeholder="58.2" placeholder-class="ph" />
-      <text class="hint" v-if="profileReady">孕期推荐增重 {{ gainRange[0] }}-{{ gainRange[1] }}kg（{{ bmiText }}，参考 IOM 口径）</text>
-      <text class="hint" v-else>孕期推荐增重 11.5-16kg（按正常 BMI 口径，完善身体档案可个性化）</text>
+      <text class="hint" v-if="profileReady">孕期推荐增重 {{ gainRange[0] }}-{{ gainRange[1] }}kg（{{ bmiText }} · IOM 口径）</text>
+      <text class="hint" v-else>孕期推荐增重 11.5-16kg（正常 BMI 口径）</text>
       <text class="link" v-if="!profileReady" @click="goProfile">去完善身高与孕前体重 ›</text>
     </view>
     <button class="btn-save lb-rise-1" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</button>

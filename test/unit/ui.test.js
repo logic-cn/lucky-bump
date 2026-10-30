@@ -159,3 +159,20 @@ test('lbc 组件颜色全部走主题令牌（暗色下不残留浅色字面量�
   }
   assert.deepEqual(offenders, [], `以下组件仍使用颜色字面量（应改用 var(--lb-*)）：\n${offenders.join('\n')}`)
 })
+
+test('按钮文字统一居中（theme.scss 集中登记）', () => {
+  const theme = fs.readFileSync(ROOT + '/theme.scss', 'utf-8')
+  const offenders = []
+  for (const file of walkUvue(path.join(ROOT, 'pages'))) {
+    const src = fs.readFileSync(file, 'utf-8')
+    for (const tag of src.match(/<button[^>]*>/g) || []) {
+      // 只取 button 自身的 class（不能误匹配 hover-class）
+      const cm = /\sclass="([^"]*)"/.exec(tag)
+      if (!cm) continue
+      const base = cm[1].trim().split(/\s+/)[0]
+      const re = new RegExp(`\\.${base}[^{]*\\{[^}]*text-align:\\s*center`)
+      if (!re.test(theme)) offenders.push(`${path.relative(ROOT, file)}: ${base}`)
+    }
+  }
+  assert.deepEqual(offenders, [], `以下按钮类未在 theme.scss 中显式居中（文字会贴左/被圆角裁切）：\n${offenders.join('\n')}`)
+})

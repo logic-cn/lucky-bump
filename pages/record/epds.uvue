@@ -1,8 +1,8 @@
 <template>
   <view class="page" :class="themeClass()">
     <view class="card lb-rise" v-if="step == 0">
-      <text class="title">产后情绪自评（EPDS）</text>
-      <text class="hint">最近 7 天的感受，每题选最贴近的一项。结果仅你自己可见，也不会用于任何推送策略。</text>
+      <text class="title">最近 7 天的感受</text>
+      <text class="hint">每题选最贴近的一项。结果仅你自己可见，也不会用于任何推送策略。</text>
       <view class="q" v-for="(q, qi) in questions" :key="qi">
         <text class="q-text">{{ qi + 1 }}. {{ q }}</text>
         <view class="opt-row">

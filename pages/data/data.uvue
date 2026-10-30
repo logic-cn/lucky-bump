@@ -1,6 +1,5 @@
 <template>
   <view class="page" :class="themeClass()">
-    <text class="title">数据</text>
     <view class="nav-card lb-rise">
       <view class="nav-row" hover-class="lb-press" hover-stay-time="120" @click="go('/pages/data/charts')">
         <text class="nav-icon">📈</text>
@@ -68,7 +67,6 @@
 <style>
   @import '../../theme.scss';
   .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
-  .title { font-size: 40rpx; font-weight: bold; color: var(--lb-text-1); align-self: flex-start; margin: 16rpx 0 24rpx 16rpx; }
   .nav-card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 8rpx 32rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
   .nav-row { flex-direction: row; align-items: center; padding: 28rpx 0; border-bottom-width: 1px; border-bottom-color: var(--lb-line); transition: all 160ms ease-out; }
   .nav-icon { font-size: 40rpx; margin-right: 20rpx; }
