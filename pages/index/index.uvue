@@ -41,6 +41,17 @@
       </view>
     </view>
 
+    <!-- 产后：妈妈今天 -->
+    <view class="card lb-rise-2" v-if="momCardVisible">
+      <text class="card-title">妈妈今天</text>
+      <view class="mom-row">
+        <view class="mom-item"><text class="mom-num">{{ momFeedings }}</text><text class="mom-label">喂养</text></view>
+        <view class="mom-item"><text class="mom-num">{{ momDiapers }}</text><text class="mom-label">尿布</text></view>
+        <view class="mom-item"><text class="mom-num">{{ momSleepText }}</text><text class="mom-label">宝宝睡眠</text></view>
+      </view>
+      <text class="mom-foot">照顾好你自己，也是宝宝的事</text>
+    </view>
+
     <!-- 趋势摘要 -->
     <view class="card lb-rise-3" v-if="trendText.length > 0">
       <text class="card-title">最近记录</text>
@@ -75,6 +86,10 @@
   const trendText = ref('')
   const reminderVisible = ref<boolean>(false)
   const reminderText = ref<string>('')
+  const momCardVisible = ref<boolean>(false)
+  const momFeedings = ref<number>(0)
+  const momDiapers = ref<number>(0)
+  const momSleepText = ref<string>('0h')
 
   const stageLabel = computed((): string => stageText(journeyState.stage))
   const weekLabel = computed((): string => weekText())
@@ -173,6 +188,16 @@
           babySizeText.value = sizeMap[idx]
         }
       }
+      const mc = res.getJSON('momCard')
+      if (mc != null) {
+        momCardVisible.value = true
+        momFeedings.value = mc.getNumber('feedings') ?? 0
+        momDiapers.value = mc.getNumber('diapers') ?? 0
+        const mins = mc.getNumber('sleepMinutes') ?? 0
+        momSleepText.value = mins >= 60 ? `${Math.floor(mins / 60)}h${mins % 60}m` : `${mins}m`
+      } else {
+        momCardVisible.value = false
+      }
       if (journeyState.stage == 'PRECONCEPTION') {
         const c = await luckyRecord('listCycleEvents', { journeyId: journeyState.journeyId } as UTSJSONObject)
         const pred = c.getJSON('prediction')
@@ -222,6 +247,11 @@
   .grid-icon { font-size: 40rpx; }
   .grid-label { font-size: 22rpx; color: var(--lb-text-2); margin-top: 12rpx; }
   .trend-text { font-size: 28rpx; color: var(--lb-text-2); }
+  .mom-row { flex-direction: row; justify-content: space-between; padding: 8rpx 12rpx; }
+  .mom-item { align-items: center; flex: 1; }
+  .mom-num { font-size: 44rpx; font-weight: bold; color: var(--lb-primary-deep); }
+  .mom-label { font-size: 22rpx; color: var(--lb-text-3); margin-top: 6rpx; }
+  .mom-foot { font-size: 22rpx; color: var(--lb-text-3); margin-top: 16rpx; text-align: center; }
 
   .mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--lb-mask); justify-content: center; align-items: center; }
   .dialog { width: 560rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 40rpx 32rpx 24rpx 32rpx; }

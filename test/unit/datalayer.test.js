@@ -165,3 +165,36 @@ test('导出摘要：仅主人可取，包含记录统计与最近指标', async
   const denied = await rt.callObject('lucky-data', 'exportSummary', { journeyId: jid }, { token: attackerToken })
   assert.equal(denied.errCode, 'NOT_FOUND', '非主人不得导出摘要')
 })
+
+test('产后妈妈卡：today 汇总今日喂养/尿布/睡眠', async () => {
+  const rt = createRuntime()
+  const reg = await rt.callObject('lucky-id', 'register', { username: 'momcard1', password: 'password123' })
+  const mk = await rt.callObject('lucky-journey', 'createJourney', { mode: 'pregnant', title: '产后', lmpDate: '2026-01-01' }, { token: reg.token })
+  const jid = mk.journeyId
+  await rt.callObject('lucky-journey', 'registerDelivery', {
+    journeyId: jid, deliveryDate: new Date().toISOString().slice(0, 10),
+    babies: [{ nickname: '小宝', sex: 'female', weightG: 3100, lengthCm: 50 }]
+  }, { token: reg.token })
+  const today = new Date().toISOString().slice(0, 10)
+  await rt.db.collection('lb-feedings').add({ journey_id: jid, user_id: 'u', date: today, duration_sec: 600 })
+  await rt.db.collection('lb-feedings').add({ journey_id: jid, user_id: 'u', date: today, duration_sec: 900 })
+  await rt.db.collection('lb-diaper-changes').add({ journey_id: jid, user_id: 'u', date: today, kind: 'wet' })
+  await rt.db.collection('lb-sleep-sessions').add({ journey_id: jid, user_id: 'u', date: today, duration_min: 120 })
+
+  const t = await rt.callObject('lucky-data', 'today', { journeyId: jid }, { token: reg.token })
+  assert.equal(t.errCode, 0, JSON.stringify(t))
+  assert.ok(t.momCard, '产后应返回妈妈卡')
+  assert.equal(t.momCard.feedings, 2)
+  assert.equal(t.momCard.diapers, 1)
+  assert.equal(t.momCard.sleepMinutes, 120)
+
+  const early = await rt.callObject('lucky-data', 'today', { journeyId: jid }, { token: reg.token })
+  assert.equal(early.momCard.date, today)
+})
+
+test('备孕旅程不返回妈妈卡', async () => {
+  const { rt, jid, victimToken } = await twoUsers()
+  const t = await rt.callObject('lucky-data', 'today', { journeyId: jid }, { token: victimToken })
+  assert.equal(t.errCode, 0, JSON.stringify(t))
+  assert.equal(t.momCard, null, '非产后阶段不应显示妈妈卡')
+})

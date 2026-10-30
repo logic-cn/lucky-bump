@@ -19,7 +19,8 @@ function parseDate(s) {
   return Number.isFinite(ms) ? ms : NaN
 }
 function fmtDate(ms) { const d = new Date(ms); return d.toISOString().slice(0, 10) }
-function daysBetween(fromMs, toMs) { return Math.floor((toMs - fromMs) / DAY) }
+/** 日差：四舍五入到最近一天（日期锚定 UTC 正午，避免当天上午被算成前一天） */
+function daysBetween(fromMs, toMs) { return Math.floor((toMs - fromMs) / DAY + 0.5) }
 
 /** 预产期计算：源类型 lmp/ovulation/ivf/user_edd/ultrasound */
 function calcEdd(source, p) {

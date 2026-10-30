@@ -42,12 +42,13 @@ function stageOf(j, now = Date.now()) {
   if (j.stage_code === 'MOURNING') return 'MOURNING'
   if (j.stage_code === 'ARCHIVED') return 'ARCHIVED'
   if (j.delivery_date) {
-    const pd = Math.floor((now - j.delivery_date) / DAY)
+    // 与 lucky-journey 同口径：四舍五入到最近一天，当天上午登记也归为产后
+    const pd = Math.floor((now - j.delivery_date) / DAY + 0.5)
     return pd < 0 ? 'T3' : (pd < 42 ? 'POSTPARTUM' : (pd < 365 ? 'RECOVERY' : 'PARENTING'))
   }
   if (j.edd) {
     const anchor = j.lmp_date || (j.edd - 280 * DAY)
-    const gest = Math.floor((now - anchor) / DAY)
+    const gest = Math.floor((now - anchor) / DAY + 0.5)
     if (gest < 0) return 'PRECONCEPTION'
     const wk = Math.floor(gest / 7)
     return wk < 14 ? 'T1' : (wk < 28 ? 'T2' : 'T3')
@@ -100,13 +101,25 @@ module.exports = {
     let weightDelta = null
     const w = await db.call(this).collection('lb-daily-logs').where({ journey_id: j._id, code: 'weight' }).orderBy('ts', 'desc').limit(2).get()
     if (w.data.length === 2) weightDelta = Math.round((w.data[0].value.kg - w.data[1].value.kg) * 10) / 10
+    // 产后/育儿期：妈妈日常卡（今日喂养/尿布/睡眠汇总，docs/03 M4.5）
+    const stage = stageOf(j, now)
+    let momCard = null
+    if (['POSTPARTUM', 'RECOVERY', 'PARENTING'].includes(stage)) {
+      const todayStr = dateOf(now)
+      const feed = await db.call(this).collection('lb-feedings').where({ journey_id: j._id, date: todayStr }).count()
+      const diaper = await db.call(this).collection('lb-diaper-changes').where({ journey_id: j._id, date: todayStr }).count()
+      const sleeps = await db.call(this).collection('lb-sleep-sessions').where({ journey_id: j._id, date: todayStr }).get()
+      let sleepMinutes = 0
+      for (const s of sleeps.data) sleepMinutes += Math.max(0, +s.duration_min || 0)
+      momCard = { date: todayStr, feedings: feed.total || 0, diapers: diaper.total || 0, sleepMinutes }
+    }
     return auth.ok({
       journey: {
         _id: j._id, stage: stageOf(j, now), edd: j.edd ? dateOf(j.edd) : '',
         lmpDate: j.lmp_date ? dateOf(j.lmp_date) : '', deliveryDate: j.delivery_date ? dateOf(j.delivery_date) : '',
         fetusCount: j.fetus_count || 1, highRisk: !!j.high_risk, title: j.title || ''
       },
-      todos, latest, weightDelta, serverDate: dateOf(now)
+      todos, latest, weightDelta, momCard, serverDate: dateOf(now)
     })
   },
 
