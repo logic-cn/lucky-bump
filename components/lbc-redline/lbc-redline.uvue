@@ -20,12 +20,12 @@
 
 <style>
   .lbc-redline { width: 702rpx; border-radius: 36rpx; padding: 40rpx; }
-  .lbc-redline-critical { background-color: #FDECEC; }
-  .lbc-redline-warn { background-color: #FCF1DC; }
-  .lbc-redline-title { font-size: 34rpx; font-weight: bold; color: #E5484D; }
-  .lbc-redline-msg { font-size: 28rpx; color: #322430; margin-top: 16rpx; }
-  .lbc-redline-action { font-size: 30rpx; font-weight: bold; color: #E5484D; margin-top: 16rpx; }
-  .lbc-redline-note { font-size: 20rpx; color: #B6AABB; margin-top: 24rpx; }
+  .lbc-redline-critical { background-color: var(--lb-danger-soft); }
+  .lbc-redline-warn { background-color: var(--lb-warning-soft); }
+  .lbc-redline-title { font-size: 34rpx; font-weight: bold; color: var(--lb-danger); }
+  .lbc-redline-msg { font-size: 28rpx; color: var(--lb-text-1); margin-top: 16rpx; }
+  .lbc-redline-action { font-size: 30rpx; font-weight: bold; color: var(--lb-danger); margin-top: 16rpx; }
+  .lbc-redline-note { font-size: 20rpx; color: var(--lb-text-3); margin-top: 24rpx; }
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
   .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
 </style>

@@ -149,3 +149,13 @@ test('theme.scss 双主题变量完整且 t-light 与 uni.scss 令牌一致', ()
     assert.ok(store.includes(fn), `themeStore.uts 缺 ${fn}`)
   }
 })
+
+test('lbc 组件颜色全部走主题令牌（暗色下不残留浅色字面量）', () => {
+  const offenders = []
+  for (const file of walkUvue(path.join(ROOT, 'components'))) {
+    const src = fs.readFileSync(file, 'utf-8')
+    const hex = src.match(/#[0-9A-Fa-f]{6}/g) || []
+    if (hex.length > 0) offenders.push(`${path.relative(ROOT, file)}: ${hex.join(', ')}`)
+  }
+  assert.deepEqual(offenders, [], `以下组件仍使用颜色字面量（应改用 var(--lb-*)）：\n${offenders.join('\n')}`)
+})
