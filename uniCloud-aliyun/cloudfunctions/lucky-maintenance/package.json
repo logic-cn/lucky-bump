@@ -1,0 +1,17 @@
+{
+  "name": "lucky-maintenance",
+  "version": "1.0.0",
+  "main": "index.js",
+  "description": "账号注销冷静期满后的定时物理删除",
+  "cloudfunction-config": {
+    "memorySize": 256,
+    "timeout": 60,
+    "triggers": [
+      {
+        "name": "purgeDeletionAccounts",
+        "type": "timer",
+        "config": "0 0 3 * * * *"
+      }
+    ]
+  }
+}
