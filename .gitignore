@@ -25,3 +25,6 @@ uniCloud-aliyun/cloudfunctions/*/common/
 
 # 超能力流程 scratch 目录（SDD 台账，不入库）
 .superpowers/
+
+# 本地生成的分享包（不纳入版本库）
+.trae-html-share-packages/
