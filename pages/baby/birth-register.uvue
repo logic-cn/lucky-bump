@@ -31,6 +31,21 @@
     </view>
     <button class="btn-save lb-rise-1" hover-class="lb-press" hover-stay-time="120" :disabled="saving" @click="save">{{ saving ? '登记中…' : '完成分娩登记' }}</button>
     <text class="hint">登记后自动生成宝宝档案、产褥期时钟、出生卡与疫苗计划</text>
+
+    <!-- 出生卡（登记成功后展示，可复制分享文案） -->
+    <view class="mask lb-fade" v-if="cardVisible">
+      <view class="bcard lb-pop">
+        <text class="bcard-kicker">BIRTH CARD</text>
+        <text class="bcard-date">{{ deliveredAt }}</text>
+        <text class="bcard-names">{{ cardNames }}</text>
+        <text class="bcard-meta">{{ cardMeta }}</text>
+        <text class="bcard-wish">欢迎来到这个世界，愿被温柔以待</text>
+        <view class="bcard-actions">
+          <text class="bcard-btn bcard-btn-ghost" @click="copyCard">复制分享文案</text>
+          <text class="bcard-btn" @click="closeCard">进入宝宝首页</text>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -54,6 +69,40 @@
     { value: 'vaginal', label: '顺产' }, { value: 'assisted', label: '助产' }, { value: 'c_section', label: '剖宫产' }
   ])
   const sexLabels = ref<string[]>(['男', '女', '还不告诉你们'])
+  const cardVisible = ref<boolean>(false)
+  const deliveredAt = ref<string>('')
+  const cardNames = ref<string>('')
+  const cardMeta = ref<string>('')
+
+  function buildCard(list: BabyForm[]) {
+    deliveredAt.value = deliveryDate.value
+    const names: string[] = []
+    const metas: string[] = []
+    for (let i = 0; i < list.length; i++) {
+      names.push(list[i].nickname)
+      const parts: string[] = []
+      const w = parseInt(list[i].weightG)
+      const l = parseFloat(list[i].lengthCm)
+      if (w > 0) parts.push(`${w}g`)
+      if (l > 0) parts.push(`${l}cm`)
+      if (parts.length > 0) metas.push(`${list[i].nickname} ${parts.join(' · ')}`)
+    }
+    cardNames.value = names.join(' & ')
+    cardMeta.value = metas.join('　')
+  }
+  function cardShareText(): string {
+    return `${deliveredAt.value}，${cardNames.value} 平安出生啦 🎉${cardMeta.value.length > 0 ? '\n' + cardMeta.value : ''}\n—— 来自幸孕记`
+  }
+  function copyCard() {
+    uni.setClipboardData({
+      data: cardShareText(),
+      success: () => { uni.showToast({ title: '文案已复制', icon: 'none' }) }
+    })
+  }
+  function closeCard() {
+    cardVisible.value = false
+    uni.reLaunch({ url: '/pages/baby/baby-home' })
+  }
 
   function onDateChange(e: UniPickerChangeEvent) { deliveryDate.value = (e.detail.value as string) ?? '' }
   function onSexChange(i: number, e: UniPickerChangeEvent) {
@@ -80,7 +129,8 @@
         uni.setStorageSync('current_baby_id', ids[0])
       }
       uni.showToast({ title: '欢迎小宝贝 🎉', icon: 'none' })
-      setTimeout(() => { uni.reLaunch({ url: '/pages/baby/baby-home' }) }, 800)
+      buildCard(list)
+      cardVisible.value = true
     } catch (e) {
       uni.showToast({ title: (e as Error).message, icon: 'none' })
     } finally { saving.value = false }
@@ -114,6 +164,17 @@
   .ph { color: var(--lb-text-3); }
   .btn-save { width: 702rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 32rpx; transition: all 160ms ease-out; }
   .hint { font-size: 20rpx; color: var(--lb-text-3); margin-top: 24rpx; }
+
+  .mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--lb-mask); justify-content: center; align-items: center; }
+  .bcard { width: 600rpx; background-color: var(--lb-card); border-radius: 40rpx; padding: 48rpx 40rpx 32rpx 40rpx; align-items: center; }
+  .bcard-kicker { font-size: 22rpx; color: var(--lb-text-3); letter-spacing: 6rpx; }
+  .bcard-date { font-size: 30rpx; color: var(--lb-text-2); margin-top: 20rpx; }
+  .bcard-names { font-size: 48rpx; font-weight: bold; color: var(--lb-primary-deep); margin-top: 16rpx; text-align: center; }
+  .bcard-meta { font-size: 26rpx; color: var(--lb-text-2); margin-top: 16rpx; }
+  .bcard-wish { font-size: 24rpx; color: var(--lb-text-3); margin-top: 28rpx; text-align: center; }
+  .bcard-actions { flex-direction: row; margin-top: 40rpx; }
+  .bcard-btn { font-size: 26rpx; color: #FFFFFF; background-color: var(--lb-primary); border-radius: 40rpx; padding: 16rpx 28rpx; margin-left: 16rpx; }
+  .bcard-btn-ghost { color: var(--lb-text-2); background-color: var(--lb-fill); margin-left: 0; }
 
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
