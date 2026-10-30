@@ -53,13 +53,35 @@
       <view class="p-row"><text class="p-label">体重单位</text><text class="p-value">kg</text></view>
       <view class="p-row"><text class="p-label">当前版本</text><text class="p-value">1.0.0</text></view>
     </view>
+
+    <view class="card lb-rise-3">
+      <text class="card-title">账号安全</text>
+      <view class="p-row" hover-class="lb-press" hover-stay-time="120" @click="openPwd">
+        <text class="p-label">修改密码</text>
+        <text class="p-value">›</text>
+      </view>
+      <text class="hint">忘记密码暂不支持自助找回（需短信服务，见 docs/08 §4）</text>
+    </view>
+
+    <!-- 修改密码弹窗（web 端 uni.showModal 回调不触发，统一自绘） -->
+    <view class="mask lb-fade" v-if="pwdVisible">
+      <view class="dialog lb-pop">
+        <text class="dlg-title">修改密码</text>
+        <input class="dlg-input" type="text" :password="true" v-model="oldPwd" placeholder="原密码" placeholder-class="ph" />
+        <input class="dlg-input" type="text" :password="true" v-model="newPwd" placeholder="新密码（8-32 位）" placeholder-class="ph" />
+        <view class="dlg-actions">
+          <text class="dlg-btn" @click="pwdVisible = false">取消</text>
+          <text class="dlg-btn dlg-btn-ok" @click="onChangePwd">{{ pwdSaving ? '提交中…' : '确认修改' }}</text>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
 <script setup lang="ts">
   import { ref } from 'vue'
   import { onLoad, onShow } from '@dcloudio/uni-app'
-  import { luckyReminder } from '../../utils/request.uts'
+  import { luckyReminder, luckyId } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
   import { themeState, setThemeMode, themeClass } from '../../store/themeStore.uts'
   import { quietStart, quietEnd, setQuietRange } from '../../utils/quiet.uts'
@@ -77,6 +99,30 @@
   const darkMode = ref<boolean>(themeState.resolved == 'dark')
   const quietStartTime = ref<string>(quietStart())
   const quietEndTime = ref<string>(quietEnd())
+  const pwdVisible = ref<boolean>(false)
+  const pwdSaving = ref<boolean>(false)
+  const oldPwd = ref<string>('')
+  const newPwd = ref<string>('')
+  function openPwd() {
+    oldPwd.value = ''
+    newPwd.value = ''
+    pwdVisible.value = true
+  }
+  async function onChangePwd() {
+    if (pwdSaving.value) return
+    if (oldPwd.value.length < 8 || newPwd.value.length < 8) {
+      uni.showToast({ title: '密码长度需 8-32 位', icon: 'none' })
+      return
+    }
+    pwdSaving.value = true
+    try {
+      await luckyId('changePassword', { oldPassword: oldPwd.value, newPassword: newPwd.value } as UTSJSONObject)
+      pwdVisible.value = false
+      uni.showToast({ title: '密码已更新', icon: 'success' })
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    } finally { pwdSaving.value = false }
+  }
   function onQuietStartChange(e: UniPickerChangeEvent) {
     quietStartTime.value = (e.detail.value as string) ?? '22:00'
     setQuietRange(quietStartTime.value, quietEndTime.value)
@@ -160,6 +206,14 @@
   .p-row { flex-direction: row; align-items: center; justify-content: space-between; padding: 12rpx 0; }
   .p-label { font-size: 26rpx; color: var(--lb-text-1); }
   .p-value { font-size: 26rpx; color: var(--lb-text-3); }
+
+  .mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--lb-mask); justify-content: center; align-items: center; }
+  .dialog { width: 560rpx; background-color: var(--lb-card); border-radius: 24rpx; padding: 40rpx 32rpx 24rpx 32rpx; }
+  .dlg-title { font-size: 32rpx; font-weight: bold; color: var(--lb-text-1); text-align: center; }
+  .dlg-input { width: 100%; height: 88rpx; background-color: var(--lb-fill); border-radius: 16rpx; padding: 0 24rpx; font-size: 28rpx; color: var(--lb-text-1); margin-top: 20rpx; }
+  .dlg-actions { flex-direction: row; justify-content: space-between; margin-top: 32rpx; }
+  .dlg-btn { width: 230rpx; height: 80rpx; line-height: 80rpx; text-align: center; font-size: 29rpx; color: var(--lb-text-2); background-color: var(--lb-fill); border-radius: 40rpx; }
+  .dlg-btn-ok { color: #FFFFFF; background-color: var(--lb-primary); }
 
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
