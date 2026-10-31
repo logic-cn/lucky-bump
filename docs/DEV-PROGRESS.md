@@ -173,3 +173,13 @@ Web 端已可用。后续运行只涉及：1) `npm test` 保持 70/70；2) 上�
 - [x] 引导页承诺屏：敏感仅本人 / 零广告零营销 / 数据可导出
 
 - [ ] 仍需人工：HBuilderX 真机回归（本地通知、拍照上传、暗色 tabBar）；上传 `lucky-record`/`lucky-data`/`lucky-family` 云函数与 `lb-cycle-events` schema 变更到 uniCloud；`uni.createPushMessage` 基座可用性验证（运行时已做探测兜底）
+
+## 上线前最后一轮验证（2026-10-31）
+
+- [x] 云端部署：`scripts/sync_commons.sh` 后经 HBuilderX CLI 上传 `lucky-record` / `lucky-data` / `lucky-family` 三个云对象（逐个 "上传云对象…OK"）
+- [x] 编译级验证：Android 云打包全量编译通过（44 页 + 组件，uni-app x 5.34 蒸汽模式）——过程中发现并修复 3 个存量选项式 `<script>` 组件（lbc-redline/lbc-card/lbc-disclaimer），并新增门禁测试防回流（109/109）
+- [x] 真机回归载体：自定义调试基座 APK 已产出 `unpackage/debug/android_debug_vapor.apk`（22MB）
+- [ ] schema 增量（lb-cycle-events 加 mucus 枚举）：CLI 对已存在 schema 一律"跳过上传"（HBuilderX CLI 限制）；已验证**非运行时阻断**——云对象以管理上下文写入、绕过 schema 校验，mucus 枚举由 lucky-record 服务端代码强校验（含单测）。补齐方式：HBuilderX 里右键该 schema → 上传（约 30 秒）
+- [ ] 真机回归（无 USB 设备连接，无法自动执行）：安装上述 APK 后验证 ①本地通知锁屏弹达 ②试纸拍照上传 ③暗色模式切换 ④喂养/图表/故事流/爸爸端渲染 ⑤键盘与保存反馈
+- [ ] 已知低危项：uvue CSS 对 `animation-fill-mode: both` 仅支持 `forwards`（编译警告，仅影响带延迟的进场动画起始帧，无功能影响）
+- [x] 提交入库：分波次 7 个 commit（docs 对标 / 波一 / 波二 / 波三 / 试纸拍照 / 组件修复 / 守护日志），`npm test` 109/109
