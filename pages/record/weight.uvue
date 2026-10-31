@@ -2,7 +2,16 @@
   <view class="page" :class="themeClass()">
     <view class="card lb-rise">
       <text class="label">记录日期</text>
-      <lbc-date-field :value="recordDate" :end="todayEnd" @change="onDateChange" placeholder="选择日期" />
+      <!-- #ifdef APP-ANDROID || APP-IOS -->
+    <lbc-date-field :value="recordDate" :end="todayEnd" @change="onDateChange" />
+    <!-- #endif -->
+    <!-- #ifdef WEB -->
+    <view :end="todayEnd" hover-class="lb-press" hover-stay-time="120" @click="onPickWeb0">
+        <view class="date-box" hover-class="lb-press" hover-stay-time="120">
+          <text class="date-text">{{ recordDate }}{{ isTodayDate ? '（今天）' : '' }}</text>
+        </view>
+      </view>
+    <!-- #endif -->
       <text class="label">体重（kg）</text>
       <view class="input-row">
         <input class="num-input" type="number" v-model="kg" :focus="focusInput" :placeholder="weightPlaceholder" placeholder-class="ph" confirm-type="done" @confirm="save" />
@@ -12,7 +21,8 @@
       <text class="hint" v-else>孕期推荐增重 11.5-16kg（正常 BMI 口径）</text>
       <text class="link" v-if="!profileReady" @click="goProfile">去完善身高与孕前体重 ›</text>
     </view>
-    <button class="btn-save lb-rise-1" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</button>
+    <lbc-disclaimer class="lb-rise-1" />
+    <!-- EXP-INPUT --><input class="num-input" type="date" style="width: 400rpx; height: 60rpx; font-size: 28rpx;" value="2026-10-31" /><button class="btn-save lb-rise-1" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</button>
     <text class="ok-text lb-fade" v-if="saved">已记录 ✓ · 可继续记录下一条</text>
     <text class="link" v-if="saved" @click="goCharts">查看体重曲线 ›</text>
   </view>
@@ -26,6 +36,9 @@
   import { themeClass } from '../../store/themeStore.uts'
   import { track } from '../../utils/track.uts'
   import { todayDateStr, dateToTs, isToday } from '../../utils/recordDate.uts'
+  // #ifdef WEB
+  import { pickDate } from '../../utils/pickDate.uts'
+  // #endif
   const todayEnd = todayDateStr()
   import { newClientId, isNetworkError, enqueueRecord } from '../../utils/offlineQueue.uts'
 
@@ -110,6 +123,15 @@
     setTimeout(() => { focusInput.value = true }, 50)
     saving.value = false
   }
+
+  // #ifdef WEB
+  async function onPickWeb0() {
+    const v = await pickDate(recordDate.value, todayEnd)
+    if (v.length > 0) {
+      onDateChange(v)
+    }
+  }
+  // #endif
 </script>
 
 <style>

@@ -92,7 +92,16 @@
       <text class="card-title">白带（宫颈黏液）</text>
       <view class="bbt-date-row">
         <text class="label-inline">日期</text>
-        <lbc-date-field :value="mucusDate" :end="todayEnd" @change="onMucusDateChange" placeholder="选择日期" />
+        <!-- #ifdef APP-ANDROID || APP-IOS -->
+    <lbc-date-field :value="mucusDate" :end="todayEnd" @change="onMucusDateChange" />
+    <!-- #endif -->
+    <!-- #ifdef WEB -->
+    <view :end="todayEnd" hover-class="lb-press" hover-stay-time="120" @click="onPickBbtDateWeb">
+          <view class="bbt-date-box" hover-class="lb-press" hover-stay-time="120">
+            <text class="bbt-date-text">{{ mucusDate }}</text>
+          </view>
+        </view>
+    <!-- #endif -->
       </view>
       <view class="flow-row">
         <view class="flow-chip" v-for="(m, i) in mucusOpts" :key="i" :class="mucus == m.value ? 'flow-chip-active' : ''" hover-class="lb-press" hover-stay-time="120" @click="mucus = m.value">
@@ -109,7 +118,16 @@
       <text class="card-title">基础体温</text>
       <view class="bbt-date-row">
         <text class="label-inline">测量日期</text>
-        <lbc-date-field :value="bbtDate" :end="todayEnd" @change="onBbtDateChange" placeholder="选择日期" />
+        <!-- #ifdef APP-ANDROID || APP-IOS -->
+    <lbc-date-field :value="bbtDate" :end="todayEnd" @change="onBbtDateChange" />
+    <!-- #endif -->
+    <!-- #ifdef WEB -->
+    <view :end="todayEnd" hover-class="lb-press" hover-stay-time="120" @click="onPickMucusDateWeb">
+          <view class="bbt-date-box" hover-class="lb-press" hover-stay-time="120">
+            <text class="bbt-date-text">{{ bbtDate }}</text>
+          </view>
+        </view>
+    <!-- #endif -->
       </view>
       <text class="label">晨起未活动时，°C</text>
       <view class="input-row">
@@ -142,6 +160,9 @@
   import { themeClass } from '../../store/themeStore.uts'
   import { track } from '../../utils/track.uts'
   import { todayDateStr, dateToTs } from '../../utils/recordDate.uts'
+  // #ifdef WEB
+  import { pickDate } from '../../utils/pickDate.uts'
+  // #endif
   const todayEnd = todayDateStr()
 
   type Flow = { value: string, label: string }
@@ -497,6 +518,24 @@
   }
 
   onPageReady(() => { load() })
+
+  // #ifdef WEB
+  async function onPickBbtDateWeb() {
+    const v = await pickDate(mucusDate.value, todayEnd)
+    if (v.length > 0) {
+      onMucusDateChange(v)
+    }
+  }
+  // #endif
+
+  // #ifdef WEB
+  async function onPickMucusDateWeb() {
+    const v = await pickDate(bbtDate.value, todayEnd)
+    if (v.length > 0) {
+      onBbtDateChange(v)
+    }
+  }
+  // #endif
 </script>
 
 <style>

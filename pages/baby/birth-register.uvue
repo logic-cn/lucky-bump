@@ -2,7 +2,14 @@
   <view class="page" :class="themeClass()">
     <view class="card lb-rise">
       <text class="label">分娩日期</text>
-      <lbc-date-field :value="deliveryDate" @change="onDateChange" placeholder="选择日期" />
+      <!-- #ifdef APP-ANDROID || APP-IOS -->
+    <lbc-date-field :value="deliveryDate" @change="onDateChange" />
+    <!-- #endif -->
+    <!-- #ifdef WEB -->
+    <view hover-class="lb-press" hover-stay-time="120" @click="onPickDeliveryWeb">
+        <view class="date-box" hover-class="lb-press" hover-stay-time="120"><text class="date-text">{{ deliveryDate == '' ? '选择日期' : deliveryDate }}</text></view>
+      </view>
+    <!-- #endif -->
       <text class="label">分娩方式</text>
       <view class="opts">
         <view class="opt" hover-class="lb-press" hover-stay-time="120" v-for="(m, i) in modes" :key="i" :class="mode == m.value ? 'opt-active' : ''" @click="mode = m.value">
@@ -50,6 +57,9 @@
 
 <script setup lang="ts">
   import { ref } from 'vue'
+  // #ifdef WEB
+  import { pickDate } from '../../utils/pickDate.uts'
+  // #endif
   import { onPageReady } from '../../utils/pageLifecycle.uts'
   import { luckyJourney } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
@@ -135,6 +145,15 @@
   onPageReady(() => {
     fetusCount.value = journeyState.fetusCount > 0 ? journeyState.fetusCount : 1
   })
+
+  // #ifdef WEB
+  async function onPickDeliveryWeb() {
+    const v = await pickDate(deliveryDate.value, '')
+    if (v.length > 0) {
+      onDateChange(v)
+    }
+  }
+  // #endif
 </script>
 
 <style>

@@ -2,7 +2,14 @@
   <view class="page" :class="themeClass()">
     <view class="card lb-rise">
       <text class="label">产检日期</text>
-      <lbc-date-field :value="visitDate" @change="onDateChange" placeholder="选择日期" />
+      <!-- #ifdef APP-ANDROID || APP-IOS -->
+    <lbc-date-field :value="visitDate" @change="onDateChange" />
+    <!-- #endif -->
+    <!-- #ifdef WEB -->
+    <view hover-class="lb-press" hover-stay-time="120" @click="onPickVisitDateWeb">
+        <view class="date-box" hover-class="lb-press" hover-stay-time="120"><text class="date-text">{{ visitDate }}</text></view>
+      </view>
+    <!-- #endif -->
       <text class="label">孕周（周）</text>
       <input class="input" type="number" v-model="week" placeholder="如 24" placeholder-class="ph" />
       <text class="label">医院 / 医生</text>
@@ -31,7 +38,14 @@
       </view>
       <text class="hint" v-if="uploading">上传中…</text>
       <text class="label">下次产检时间（医生口径优先）</text>
-      <lbc-date-field :value="nextDate" @change="onNextChange" placeholder="选择日期" />
+      <!-- #ifdef APP-ANDROID || APP-IOS -->
+    <lbc-date-field :value="nextDate" @change="onNextChange" />
+    <!-- #endif -->
+    <!-- #ifdef WEB -->
+    <view hover-class="lb-press" hover-stay-time="120" @click="onPickNextDateWeb">
+        <view class="date-box" hover-class="lb-press" hover-stay-time="120"><text class="date-text">{{ nextDate == '' ? '选填' : nextDate }}</text></view>
+      </view>
+    <!-- #endif -->
     </view>
     <button class="btn-save lb-rise-1" hover-class="lb-press" hover-stay-time="120" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存本次产检' }}</button>
 
@@ -50,6 +64,9 @@
 
 <script setup lang="ts">
   import { ref } from 'vue'
+  // #ifdef WEB
+  import { pickDate } from '../../utils/pickDate.uts'
+  // #endif
   import { onPageReady, currentPageQuery } from '../../utils/pageLifecycle.uts'
   import { luckyCare } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
@@ -154,6 +171,24 @@
     if (w.length > 0) week.value = w
     loadVisits()
   })
+
+  // #ifdef WEB
+  async function onPickVisitDateWeb() {
+    const v = await pickDate(visitDate.value, '')
+    if (v.length > 0) {
+      onDateChange(v)
+    }
+  }
+  // #endif
+
+  // #ifdef WEB
+  async function onPickNextDateWeb() {
+    const v = await pickDate(nextDate.value, '')
+    if (v.length > 0) {
+      onNextChange(v)
+    }
+  }
+  // #endif
 </script>
 
 <style>

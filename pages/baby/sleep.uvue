@@ -8,13 +8,33 @@
       </view>
       <text class="label">入睡时间</text>
       <view class="row2">
-        <lbc-date-field class="half"  :value="startDate" @change="onStartDateChange" placeholder="选择日期" />
-        <lbc-time-field class="half"  :value="startTime" @change="onStartTimeChange" placeholder="选择时间" />
+        <!-- #ifdef APP-ANDROID || APP-IOS -->
+    <lbc-date-field class="half"  :value="startDate" @change="onStartDateChange" />
+    <!-- #endif -->
+    <!-- #ifdef WEB -->
+    <view class="half" hover-class="lb-press" hover-stay-time="120" @click="onPickStartDateWeb"><view class="pick-box" hover-class="lb-press" hover-stay-time="120"><text class="pick-text">{{ startDate }}</text></view></view>
+    <!-- #endif -->
+        <!-- #ifdef APP-ANDROID || APP-IOS -->
+    <lbc-time-field class="half"  :value="startTime" @change="onStartTimeChange" />
+    <!-- #endif -->
+    <!-- #ifdef WEB -->
+    <view class="half" hover-class="lb-press" hover-stay-time="120" @click="onPickStartTimeWeb"><view class="pick-box" hover-class="lb-press" hover-stay-time="120"><text class="pick-text">{{ startTime }}</text></view></view>
+    <!-- #endif -->
       </view>
       <text class="label">醒来时间</text>
       <view class="row2">
-        <lbc-date-field class="half"  :value="endDate" @change="onEndDateChange" placeholder="选择日期" />
-        <lbc-time-field class="half"  :value="endTime" @change="onEndTimeChange" placeholder="选择时间" />
+        <!-- #ifdef APP-ANDROID || APP-IOS -->
+    <lbc-date-field class="half"  :value="endDate" @change="onEndDateChange" />
+    <!-- #endif -->
+    <!-- #ifdef WEB -->
+    <view class="half" hover-class="lb-press" hover-stay-time="120" @click="onPickEndDateWeb"><view class="pick-box" hover-class="lb-press" hover-stay-time="120"><text class="pick-text">{{ endDate }}</text></view></view>
+    <!-- #endif -->
+        <!-- #ifdef APP-ANDROID || APP-IOS -->
+    <lbc-time-field class="half"  :value="endTime" @change="onEndTimeChange" />
+    <!-- #endif -->
+    <!-- #ifdef WEB -->
+    <view class="half" hover-class="lb-press" hover-stay-time="120" @click="onPickEndTimeWeb"><view class="pick-box" hover-class="lb-press" hover-stay-time="120"><text class="pick-text">{{ endTime }}</text></view></view>
+    <!-- #endif -->
       </view>
       <view class="wak-row" v-if="kind == 'night'">
         <text class="label-inline">夜醒次数</text>
@@ -36,6 +56,9 @@
 
 <script setup lang="ts">
   import { computed, ref } from 'vue'
+  // #ifdef WEB
+  import { pickDate, pickTime } from '../../utils/pickDate.uts'
+  // #endif
   import { onPageReady } from '../../utils/pageLifecycle.uts'
   import { luckyBaby } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
@@ -94,6 +117,42 @@
     }
     load()
   })
+
+  // #ifdef WEB
+  async function onPickStartDateWeb() {
+    const v = await pickDate(startDate.value, '')
+    if (v.length > 0) {
+      onStartDateChange(v)
+    }
+  }
+  // #endif
+
+  // #ifdef WEB
+  async function onPickStartTimeWeb() {
+    const v = await pickTime(startTime.value)
+    if (v.length > 0) {
+      onStartTimeChange(v)
+    }
+  }
+  // #endif
+
+  // #ifdef WEB
+  async function onPickEndDateWeb() {
+    const v = await pickDate(endDate.value, '')
+    if (v.length > 0) {
+      onEndDateChange(v)
+    }
+  }
+  // #endif
+
+  // #ifdef WEB
+  async function onPickEndTimeWeb() {
+    const v = await pickTime(endTime.value)
+    if (v.length > 0) {
+      onEndTimeChange(v)
+    }
+  }
+  // #endif
 </script>
 
 <style>

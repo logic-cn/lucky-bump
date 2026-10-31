@@ -27,7 +27,14 @@
           <text class="opt-text" :class="type == t.value ? 'opt-text-active' : ''">{{ t.label }}</text>
         </view>
       </view>
-      <lbc-date-field v-if="type == 'absolute'"  :value="anchorDate" @change="onAnchorChange" placeholder="选择日期" />
+      <!-- #ifdef APP-ANDROID || APP-IOS -->
+      <lbc-date-field v-if="type == 'absolute'" :value="anchorDate" @change="onAnchorChange" />
+      <!-- #endif -->
+      <!-- #ifdef WEB -->
+      <view v-if="type == 'absolute'" hover-class="lb-press" hover-stay-time="120" @click="onPickAnchorWeb">
+        <view class="pick-box"><text class="pick-text">{{ anchorDate == '' ? '选择日期' : anchorDate }}</text></view>
+      </view>
+      <!-- #endif -->
       <input v-if="type == 'by_week'" class="input" type="number" v-model="week" placeholder="孕周，如 28" placeholder-class="ph" />
       <input v-if="type == 'by_month'" class="input" type="number" v-model="month" placeholder="月龄，如 6" placeholder-class="ph" />
       <input v-if="type == 'recurring'" class="input" type="number" v-model="intervalDays" placeholder="间隔天数，如 1" placeholder-class="ph" />
@@ -39,11 +46,25 @@
       <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">免打扰时段</text></view>
       <view class="p-row">
         <text class="p-label">开始</text>
-        <lbc-time-field :value="quietStartTime" @change="onQuietStartChange" placeholder="选择时间" />
+        <!-- #ifdef APP-ANDROID || APP-IOS -->
+    <lbc-time-field :value="quietStartTime" @change="onQuietStartChange" />
+    <!-- #endif -->
+    <!-- #ifdef WEB -->
+    <view hover-class="lb-press" hover-stay-time="120" @click="onPickQuietStartWeb">
+          <text class="pick-text">{{ quietStartTime }}</text>
+        </view>
+    <!-- #endif -->
       </view>
       <view class="p-row">
         <text class="p-label">结束</text>
-        <lbc-time-field :value="quietEndTime" @change="onQuietEndChange" placeholder="选择时间" />
+        <!-- #ifdef APP-ANDROID || APP-IOS -->
+    <lbc-time-field :value="quietEndTime" @change="onQuietEndChange" />
+    <!-- #endif -->
+    <!-- #ifdef WEB -->
+    <view hover-class="lb-press" hover-stay-time="120" @click="onPickQuietEndWeb">
+          <text class="pick-text">{{ quietEndTime }}</text>
+        </view>
+    <!-- #endif -->
       </view>
       <text class="hint">默认 22:00-7:00；仅影响前台提醒弹层，不隐藏待办</text>
     </view>
@@ -137,6 +158,9 @@
   import { quietStart, quietEnd, setQuietRange } from '../../utils/quiet.uts'
   import { notifyEnabled, notifyPermission, setNotifyEnabled } from '../../utils/webNotify.uts'
   import { todayDateStr } from '../../utils/recordDate.uts'
+  // #ifdef WEB
+  import { pickDate, pickTime } from '../../utils/pickDate.uts'
+  // #endif
 
   type TOpt = { value: string, label: string }
 
@@ -314,6 +338,33 @@
 
   // 首屏与 tab 切回统一走 onPageReady（uni-app x 5.34 页面钩子不触发，见 utils/pageLifecycle.uts）
   onPageReady(() => { load(); loadProfile() })
+
+  // #ifdef WEB
+  async function onPickAnchorWeb() {
+    const v = await pickDate(anchorDate.value, '')
+    if (v.length > 0) {
+      onAnchorChange(v)
+    }
+  }
+  // #endif
+
+  // #ifdef WEB
+  async function onPickQuietStartWeb() {
+    const v = await pickTime(quietStartTime)
+    if (v.length > 0) {
+      onQuietStartChange(v)
+    }
+  }
+  // #endif
+
+  // #ifdef WEB
+  async function onPickQuietEndWeb() {
+    const v = await pickTime(quietEndTime)
+    if (v.length > 0) {
+      onQuietEndChange(v)
+    }
+  }
+  // #endif
 </script>
 
 <style>

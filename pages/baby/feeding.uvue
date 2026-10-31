@@ -23,7 +23,16 @@
       </view>
       <view class="time-row">
         <text class="label-inline">时间</text>
-        <lbc-time-field :value="feedTime" @change="onTimeChange" placeholder="现在" />
+        <!-- #ifdef APP-ANDROID || APP-IOS -->
+    <lbc-time-field :value="feedTime" @change="onTimeChange" />
+    <!-- #endif -->
+    <!-- #ifdef WEB -->
+    <view :value="feedTime.length  hover-class="lb-press" hover-stay-time="120" @click="onPickFeedTimeWeb"> 0 ? feedTime : feedFallback" @change="onTimeChange">
+          <view class="time-box" hover-class="lb-press" hover-stay-time="120">
+            <text class="time-text">{{ feedTime == '' ? '现在' : feedTime }}</text>
+          </view>
+        </view>
+    <!-- #endif -->
         <text class="time-reset" v-if="feedTime.length > 0" @click="feedTime = ''">恢复现在</text>
       </view>
       <text class="hint">可补记今天早些时候的奶量（如夜奶）</text>
@@ -53,6 +62,9 @@
   import { themeClass } from '../../store/themeStore.uts'
   import { track } from '../../utils/track.uts'
   import { todayDateStr } from '../../utils/recordDate.uts'
+  // #ifdef WEB
+  import { pickTime } from '../../utils/pickDate.uts'
+  // #endif
 
   type FOpt = { value: string, label: string }
   type FRow = { time: string, desc: string }
@@ -164,6 +176,15 @@
     }
     load()
   })
+
+  // #ifdef WEB
+  async function onPickFeedTimeWeb() {
+    const v = await pickTime(feedTime.value)
+    if (v.length > 0) {
+      onTimeChange(v)
+    }
+  }
+  // #endif
 </script>
 
 <style>

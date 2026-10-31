@@ -1,0 +1,42 @@
+/** 跨页日期/时间选择（Web 端 picker 平台缺陷绕过，2026-10-31）：
+ * 打开独立选择器页（页面渲染路径在 Web 可靠）。
+ * 回传走本地存储 + 轮询：Web 端页面栈回退会重建页面实例，闭包/$once 监听不可靠。 */
+
+const POLL_MS = 300
+const POLL_MAX = 200
+
+function waitForPick(id: string): Promise<string> {
+  return new Promise<string>((resolve) => {
+    const key = `lb_pick_${id}`
+    let n = 0
+    const tick = () => {
+      const v = uni.getStorageSync(key)
+      if (v != null && (v as string).length > 0) {
+        uni.removeStorageSync(key)
+        resolve(v as string)
+        return
+      }
+      n += 1
+      if (n < POLL_MAX) {
+        setTimeout(tick, POLL_MS)
+      } else {
+        resolve('')
+      }
+    }
+    setTimeout(tick, POLL_MS)
+  })
+}
+
+export function pickDate(value: string, end: string): Promise<string> {
+  const id = `pick${Date.now()}`
+  const p = waitForPick(id)
+  uni.navigateTo({ url: `/pages/util/date-picker?mode=date&id=${id}&value=${value}&end=${end}` })
+  return p
+}
+
+export function pickTime(value: string): Promise<string> {
+  const id = `pick${Date.now()}`
+  const p = waitForPick(id)
+  uni.navigateTo({ url: `/pages/util/date-picker?mode=time&id=${id}&value=${value}` })
+  return p
+}

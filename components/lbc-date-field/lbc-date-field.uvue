@@ -29,7 +29,7 @@
             </view>
           </view>
         </view>
-        <text class="lbc-df-cancel" @click="closePanel">取消</text>
+        <view class="lbc-df-cancel" hover-class="lb-press" hover-stay-time="120" @click="closePanel"><text class="lbc-df-cancel-text">取消</text></view>
       </view>
     </view>
     <!-- #endif -->
@@ -135,7 +135,8 @@
   .lbc-df-day-disabled { background-color: transparent; opacity: 0.3; }
   .lbc-df-day-sel { background-color: var(--lb-primary); }
   .lbc-df-day-sel-text { color: var(--lb-white); font-weight: bold; }
-  .lbc-df-cancel { margin-top: 20rpx; text-align: center; font-size: 26rpx; color: var(--lb-text-3); padding: 12rpx 0; }
+  .lbc-df-cancel { margin-top: 20rpx; align-items: center; padding: 12rpx 0; }
+  .lbc-df-cancel-text { font-size: 26rpx; color: var(--lb-text-3); }
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
   @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }

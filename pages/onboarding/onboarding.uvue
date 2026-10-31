@@ -21,7 +21,14 @@
 
     <view v-if="step == 1" class="card lb-rise-1">
       <text class="q">{{ questionText }}</text>
-      <lbc-date-field :value="dateValue" :end="todayEnd" @change="onDateChange" placeholder="点这里选择日期" />
+      <!-- #ifdef APP-ANDROID || APP-IOS -->
+    <lbc-date-field :value="dateValue" :end="todayEnd" @change="onDateChange" />
+    <!-- #endif -->
+    <!-- #ifdef WEB -->
+    <view :end="todayEnd" hover-class="lb-press" hover-stay-time="120" @click="onPickOnboardDate">
+        <view class="date-box" hover-class="lb-press" hover-stay-time="120"><text class="date-text">{{ dateValue == '' ? '点这里选择日期' : dateValue }}</text></view>
+      </view>
+    <!-- #endif -->
       <text class="q q-top">身高与孕前体重（选填，用于个性化增重区间）</text>
       <view class="row-inputs">
         <input class="mini-input" type="number" v-model="heightCm" placeholder="身高 cm" placeholder-class="ph" confirm-type="next" />
@@ -43,6 +50,9 @@
   import { themeClass } from '../../store/themeStore.uts'
   import { track } from '../../utils/track.uts'
   import { todayDateStr } from '../../utils/recordDate.uts'
+  // #ifdef WEB
+  import { pickDate } from '../../utils/pickDate.uts'
+  // #endif
   const todayEnd = todayDateStr()
 
   const step = ref<number>(0)        // 0 选阶段 / 1 录日期
@@ -105,6 +115,15 @@
       uni.showToast({ title: (e as Error).message, icon: 'none' })
     }
   }
+
+  // #ifdef WEB
+  async function onPickOnboardDate() {
+    const v = await pickDate(dateValue.value, todayEnd)
+    if (v.length > 0) {
+      onDateChange(v)
+    }
+  }
+  // #endif
 </script>
 
 <style>

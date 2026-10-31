@@ -1,0 +1,179 @@
+<template>
+  <view class="page" :class="themeClass()">
+    <view class="head lb-rise">
+      <view class="head-btn" hover-class="lb-press" hover-stay-time="120" @click="cancel"><text class="head-cancel">取消</text></view>
+      <text class="head-title">{{ mode == 'date' ? '选择日期' : '选择时间' }}</text>
+      <view class="head-btn" hover-class="lb-press" hover-stay-time="120" @click="doConfirm"><text class="head-ok">{{ mode == 'date' ? '今天' : '现在' }}</text></view>
+    </view>
+
+    <!-- 日期模式：月历 -->
+    <view class="card lb-rise-1" v-if="mode == 'date'">
+      <view class="cal-head">
+        <view class="cal-nav" hover-class="lb-press" hover-stay-time="120" @click="shiftMonth(-1)"><text class="cal-nav-text">‹</text></view>
+        <text class="cal-title">{{ viewYear }} 年 {{ viewMonth }} 月</text>
+        <view class="cal-nav" hover-class="lb-press" hover-stay-time="120" @click="shiftMonth(1)"><text class="cal-nav-text">›</text></view>
+      </view>
+      <view class="cal-week">
+        <text class="cal-wd" v-for="(w, i) in weekdays" :key="i">{{ w }}</text>
+      </view>
+      <view class="cal-grid">
+        <view class="cal-cell" v-for="(c, i) in cells" :key="i" @click="pickDay(c)">
+          <view class="cal-day" :class="dayClass(c)" hover-class="lb-press" hover-stay-time="120">
+            <text class="cal-day-text" :class="c.empty ? '' : (c.date == picked ? 'cal-text-sel' : '')">{{ c.empty ? '' : c.day }}</text>
+          </view>
+        </view>
+      </view>
+      <text class="cal-tip">灰色日期超出可选范围</text>
+    </view>
+
+    <!-- 时间模式：时/分芯片 -->
+    <view class="card lb-rise-1" v-if="mode == 'time'">
+      <text class="hint">小时</text>
+      <view class="grid">
+        <view class="chip" v-for="(h, i) in hours" :key="'h' + i" :class="selHour == h ? 'chip-sel' : ''" hover-class="lb-press" hover-stay-time="120" @click="selHour = h">
+          <text class="chip-text" :class="selHour == h ? 'chip-text-sel' : ''">{{ h }}</text>
+        </view>
+      </view>
+      <text class="hint">分钟</text>
+      <view class="grid">
+        <view class="chip" v-for="(m, i) in minutes" :key="'m' + i" :class="selMinute == m ? 'chip-sel' : ''" hover-class="lb-press" hover-stay-time="120" @click="selMinute = m">
+          <text class="chip-text" :class="selMinute == m ? 'chip-text-sel' : ''">{{ m }}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script setup lang="ts">
+  /** 独立日期/时间选择页（v3 精装）：Web 端 vapor picker 平台缺陷的绕过路径。
+   * 用法：utils/pickDate.uts 的 pickDate/pickTime → navigateTo 本页 → 确认后 $once 回传。 */
+  import { computed, ref } from 'vue'
+  import { onLoad } from '@dcloudio/uni-app'
+  import { themeClass } from '../../store/themeStore.uts'
+
+  type DCell = { day: number, date: string, empty: boolean, selectable: boolean }
+
+  const mode = ref<string>('date')
+  const pickId = ref<string>('')
+  const picked = ref<string>('')
+  const endLimit = ref<string>('')
+  const weekdays = ref<string[]>(['一', '二', '三', '四', '五', '六', '日'])
+  const now = new Date()
+  const viewYear = ref<number>(now.getFullYear())
+  const viewMonth = ref<number>(now.getMonth() + 1)
+  const selHour = ref<number>(8)
+  const selMinute = ref<number>(0)
+  const hours = ref<number[]>(Array.from({ length: 24 }, (_, i) => i))
+  const minutes = ref<number[]>(Array.from({ length: 12 }, (_, i) => i * 5))
+
+  function pad2(n: number): string { return n < 10 ? '0' + n : '' + n }
+
+  onLoad((q: OnLoadOptions) => {
+    mode.value = q.getString('mode') ?? 'date'
+    pickId.value = q.getString('id') ?? ''
+    picked.value = q.getString('value') ?? ''
+    endLimit.value = q.getString('end') ?? ''
+    if (mode.value == 'date') {
+      const base = picked.value.length > 0 ? picked.value : `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`
+      const d = new Date(Date.parse(base + 'T12:00:00'))
+      if (Number.isFinite(d.getTime())) { viewYear.value = d.getFullYear(); viewMonth.value = d.getMonth() + 1 }
+    } else {
+      const parts = (picked.value.length > 0 ? picked.value : '08:00').split(':')
+      selHour.value = Math.max(0, Math.min(23, parseInt(parts[0]) || 0))
+      selMinute.value = Math.max(0, Math.min(55, Math.round((parseInt(parts[1]) || 0) / 5) * 5))
+    }
+  })
+
+  function emitBack(v: string) {
+    if (pickId.value.length == 0) return
+    // 回传走本地存储：Web 端页面栈回退重建实例，$once 监听不可靠
+    uni.setStorageSync(`lb_pick_${pickId.value}`, v)
+    uni.navigateBack({ delta: 1 })
+  }
+  function cancel() { uni.navigateBack({ delta: 1 }) }
+  function doConfirm() {
+    if (mode.value == 'date') {
+      const today = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`
+      emitBack(picked.value.length > 0 ? picked.value : today)
+    } else {
+      emitBack(`${pad2(selHour.value)}:${pad2(selMinute.value)}`)
+    }
+  }
+  function shiftMonth(delta: number) {
+    let m = viewMonth.value + delta
+    let y = viewYear.value
+    if (m < 1) { m = 12; y -= 1 }
+    if (m > 12) { m = 1; y += 1 }
+    viewMonth.value = m
+    viewYear.value = y
+  }
+  function pickDay(c: DCell) {
+    if (c.empty || !c.selectable) return
+    picked.value = c.date
+  }
+  function dayClass(c: DCell): string {
+    if (c.empty) return 'cal-day-empty'
+    if (!c.selectable) return 'cal-day-disabled'
+    if (c.date == picked.value) return 'cal-day-sel'
+    return 'cal-day-normal'
+  }
+
+  const cells = computed((): DCell[] => {
+    const out: DCell[] = []
+    const y = viewYear.value
+    const m = viewMonth.value
+    const offset = (new Date(y, m - 1, 1).getDay() + 6) % 7
+    const blank: DCell = { day: 0, date: '', empty: true, selectable: false }
+    for (let i = 0; i < offset; i++) out.push(blank)
+    const days = new Date(y, m, 0).getDate()
+    for (let d = 1; d <= days; d++) {
+      const ds = `${y}-${pad2(m)}-${pad2(d)}`
+      const selectable = endLimit.value.length == 0 || ds <= endLimit.value
+      out.push({ day: d, date: ds, empty: false, selectable })
+    }
+    return out
+  })
+</script>
+
+<style>
+  @import '../../theme.scss';
+  .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
+  .head { width: 702rpx; flex-direction: row; align-items: center; justify-content: space-between; padding: 12rpx 8rpx 24rpx 8rpx; }
+  .head-btn { padding: 12rpx 20rpx; }
+  .head-cancel { font-size: 28rpx; color: var(--lb-text-2); }
+  .head-title { font-size: 32rpx; font-weight: bold; color: var(--lb-text-1); }
+  .head-ok { font-size: 28rpx; color: var(--lb-primary); font-weight: bold; }
+  .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 32rpx; box-shadow: 0 8rpx 28rpx rgba(61,35,48,0.05); }
+  .cal-head { flex-direction: row; align-items: center; justify-content: space-between; margin-bottom: 20rpx; }
+  .cal-nav { width: 72rpx; height: 72rpx; align-items: center; justify-content: center; border-radius: 24rpx; background-color: var(--lb-fill); }
+  .cal-nav-text { font-size: 36rpx; color: var(--lb-text-2); }
+  .cal-title { font-size: 30rpx; font-weight: bold; color: var(--lb-text-1); }
+  .cal-week { flex-direction: row; margin-bottom: 8rpx; }
+  .cal-wd { width: 84rpx; text-align: center; font-size: 24rpx; color: var(--lb-text-3); }
+  .cal-grid { flex-direction: row; flex-wrap: wrap; }
+  .cal-cell { width: 84rpx; align-items: center; padding: 4rpx 0; }
+  .cal-day { width: 72rpx; height: 72rpx; border-radius: 36rpx; align-items: center; justify-content: center; }
+  .cal-day-text { font-size: 27rpx; color: var(--lb-text-1); }
+  .cal-text-sel { color: #FFFFFF; font-weight: bold; }
+  .cal-day-empty { background-color: transparent; }
+  .cal-day-normal { background-color: transparent; }
+  .cal-day-disabled { background-color: transparent; opacity: 0.3; }
+  .cal-day-sel { background-color: var(--lb-primary); }
+  .cal-tip { font-size: 24rpx; color: var(--lb-text-3); margin-top: 20rpx; }
+  .hint { font-size: 24rpx; color: var(--lb-text-3); margin: 16rpx 0 8rpx 0; }
+  .grid { flex-direction: row; flex-wrap: wrap; }
+  .chip { width: 84rpx; height: 64rpx; border-radius: 18rpx; background-color: var(--lb-fill); align-items: center; justify-content: center; margin: 4rpx; }
+  .chip-sel { background-color: var(--lb-primary); }
+  .chip-text { font-size: 26rpx; color: var(--lb-text-1); }
+  .chip-text-sel { color: #FFFFFF; font-weight: bold; }
+
+  @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+  @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
+  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms both; }
+  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-fade { animation: lb-fade 200ms ease-out both; }
+  .lb-press { opacity: 0.72; transform: scale(0.98); }
+</style>

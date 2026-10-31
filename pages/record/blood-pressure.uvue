@@ -2,7 +2,16 @@
   <view class="page" :class="themeClass()">
     <view class="card lb-rise">
       <text class="label">记录日期</text>
-      <lbc-date-field :value="recordDate" :end="todayEnd" @change="onDateChange" placeholder="选择日期" />
+      <!-- #ifdef APP-ANDROID || APP-IOS -->
+    <lbc-date-field :value="recordDate" :end="todayEnd" @change="onDateChange" />
+    <!-- #endif -->
+    <!-- #ifdef WEB -->
+    <view :end="todayEnd" hover-class="lb-press" hover-stay-time="120" @click="onPickWeb0">
+        <view class="date-box" hover-class="lb-press" hover-stay-time="120">
+          <text class="date-text">{{ recordDate }}{{ isTodayDate ? '（今天）' : '' }}</text>
+        </view>
+      </view>
+    <!-- #endif -->
       <text class="label">血压（mmHg）</text>
       <view class="bp-row">
         <view class="bp-col">
@@ -36,6 +45,9 @@
   import { journeyState } from '../../store/journeyStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
   import { todayDateStr, dateToTs, isToday } from '../../utils/recordDate.uts'
+  // #ifdef WEB
+  import { pickDate } from '../../utils/pickDate.uts'
+  // #endif
   const todayEnd = todayDateStr()
   import { newClientId, isNetworkError, enqueueRecord } from '../../utils/offlineQueue.uts'
 
@@ -130,6 +142,15 @@
     else if (saved.value) uni.showToast({ title: '已记录 ✓', icon: 'success' })
     saving.value = false
   }
+
+  // #ifdef WEB
+  async function onPickWeb0() {
+    const v = await pickDate(recordDate.value, todayEnd)
+    if (v.length > 0) {
+      onDateChange(v)
+    }
+  }
+  // #endif
 </script>
 
 <style>

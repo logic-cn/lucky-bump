@@ -18,7 +18,14 @@
       <text class="celebrate-title">恭喜！要先确认好孕吗？</text>
       <text class="hint">确认后你的备孕记录会无缝带孕展示，还能邀请宝宝爸爸一起记录</text>
       <text class="label">末次月经第一天</text>
-      <lbc-date-field :value="lmp" :end="todayEnd" @change="onLmpChange" placeholder="选择日期" />
+      <!-- #ifdef APP-ANDROID || APP-IOS -->
+    <lbc-date-field :value="lmp" :end="todayEnd" @change="onLmpChange" />
+    <!-- #endif -->
+    <!-- #ifdef WEB -->
+    <view :end="todayEnd" hover-class="lb-press" hover-stay-time="120" @click="onPickLmpWeb">
+        <view class="date-box"><text class="date-text">{{ lmp == '' ? '选择日期' : lmp }}</text></view>
+      </view>
+    <!-- #endif -->
       <button class="btn-save" :disabled="saving" @click="confirmPregnancy">{{ saving ? '确认中…' : '确认好孕，开始孕期模式' }}</button>
       <view class="link-wrap" hover-class="lb-press" hover-stay-time="120"><text class="link" @click="uni.navigateBack()">稍后再说</text></view>
     </view>
@@ -37,6 +44,9 @@
   import { journeyState, applyJourney, stageText } from '../../store/journeyStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
   import { todayDateStr } from '../../utils/recordDate.uts'
+  // #ifdef WEB
+  import { pickDate } from '../../utils/pickDate.uts'
+  // #endif
   const todayEnd = todayDateStr()
 
   type Opt = { value: string, label: string, emoji: string }
@@ -84,6 +94,15 @@
   }
 
   function goHome() { uni.switchTab({ url: '/pages/index/index' }) }
+
+  // #ifdef WEB
+  async function onPickLmpWeb() {
+    const v = await pickDate(lmp.value, todayEnd)
+    if (v.length > 0) {
+      onLmpChange(v)
+    }
+  }
+  // #endif
 </script>
 
 <style>
