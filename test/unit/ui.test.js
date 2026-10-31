@@ -434,6 +434,31 @@ test('语音输入：日记页支持浏览器语音转文字', () => {
   assert.ok(src.includes('voice-btn'), '缺少语音按钮')
 })
 
+
+test('Web 端选择器绕过：独立选择器页与存储轮询回传接线完整', () => {
+  // Web 端 vapor picker 平台缺陷（docs/10）的绕过方案门禁：
+  // 页面触发器（#ifdef WEB）→ pickDate/pickTime → 独立选择器页 → 存储轮询回传
+  const pickerPage = fs.readFileSync(path.join(ROOT, 'pages/util/date-picker.uvue'), 'utf-8')
+  assert.ok(pickerPage.includes("uni.setStorageSync(`lb_pick_${pickId.value}`, v)"), '选择器页缺少存储回传')
+  assert.ok(pickerPage.includes('uni.navigateBack({ delta: 1 })'), '选择器页返回缺 delta（Web 端无参返回静默失效）')
+  assert.ok(pickerPage.includes('emitBack(c.date)'), '日期模式缺点日即回传')
+  assert.ok(pickerPage.includes('pickMinute(m)'), '时间模式缺点分钟即完成')
+  const util = fs.readFileSync(path.join(ROOT, 'utils/pickDate.uts'), 'utf-8')
+  assert.ok(util.includes('lb_pick_'), 'pickDate.uts 缺存储轮询键')
+  assert.ok(util.includes('POLL_MAX'), 'pickDate.uts 缺轮询上限')
+  const pages = ['pages/record/weight.uvue', 'pages/record/blood-pressure.uvue', 'pages/record/cycle.uvue', 'pages/me/settings.uvue', 'pages/baby/feeding.uvue']
+  for (const p of pages) {
+    const src = fs.readFileSync(path.join(ROOT, p), 'utf-8')
+    assert.ok(/#ifdef WEB[\s\S]*?onPick\w+/.test(src) || src.includes('pickDate.uts'), `${p} 缺少 Web 分支触发器接线`)
+  }
+})
+
+test('docs 索引：同类产品对标与平台缺陷报告已登记', () => {
+  const readme = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf-8')
+  assert.ok(readme.includes('09-同类产品对标同类产品报告'), 'README 缺 docs/09 链接')
+  assert.ok(readme.includes('10-HBuilderX平台缺陷报告'), 'README 缺 docs/10 链接')
+})
+
 /* ---------------- 可读性下限（小字号不得回流） ---------------- */
 
 test('最小字号不低于 24rpx（正文与辅助文案一致）', () => {
