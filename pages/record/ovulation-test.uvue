@@ -10,7 +10,15 @@
       </view>
       <text class="hint" v-if="result == 'strong_positive'">强阳通常预示未来 24-48 小时内排卵，易孕窗口已更新</text>
       <text class="hint" v-else>建议每天同一时间测，接近强阳时缩短至 4-6 小时一次</text>
-      <button class="btn-save" :disabled="saving || result.length == 0" @click="save">{{ saving ? '保存中…' : '保存' }}</button>
+      <text class="label">试纸照片（选填，便于对比 LH 深浅）</text>
+      <view class="photo-row" v-if="photoUrl.length > 0">
+        <image class="photo" :src="photoUrl" mode="aspectFill" />
+        <text class="photo-del" @click="photoUrl = ''">移除</text>
+      </view>
+      <view class="photo-add" v-else hover-class="lb-press" hover-stay-time="120" @click="choosePhoto">
+        <text class="photo-add-text">{{ uploading ? '上传中…' : '📷 拍照 / 从相册选择' }}</text>
+      </view>
+      <button class="btn-save" :disabled="saving || uploading || result.length == 0" @click="save">{{ saving ? '保存中…' : '保存' }}</button>
     </view>
   </view>
 </template>
@@ -24,6 +32,8 @@
   type Opt = { value: string, label: string, emoji: string }
 
   const result = ref('')
+  const photoUrl = ref('')
+  const uploading = ref(false)
   const opts = ref<Opt[]>([
     { value: 'negative', label: '阴性', emoji: '⚪' },
     { value: 'weak_positive', label: '弱阳', emoji: '🌥' },
@@ -31,10 +41,41 @@
   ])
   const saving = ref(false)
 
+  /** 试纸拍照（复用相册上传链路：chooseImage → uniCloud.uploadFile → fileID） */
+  function choosePhoto() {
+    if (uploading.value) return
+    uni.chooseImage({
+      count: 1,
+      sizeType: ['compressed'],
+      success: (res: any) => {
+        const paths = res.tempFilePaths as string[]
+        if (paths.length > 0) uploadPhoto(paths[0])
+      },
+      fail: () => { }
+    })
+  }
+  async function uploadPhoto(path: string): Promise<void> {
+    uploading.value = true
+    try {
+      const dot = path.lastIndexOf('.')
+      const ext = dot >= 0 ? path.slice(dot + 1) : 'jpg'
+      const cloudPath = `ovulation-test/${journeyState.journeyId}/${Date.now()}.${ext}`
+      const up = await uniCloud.uploadFile({ filePath: path, cloudPath } as UTSJSONObject)
+      const fileId = (up as UTSJSONObject).getString('fileID') ?? ''
+      if (fileId.length == 0) throw new Error('上传失败，请重试')
+      photoUrl.value = fileId
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    } finally { uploading.value = false }
+  }
+
   async function save() {
     saving.value = true
     try {
-      await luckyRecord('addCycleEvent', { journeyId: journeyState.journeyId, type: 'ovulation_test', value: { result: result.value } } as UTSJSONObject)
+      // UTSJSONObject 动态键写入各端行为不一，经 JSON 往返构造最稳妥
+      const raw = photoUrl.value.length > 0 ? { result: result.value, photoUrl: photoUrl.value } : { result: result.value }
+      const value = JSON.parse(JSON.stringify(raw)) as UTSJSONObject
+      await luckyRecord('addCycleEvent', { journeyId: journeyState.journeyId, type: 'ovulation_test', value } as UTSJSONObject)
       uni.showToast({ title: '已记录 ✓', icon: 'success' })
       setTimeout(() => { uni.navigateBack() }, 600)
     } catch (e) {
@@ -55,6 +96,11 @@
   .opt-text { font-size: 26rpx; color: var(--lb-text-1); margin-top: 12rpx; }
   .opt-text-active { color: var(--lb-primary-deep); font-weight: bold; }
   .hint { font-size: 24rpx; color: var(--lb-text-3); margin: 16rpx 0 32rpx 0; }
+  .photo-row { flex-direction: row; align-items: center; margin-bottom: 24rpx; }
+  .photo { width: 160rpx; height: 160rpx; border-radius: 24rpx; background-color: var(--lb-fill); }
+  .photo-del { font-size: 26rpx; color: var(--lb-danger); margin-left: 24rpx; padding: 16rpx 24rpx; }
+  .photo-add { width: 620rpx; height: 140rpx; border-radius: 24rpx; background-color: var(--lb-fill); align-items: center; justify-content: center; margin-bottom: 24rpx; transition: all 160ms ease-out; }
+  .photo-add-text { font-size: 28rpx; color: var(--lb-text-2); }
   .btn-save { width: 620rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
 
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
