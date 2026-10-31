@@ -176,7 +176,7 @@
   .hero { align-items: center; margin-top: 40rpx; }
   .timer-text { font-size: 96rpx; font-weight: bold; color: var(--lb-text-1); }
   .hint { font-size: 24rpx; color: var(--lb-text-3); margin-top: 16rpx; }
-  .big-btn { width: 320rpx; height: 320rpx; border-radius: 160rpx; background-image: linear-gradient(135deg, #F0709D, #DC3D75); align-items: center; justify-content: center; margin: 40rpx 0; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); transition: all 160ms ease-out; }
+  .big-btn { width: 320rpx; height: 320rpx; border-radius: 160rpx; background-image: linear-gradient(135deg, #F376A0, #D43770); align-items: center; justify-content: center; margin: 40rpx 0; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); transition: all 160ms ease-out; }
   .big-btn-stop { background-image: none; background-color: var(--lb-danger); box-shadow: 0 12rpx 32rpx rgba(229,72,77,0.28); }
   .big-btn-text { font-size: 44rpx; font-weight: bold; color: #FFFFFF; }
   .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 32rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }

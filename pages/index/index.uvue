@@ -1,15 +1,26 @@
 <template>
   <view class="page" :class="themeClass()">
-    <!-- 阶段大卡（可点：进入生命故事时间线） -->
+    <!-- 阶段大卡：品牌面（日出渐变 + bump 弧线 + 幸运星），可点进入生命故事 -->
     <view class="hero-card lb-rise" hover-class="lb-press" hover-stay-time="120" @click="goStory">
-      <view class="hero-row">
-        <text class="hero-week" :lines="1">{{ weekLabel }}</text>
-        <text class="hero-stage" v-if="stageLabel.length > 0 && stageLabel != weekLabel">{{ stageLabel }}</text>
+      <view class="hero-deco hero-deco-big" />
+      <view class="hero-deco hero-deco-small" />
+      <view class="spark-v hero-spark-1v" />
+      <view class="spark-h hero-spark-1h" />
+      <view class="spark-v hero-spark-2v" />
+      <view class="spark-h hero-spark-2h" />
+      <view class="hero-body">
+        <view class="hero-row">
+          <text class="hero-week" :lines="1">{{ weekLabel }}</text>
+          <text class="hero-stage" v-if="stageLabel.length > 0 && stageLabel != weekLabel">{{ stageLabel }}</text>
+        </view>
+        <text class="hero-sub" v-if="showBabySize">宝宝现在{{ babySizeText }}，距预产期还有 {{ journeyState.daysToEdd }} 天</text>
+        <text class="hero-sub" v-else-if="isPostpartum">产后第 {{ journeyState.postpartumDays }} 天 · 照顾好你自己也是宝宝的事</text>
+        <text class="hero-sub" v-else-if="isTtc">距预测下次月经还有 {{ daysToPeriod }} 天 · 记录身体信号，好孕自来</text>
+        <view class="hero-foot">
+          <text class="hero-link">查看生命故事</text>
+          <text class="hero-arrow">›</text>
+        </view>
       </view>
-      <text class="hero-sub" v-if="showBabySize">宝宝现在{{ babySizeText }}，距预产期还有 {{ journeyState.daysToEdd }} 天</text>
-      <text class="hero-sub" v-else-if="isPostpartum">产后第 {{ journeyState.postpartumDays }} 天 · 照顾好你自己也是宝宝的事</text>
-      <text class="hero-sub" v-else-if="isTtc">距预测下次月经还有 {{ daysToPeriod }} 天 · 记录身体信号，好孕自来</text>
-      <text class="hero-link">查看生命故事 ›</text>
     </view>
 
     <!-- 数据加载失败：显式可重试，不再静默显示空态 -->
@@ -25,7 +36,10 @@
 
     <!-- 今日待办 -->
     <view class="card lb-rise-1" v-if="todos.length > 0 && !loadFailed">
-      <text class="card-title">今日待办</text>
+      <view class="card-head">
+        <view class="title-bar" />
+        <text class="card-title card-title-flush">今日待办</text>
+      </view>
       <view class="todo-row" v-for="(t, i) in todos" :key="i" hover-class="lb-press" hover-stay-time="120" @click="openTodo(t)">
         <view class="todo-dot" :class="t.getBoolean('urgent') == true ? 'todo-dot-urgent' : ''" />
         <view class="todo-body">
@@ -39,13 +53,19 @@
       </view>
     </view>
     <view class="card lb-rise-1" v-else-if="!loadFailed">
-      <text class="card-title">今日待办</text>
+      <view class="card-head">
+        <view class="title-bar" />
+        <text class="card-title card-title-flush">今日待办</text>
+      </view>
       <text class="empty-text">暂无待办，按节奏来就好 ☺</text>
     </view>
 
     <!-- 快捷记录宫格 -->
     <view class="card lb-rise-2">
-      <text class="card-title">快捷记录</text>
+      <view class="card-head">
+        <view class="title-bar" />
+        <text class="card-title card-title-flush">快捷记录</text>
+      </view>
       <view class="grid">
         <view class="grid-item" v-for="(item, i) in quickItems" :key="i" hover-class="lb-press" hover-stay-time="120" @click="goRecord(item.url)">
           <view class="grid-chip" :class="'grid-chip-' + (i % 5)">
@@ -402,14 +422,29 @@
 <style>
   @import '../../theme.scss';
   .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; }
-  .hero-card { background-image: linear-gradient(135deg, #F0709D, #DC3D75); border-radius: 40rpx; padding: 44rpx 40rpx; margin-bottom: 24rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
+  .hero-card { position: relative; overflow: hidden; background-image: linear-gradient(165deg, #F376A0, #D43770); border-radius: 46rpx; padding: 44rpx 40rpx 36rpx 40rpx; margin-bottom: 24rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
+  .hero-deco { position: absolute; border-radius: 999rpx; background-color: rgba(255,255,255,0.10); }
+  .hero-deco-big { width: 300rpx; height: 300rpx; right: -70rpx; bottom: -110rpx; background-color: rgba(255,255,255,0.09); }
+  .hero-deco-small { width: 150rpx; height: 150rpx; left: -40rpx; top: -50rpx; background-color: rgba(255,255,255,0.12); }
+  .spark-v { position: absolute; width: 6rpx; border-radius: 4rpx; background-color: #FFD27A; }
+  .spark-h { position: absolute; height: 6rpx; border-radius: 4rpx; background-color: #FFD27A; }
+  .hero-spark-1v { height: 34rpx; right: 74rpx; top: 36rpx; }
+  .hero-spark-1h { width: 34rpx; right: 60rpx; top: 50rpx; }
+  .hero-spark-2v { height: 18rpx; right: 130rpx; top: 84rpx; opacity: 0.7; }
+  .hero-spark-2h { width: 18rpx; right: 125rpx; top: 89rpx; opacity: 0.7; }
+  .hero-body { position: relative; }
   .hero-row { flex-direction: row; align-items: flex-end; }
-  .hero-week { font-size: 52rpx; font-weight: bold; color: #FFFFFF; flex: 1; margin-right: 12rpx; }
-  .hero-stage { font-size: 24rpx; color: #FFFFFF; background-color: rgba(255,255,255,0.28); border-radius: 999rpx; padding: 8rpx 20rpx; }
-  .hero-sub { font-size: 26rpx; color: rgba(255,255,255,0.92); margin-top: 16rpx; }
-  .hero-link { font-size: 24rpx; color: rgba(255,255,255,0.85); margin-top: 16rpx; }
-  .card { background-color: var(--lb-card); border-radius: 36rpx; padding: 36rpx; margin-bottom: 24rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
+  .hero-week { font-size: 64rpx; font-weight: bold; color: #FFFFFF; flex: 1; margin-right: 12rpx; }
+  .hero-stage { font-size: 24rpx; color: #FFFFFF; background-color: rgba(255,255,255,0.22); border-radius: 999rpx; padding: 8rpx 20rpx; }
+  .hero-sub { font-size: 26rpx; color: rgba(255,255,255,0.92); margin-top: 14rpx; }
+  .hero-foot { flex-direction: row; align-items: center; margin-top: 20rpx; }
+  .hero-link { font-size: 24rpx; color: #FFFFFF; background-color: rgba(255,255,255,0.18); border-radius: 999rpx; padding: 10rpx 24rpx; }
+  .hero-arrow { font-size: 28rpx; color: rgba(255,255,255,0.85); margin-left: 12rpx; }
+  .card { background-color: var(--lb-card); border-radius: 36rpx; padding: 36rpx; margin-bottom: 24rpx; box-shadow: 0 8rpx 28rpx rgba(61,35,48,0.05); }
+  .card-head { flex-direction: row; align-items: center; margin-bottom: 24rpx; }
+  .title-bar { width: 8rpx; height: 30rpx; border-radius: 4rpx; background-image: linear-gradient(180deg, #F376A0, #D43770); margin-right: 14rpx; }
   .card-title { font-size: 32rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 24rpx; }
+  .card-title-flush { margin-bottom: 0; }
   .todo-row { flex-direction: row; align-items: center; padding: 18rpx 16rpx; border-radius: 24rpx; transition: all 160ms ease-out; }
   .todo-dot { width: 16rpx; height: 16rpx; border-radius: 8rpx; background-color: var(--lb-primary); margin-right: 16rpx; }
   .todo-dot-urgent { background-color: var(--lb-danger); }
@@ -422,13 +457,13 @@
   .empty-text { font-size: 26rpx; color: var(--lb-text-3); }
   .grid { flex-direction: row; flex-wrap: wrap; }
   .grid-item { width: 25%; align-items: center; padding: 16rpx 0; border-radius: 24rpx; transition: all 160ms ease-out; }
-  .grid-chip { width: 84rpx; height: 84rpx; border-radius: 24rpx; align-items: center; justify-content: center; }
-  .grid-chip-0 { background-color: var(--lb-primary-soft); }
-  .grid-chip-1 { background-color: var(--lb-secondary-soft); }
-  .grid-chip-2 { background-color: var(--lb-success-soft); }
-  .grid-chip-3 { background-color: var(--lb-warning-soft); }
-  .grid-chip-4 { background-color: var(--lb-chip-5); }
-  .grid-icon { font-size: 40rpx; }
+  .grid-chip { width: 92rpx; height: 92rpx; border-radius: 30rpx; align-items: center; justify-content: center; }
+  .grid-chip-0 { background-image: linear-gradient(160deg, #FDEDF3, #F9D6E4); }
+  .grid-chip-1 { background-image: linear-gradient(160deg, #F1EEFE, #E1DBFA); }
+  .grid-chip-2 { background-image: linear-gradient(160deg, #E6F7F0, #D0EFE2); }
+  .grid-chip-3 { background-image: linear-gradient(160deg, #FDF3E0, #FAE5C6); }
+  .grid-chip-4 { background-image: linear-gradient(160deg, #FFF0E8, #FEDFD0); }
+  .grid-icon { font-size: 44rpx; }
   .grid-label { font-size: 24rpx; color: var(--lb-text-2); margin-top: 12rpx; }
   .trend-text { font-size: 28rpx; color: var(--lb-text-2); }
   .mom-row { flex-direction: row; justify-content: space-between; padding: 8rpx 12rpx; }

@@ -63,7 +63,7 @@
   @import '../../theme.scss';
   .page { flex: 1; background-color: var(--lb-bg); align-items: center; padding-top: 100rpx; }
   .logo-head { align-items: center; margin-bottom: 48rpx; }
-  .logo-mark { width: 128rpx; height: 128rpx; border-radius: 36rpx; background-image: linear-gradient(135deg, #F0709D, #DC3D75); box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); align-items: center; justify-content: center; margin-bottom: 28rpx; }
+  .logo-mark { width: 128rpx; height: 128rpx; border-radius: 36rpx; background-image: linear-gradient(135deg, #F376A0, #D43770); box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); align-items: center; justify-content: center; margin-bottom: 28rpx; }
   .logo-emoji { font-size: 64rpx; }
   .title { font-size: 56rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 0; }
   .card { width: 640rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 48rpx 40rpx; }

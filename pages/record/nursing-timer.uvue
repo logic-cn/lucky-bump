@@ -170,7 +170,7 @@
   .timer-text { font-size: 96rpx; font-weight: bold; color: var(--lb-text-1); }
   .hint { font-size: 24rpx; color: var(--lb-text-3); margin-top: 16rpx; }
   .side-row { flex-direction: row; margin: 40rpx 0; }
-  .side-btn { width: 280rpx; height: 280rpx; border-radius: 140rpx; background-image: linear-gradient(135deg, #F0709D, #DC3D75); align-items: center; justify-content: center; margin: 0 20rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); transition: all 160ms ease-out; }
+  .side-btn { width: 280rpx; height: 280rpx; border-radius: 140rpx; background-image: linear-gradient(135deg, #F376A0, #D43770); align-items: center; justify-content: center; margin: 0 20rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); transition: all 160ms ease-out; }
   .side-text { font-size: 36rpx; font-weight: bold; color: #FFFFFF; }
   .big-btn { width: 320rpx; height: 320rpx; border-radius: 160rpx; background-color: var(--lb-danger); align-items: center; justify-content: center; margin: 40rpx 0; box-shadow: 0 12rpx 32rpx rgba(229,72,77,0.28); transition: all 160ms ease-out; }
   .big-btn-text { font-size: 40rpx; font-weight: bold; color: #FFFFFF; }

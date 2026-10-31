@@ -82,7 +82,7 @@
   @import '../../theme.scss';
   .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
   .profile { width: 702rpx; flex-direction: row; align-items: center; padding: 36rpx 8rpx; }
-  .avatar { width: 116rpx; height: 116rpx; border-radius: 58rpx; background-image: linear-gradient(135deg, #F0709D, #DC3D75); align-items: center; justify-content: center; box-shadow: 0 8rpx 24rpx rgba(228,83,127,0.28); }
+  .avatar { width: 116rpx; height: 116rpx; border-radius: 58rpx; background-image: linear-gradient(135deg, #F376A0, #D43770); align-items: center; justify-content: center; box-shadow: 0 8rpx 24rpx rgba(228,83,127,0.28); }
   .avatar-text { font-size: 46rpx; color: #FFFFFF; font-weight: bold; }
   .profile-body { margin-left: 26rpx; }
   .nickname { font-size: 36rpx; font-weight: bold; color: var(--lb-text-1); }
@@ -99,7 +99,7 @@
   .dlg-content { font-size: 28rpx; color: var(--lb-text-2); margin-top: 20rpx; text-align: center; line-height: 44rpx; }
   .dlg-actions { flex-direction: row; justify-content: space-between; margin-top: 36rpx; }
   .dlg-btn { width: 230rpx; height: 84rpx; line-height: 84rpx; text-align: center; font-size: 29rpx; color: var(--lb-text-2); background-color: var(--lb-fill); border-radius: 999rpx; }
-  .dlg-btn-ok { color: #FFFFFF; background-image: linear-gradient(135deg, #F0709D, #DC3D75); }
+  .dlg-btn-ok { color: #FFFFFF; background-image: linear-gradient(135deg, #F376A0, #D43770); }
 
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }

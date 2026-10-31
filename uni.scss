@@ -6,8 +6,9 @@
 $lb-primary: #E4537F;          /* 蔷薇玫瑰：主按钮/选中态/强调 */
 $lb-primary-deep: #C93A67;     /* 按压态/浅底上的主色文字 */
 $lb-primary-soft: #FBE7EF;     /* 樱粉浅底：芯片、选中底 */
-$lb-grad-1: #F0709D;           /* 英雄卡渐变起点（左上） */
-$lb-grad-2: #DC3D75;           /* 英雄卡渐变终点（右下） */
+$lb-grad-1: #F376A0;           /* 品牌渐变起点：日出桃（与 mark.png 同源） */
+$lb-grad-2: #D43770;           /* 品牌渐变终点：绛玫瑰 */
+$lb-gold: #F5A83C;             /* 幸运金：品牌星点/强调点缀（不用于语义提醒） */
 $lb-secondary: #8B7BE8;        /* 鸢尾紫：家庭/爸爸端主题 */
 $lb-secondary-soft: #EFECFD;
 $lb-success: #37A884;          /* 薄荷绿：达标/正常 */
@@ -23,7 +24,7 @@ $lb-card: #FFFFFF;
 $lb-fill: #F6EFF2;             /* 次级浅底：禁用/对话框次按钮 */
 $lb-text-1: #322430;           /* 梅墨：标题 */
 $lb-text-2: #7D7183;           /* 正文辅助 */
-$lb-text-3: #B6AABB;           /* 弱提示/未选中 tab */
+$lb-text-3: #9E8DA5;           /* 弱提示/未选中 tab（对比度 4.5:1 基线） */
 $lb-line: #F2E9ED;             /* 分隔发丝线 */
 $lb-arrow: #C6B8C6;            /* 列表箭头 */
 $lb-mask: rgba(50, 36, 48, 0.5); /* 弹窗遮罩（梅子色半透明） */
