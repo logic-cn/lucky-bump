@@ -183,3 +183,9 @@ Web 端已可用。后续运行只涉及：1) `npm test` 保持 70/70；2) 上�
 - [ ] 真机回归（无 USB 设备连接，无法自动执行）：安装上述 APK 后验证 ①本地通知锁屏弹达 ②试纸拍照上传 ③暗色模式切换 ④喂养/图表/故事流/爸爸端渲染 ⑤键盘与保存反馈
 - [ ] 已知低危项：uvue CSS 对 `animation-fill-mode: both` 仅支持 `forwards`（编译警告，仅影响带延迟的进场动画起始帧，无功能影响）
 - [x] 提交入库：分波次 7 个 commit（docs 对标 / 波一 / 波二 / 波三 / 试纸拍照 / 组件修复 / 守护日志），`npm test` 109/109
+
+### 真机回归补充（2026-10-31 第二轮自动化探测）
+
+- adb（HBuilderX 自带 1.0.36）`devices list` 确认无设备连接（USB/无线均无）→ 真机回归物理阻塞，无法在本会话执行
+- 新增 `scripts/device-regression.sh`：手机插入并允许 USB 调试后一键执行「安装 APK → 启动 → 分步截图 → dumpsys 通知证据 → logcat 快照」，回归结果自动落盘 `.screenshots/device-regression/`
+- schema mucus 枚举：HBuilderX CLI 全量帮助确认无删除/强制更新 schema 的命令（仅 hosting delete），GUI 右键上传为唯一路径；已再次确认云对象走管理上下文写入，mucus 服务端强校验在产线即时生效，schema 属文档层差异
