@@ -23,7 +23,8 @@
         "ovulation_test",
         "bbt",
         "intercourse",
-        "pregnancy_test"
+        "pregnancy_test",
+        "mucus"
       ]
     },
     "value": {

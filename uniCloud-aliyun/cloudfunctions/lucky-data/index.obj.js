@@ -128,22 +128,43 @@ module.exports = {
       for (const s of sleeps.data) sleepMinutes += Math.max(0, +s.duration_min || 0)
       momCard = { date: todayStr, feedings: feed.total || 0, diapers: diaper.total || 0, sleepMinutes }
     }
-    // 本周小结（周报的最小可用版）：最近 7 天记录条数 + 体重变化
+    // 本周小结（周报卡）：最近 7 天记录条数 + 体重变化 + 连续记录周数 + 今日待办完成数 + 下一项日程
     const weekAgo = now - 7 * DAY
     const recentLogs = await db.call(this).collection('lb-daily-logs').where({ journey_id: j._id }).orderBy('ts', 'desc').limit(200).get()
     const weekLogs = recentLogs.data.filter(d => d.ts >= weekAgo).length
     const recentDiaries = await db.call(this).collection('lb-diaries').where({ journey_id: j._id }).orderBy('ts', 'desc').limit(100).get()
     const weekDiaries = recentDiaries.data.filter(d => d.ts >= weekAgo).length
-    const weekStats = { records: weekLogs + weekDiaries, weightDelta }
+    // 连续记录周数（含本周）：按 7 天桶往前数，中断即止；数据资产感的量化表达
+    const WEEK = 7 * DAY
+    const buckets = new Set()
+    for (const d of recentLogs.data.concat(recentDiaries.data)) {
+      if (d.ts >= now - 8 * WEEK) buckets.add(Math.floor((now - d.ts) / WEEK))
+    }
+    let streakWeeks = 0
+    while (streakWeeks < 8 && buckets.has(streakWeeks)) streakWeeks++
+    // 今日待办完成数（已完成的不出现在 todos 里，从完成表还原）
+    const todayStr2 = dateOf(now)
+    let todayDone = 0
+    for (const d of dones.data) { if (d.due_date === todayStr2) todayDone++ }
+    // 下一项日程（产检等）：取 14 天内最近一项
+    let nextVisit = null
+    if (plans.data.length > 0) nextVisit = { title: plans.data[0].title || '', date: dateOf(plans.data[0].plan_date) }
+    const weekStats = { records: weekLogs + weekDiaries, weightDelta, streakWeeks, todayDone, nextVisit }
     // 留痕：仅家庭成员访问记录，主人本人操作不写（docs/03 M7.2）
     if (access.memberRole && access.memberRole !== 'owner') {
       await logAccess(uid, j._id, 'today', dateOf(now))
     }
+    // 家人视角（爸爸端）经 today 拉旅程视图，需带齐孕周/产后天数等展示字段（与 lucky-journey.publicView 对齐）
+    const anchor2 = j.lmp_date || (j.edd ? j.edd - 280 * DAY : 0)
+    const gestDays = anchor2 ? Math.max(0, Math.floor((now - anchor2) / DAY)) : 0
     return auth.ok({
       journey: {
         _id: j._id, stage: stageOf(j, now), edd: j.edd ? dateOf(j.edd) : '',
         lmpDate: j.lmp_date ? dateOf(j.lmp_date) : '', deliveryDate: j.delivery_date ? dateOf(j.delivery_date) : '',
-        fetusCount: j.fetus_count || 1, highRisk: !!j.high_risk, title: j.title || ''
+        fetusCount: j.fetus_count || 1, highRisk: !!j.high_risk, title: j.title || '',
+        weeks: j.delivery_date ? 0 : Math.min(42, Math.floor(gestDays / 7)), days: j.delivery_date ? 0 : gestDays % 7,
+        daysToEdd: j.edd ? Math.max(0, Math.round((j.edd - now) / DAY)) : 0,
+        postpartumDays: j.delivery_date ? Math.max(0, Math.floor((now - j.delivery_date) / DAY)) : 0
       },
       todos, latest, weightDelta, momCard, weekStats, serverDate: dateOf(now)
     })

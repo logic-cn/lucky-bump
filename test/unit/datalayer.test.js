@@ -199,6 +199,49 @@ test('备孕旅程不返回妈妈卡', async () => {
   assert.equal(t.momCard, null, '非产后阶段不应显示妈妈卡')
 })
 
+test('周报卡：streakWeeks 连续周数与今日待办完成数', async () => {
+  const rt = createRuntime()
+  const reg = await rt.callObject('lucky-id', 'register', { username: 'wkstreak1', password: 'password123' })
+  const mk = await rt.callObject('lucky-journey', 'createJourney', { mode: 'pregnant', title: '周报', lmpDate: '2026-01-01' }, { token: reg.token })
+  const jid = mk.journeyId
+  const now = Date.now()
+  // 本周一条 + 上周一条（8 天前落在上一周桶）→ 连续 2 周
+  await rt.db.collection('lb-daily-logs').add({ journey_id: jid, code: 'weight', value: { kg: 60 }, ts: now, date: new Date(now).toISOString().slice(0, 10) })
+  await rt.db.collection('lb-daily-logs').add({ journey_id: jid, code: 'weight', value: { kg: 59.5 }, ts: now - 8 * 86400000, date: new Date(now - 8 * 86400000).toISOString().slice(0, 10) })
+  // 今日已完成 1 项待办
+  await rt.db.collection('lb-reminder-done').add({ journey_id: jid, rule_id: 'r1', due_date: new Date(now).toISOString().slice(0, 10), ts: now })
+  const t = await rt.callObject('lucky-data', 'today', { journeyId: jid }, { token: reg.token })
+  assert.equal(t.errCode, 0, JSON.stringify(t))
+  assert.equal(t.weekStats.streakWeeks, 2, '本周 + 上周各有一条 → 连续 2 周')
+  assert.equal(t.weekStats.todayDone, 1, '今日完成 1 项')
+  assert.equal(t.weekStats.records, 1, '周记录数只统计最近 7 天（8 天前那条不计入）')
+})
+
+test('家人自助解析：myFamily 返回共享旅程与角色，today 带齐孕周字段', async () => {
+  const rt = createRuntime()
+  const mom = await rt.callObject('lucky-id', 'register', { username: 'fam_mom', password: 'password123' })
+  const mk = await rt.callObject('lucky-journey', 'createJourney', { mode: 'pregnant', lmpDate: '2026-01-01' }, { token: mom.token })
+  const dad = await rt.callObject('lucky-id', 'register', { username: 'fam_dad', password: 'password123' })
+  // 加入前为空
+  const none = await rt.callObject('lucky-family', 'myFamily', {}, { token: dad.token })
+  assert.equal(none.errCode, 0, JSON.stringify(none))
+  assert.equal(none.member, null, '未加入家庭时 member 为空')
+  // 家庭组在 owner 首次查看时创建
+  await rt.callObject('lucky-family', 'getFamily', { journeyId: mk.journeyId }, { token: mom.token })
+  const inv = await rt.callObject('lucky-family', 'invite', { journeyId: mk.journeyId, role: 'recorder' }, { token: mom.token })
+  const joined = await rt.callObject('lucky-family', 'join', { code: inv.code, nickname: '爸爸' }, { token: dad.token })
+  assert.equal(joined.errCode, 0, JSON.stringify(joined))
+  const mine = await rt.callObject('lucky-family', 'myFamily', {}, { token: dad.token })
+  assert.equal(mine.errCode, 0, JSON.stringify(mine))
+  assert.equal(mine.member.journeyId, mk.journeyId, '应返回共享旅程')
+  assert.equal(mine.member.role, 'recorder', '应返回家庭角色')
+  // 成员经 today 拿到带孕周的旅程视图（爸爸端首页展示依赖这些字段）
+  const t = await rt.callObject('lucky-data', 'today', { journeyId: mk.journeyId }, { token: dad.token })
+  assert.equal(t.errCode, 0, JSON.stringify(t))
+  assert.ok(Number.isFinite(t.journey.weeks) && t.journey.weeks >= 0, '旅程视图应包含 weeks')
+  assert.ok(Number.isFinite(t.journey.postpartumDays), '旅程视图应包含 postpartumDays')
+})
+
 test('访问留痕：家庭成员看首页会被记录，主人可查、成员不可查', async () => {
   const { rt, jid, victimToken, attackerToken } = await twoUsers()
   const fam = await rt.callObject('lucky-family', 'getFamily', { journeyId: jid }, { token: victimToken })

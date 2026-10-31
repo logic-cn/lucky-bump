@@ -152,26 +152,90 @@ test('红线判定：血压重度升高/症状红线词', async () => {
   assert.equal(unknown.errCode, 'PARAM_ERROR')
 })
 
-test('周期预测：按周期均值预测排卵与易孕窗口', async () => {
+test('周期预测：近期加权均值 + 区间/置信度输出', async () => {
   const rt = createRuntime()
   const token = await freshUser(rt, 'user_g')
   const jid = await pregnantJourney(rt, token, '2026-01-01')
-  // 3 个周期：9/1、9/29、10/26（28 天规律）
+  // 3 个周期：9/1、9/29、10/26（长度 28、27）
   for (const d of ['2026-09-01', '2026-09-29', '2026-10-26']) {
     await withFixedClock(NOW, () => rt.callObject('lucky-record', 'addCycleEvent', { journeyId: jid, type: 'period_start', date: d }, { token }))
   }
   const list = await withFixedClock(NOW, () => rt.callObject('lucky-record', 'listCycleEvents', { journeyId: jid }, { token }))
   assert.equal(list.errCode, 0)
-  assert.equal(list.prediction.avgCycleLength, 28)
+  // 近期加权：(28×1 + 27×2)/3 = 27.33 → 27（新周期权重更高）
+  assert.equal(list.prediction.avgCycleLength, 27)
   assert.equal(list.prediction.regular, true)
-  // 下次月经 = 10/26 + 28 = 11/23；排卵 = 11/9；易孕窗 11/7-11/10
-  assert.equal(list.prediction.nextPeriodDate, '2026-11-23')
-  assert.equal(list.prediction.ovulationDate, '2026-11-09')
+  // 下次月经 = 10/26 + 27 = 11/22；排卵 = 11/8；预测带 ±1 天不确定区间
+  assert.equal(list.prediction.nextPeriodDate, '2026-11-22')
+  assert.equal(list.prediction.ovulationDate, '2026-11-08')
+  assert.equal(list.prediction.uncertaintyDays, 1)
+  assert.equal(list.prediction.nextPeriodRange.earliest, '2026-11-21')
+  assert.equal(list.prediction.nextPeriodRange.latest, '2026-11-23')
+  // 仅 2 个周期长度，样本不足 → 置信度仍为 low（周期数与规律度共同决定）
+  assert.equal(list.prediction.confidence, 'low')
   // 强阳试纸覆盖日历预测
   await withFixedClock(NOW, () => rt.callObject('lucky-record', 'addCycleEvent', { journeyId: jid, type: 'ovulation_test', date: '2026-11-07', value: { result: 'strong_positive' } }, { token }))
   const list2 = await withFixedClock(NOW, () => rt.callObject('lucky-record', 'listCycleEvents', { journeyId: jid }, { token }))
   assert.equal(list2.prediction.basedOn, 'ovulation_test')
   assert.equal(list2.prediction.ovulationDate, '2026-11-07')
+  // 易孕窗随不确定度外扩：11/7 前后 ±(2+1) 天起
+  assert.ok(list2.prediction.fertileWindow.from <= '2026-11-04')
+  assert.ok(list2.prediction.fertileWindow.to >= '2026-11-08')
+})
+
+test('周期预测：BBT 双相证据参与排卵定位', async () => {
+  const rt = createRuntime()
+  const token = await freshUser(rt, 'user_bbt')
+  const jid = await pregnantJourney(rt, token, '2026-01-01')
+  // 2 个周期：10/1、10/29（保证 lastStart 存在）
+  for (const d of ['2026-10-01', '2026-10-29']) {
+    await withFixedClock(NOW, () => rt.callObject('lucky-record', 'addCycleEvent', { journeyId: jid, type: 'period_start', date: d }, { token }))
+  }
+  // 本周期（10/29 起）BBT：3 天 36.4 低温相 → 4 天 36.9 高温相（升温 0.5°C）
+  for (const d of ['2026-10-29', '2026-10-30', '2026-10-31']) {
+    await withFixedClock(NOW, () => rt.callObject('lucky-record', 'addCycleEvent', { journeyId: jid, type: 'bbt', date: d, value: { tempC: 36.4 } }, { token }))
+  }
+  for (const d of ['2026-11-01', '2026-11-02', '2026-11-03', '2026-11-04']) {
+    await withFixedClock(NOW, () => rt.callObject('lucky-record', 'addCycleEvent', { journeyId: jid, type: 'bbt', date: d, value: { tempC: 36.9 } }, { token }))
+  }
+  const list = await withFixedClock(NOW, () => rt.callObject('lucky-record', 'listCycleEvents', { journeyId: jid }, { token }))
+  assert.equal(list.errCode, 0)
+  assert.equal(list.prediction.basedOn, 'bbt')
+  // 排卵日 = 高温首日 11/1
+  assert.equal(list.prediction.ovulationDate, '2026-11-01')
+})
+
+test('周期预测：紊乱周期降低置信度并放大不确定度', async () => {
+  const rt = createRuntime()
+  const token = await freshUser(rt, 'user_irr')
+  const jid = await pregnantJourney(rt, token, '2026-01-01')
+  // 5 个起点 → 长度 [26, 40, 22, 35]，标准差约 7 天
+  for (const d of ['2026-07-01', '2026-07-27', '2026-09-05', '2026-09-27', '2026-11-01']) {
+    await withFixedClock(NOW, () => rt.callObject('lucky-record', 'addCycleEvent', { journeyId: jid, type: 'period_start', date: d }, { token }))
+  }
+  const list = await withFixedClock(NOW, () => rt.callObject('lucky-record', 'listCycleEvents', { journeyId: jid }, { token }))
+  assert.equal(list.errCode, 0)
+  assert.equal(list.prediction.regular, false)
+  assert.equal(list.prediction.confidence, 'low')
+  assert.equal(list.prediction.uncertaintyDays, 5)
+  // 区间显著放宽：earliest 与 latest 相距 10 天
+  const range = Date.parse(list.prediction.nextPeriodRange.latest) - Date.parse(list.prediction.nextPeriodRange.earliest)
+  assert.equal(range, 10 * 86400000)
+})
+
+test('白带记录：枚举校验与落库', async () => {
+  const rt = createRuntime()
+  const token = await freshUser(rt, 'user_mucus')
+  const jid = await pregnantJourney(rt, token, '2026-01-01')
+  const ok = await withFixedClock(NOW, () => rt.callObject('lucky-record', 'addCycleEvent', { journeyId: jid, type: 'mucus', date: '2026-10-26', value: { result: 'eggwhite' } }, { token }))
+  assert.equal(ok.errCode, 0, JSON.stringify(ok))
+  const bad = await withFixedClock(NOW, () => rt.callObject('lucky-record', 'addCycleEvent', { journeyId: jid, type: 'mucus', value: { result: 'hacker' } }, { token }))
+  assert.equal(bad.errCode, 'PARAM_ERROR', '非法枚举必须拒绝')
+  // 试纸照片地址可随事件落库（超长拒绝）
+  const photo = await withFixedClock(NOW, () => rt.callObject('lucky-record', 'addCycleEvent', { journeyId: jid, type: 'ovulation_test', value: { result: 'weak_positive', photoUrl: 'cloud://test.jpg' } }, { token }))
+  assert.equal(photo.errCode, 0, JSON.stringify(photo))
+  const longUrl = await withFixedClock(NOW, () => rt.callObject('lucky-record', 'addCycleEvent', { journeyId: jid, type: 'ovulation_test', value: { result: 'weak_positive', photoUrl: 'x'.repeat(301) } }, { token }))
+  assert.equal(longUrl.errCode, 'PARAM_ERROR')
 })
 
 test('家庭移除成员：owner 按 user_id 移除后成员消失', async () => {

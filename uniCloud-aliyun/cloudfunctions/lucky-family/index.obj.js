@@ -43,6 +43,18 @@ async function accessOf(uid, journeyId) {
 module.exports = {
   _accessOf: accessOf,
 
+  /** 家庭成员自助解析：我在哪个家庭/共享旅程、什么角色（爸爸端引导的根基；只返回本人成员关系，无泄露面） */
+  async myFamily() {
+    const uid = await requireUser.call(this)
+    if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
+    const m = await db.call(this).collection('lb-family-members').where({ user_id: uid }).limit(1).get()
+    if (m.data.length === 0) return auth.ok({ member: null })
+    const fam = await db.call(this).collection('lb-families').doc(m.data[0].family_id).get()
+    if (!fam.data || fam.data.length === 0) return auth.ok({ member: null })
+    const f = Array.isArray(fam.data) ? fam.data[0] : fam.data
+    return auth.ok({ member: { familyId: f._id, journeyId: f.journey_id, role: m.data[0].role, nickname: m.data[0].nickname || '' } })
+  },
+
   async getFamily(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')

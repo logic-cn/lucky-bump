@@ -1,0 +1,74 @@
+/**
+ * App 端系统级本地通知（波二 P0：锁屏/后台提醒触达）
+ * - 数据源：首页待办（lucky-data.today），未来 14 天内的规则提醒与产检/疫苗日程
+ * - 每日一次 + 内容签名去重，避免重复注册同批通知
+ * - Web 端走 webNotify（浏览器通知），HBuilderX 真机打包后本文件在 App 生效
+ * - uni.createPushMessage / clearPushMessage 均做运行时探测（旧基座缺失时静默降级为站内提醒）
+ */
+const SYNC_DATE_KEY = 'lb_app_notify_day'
+const SYNC_SIG_KEY = 'lb_app_notify_sig'
+const HORIZON_DAYS = 14
+
+function signatureOf(todos: UTSJSONObject[]): string {
+  const parts: string[] = []
+  const today = Date.now()
+  for (let i = 0; i < todos.length; i++) {
+    const t = todos[i]
+    const due = t.getNumber('dueTs') ?? 0
+    if (due <= today || due > today + HORIZON_DAYS * 86400000) continue
+    parts.push(`${t.getString('title') ?? ''}@${t.getString('dueDate') ?? ''}`)
+  }
+  return parts.join('|')
+}
+
+function scheduleOne(title: string, content: string, dueTs: number): void {
+  const delaySec = Math.max(0, Math.round((dueTs - Date.now()) / 1000))
+  // #ifdef APP
+  const u: any = uni as any
+  if (u.createPushMessage == null) return
+  try {
+    u.createPushMessage({
+      title: '幸孕记',
+      content: content,
+      payload: { kind: 'reminder', title: title },
+      delay: delaySec
+    } as UTSJSONObject)
+  } catch (e) { /* 注册失败不影响主流程（提醒仍在站内待办可见） */ }
+  // #endif
+}
+
+/** 首页加载待办后调用：把未来 14 天的关键待办注册为系统本地通知（每日 + 签名去重） */
+export function syncLocalNotifications(todos: UTSJSONObject[]): void {
+  const d = new Date()
+  const today = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`
+  const sig = signatureOf(todos)
+  if ((uni.getStorageSync(SYNC_DATE_KEY) as string) == today && (uni.getStorageSync(SYNC_SIG_KEY) as string) == sig) return
+  let count = 0
+  for (let i = 0; i < todos.length; i++) {
+    const t = todos[i]
+    const due = t.getNumber('dueTs') ?? 0
+    const title = t.getString('title') ?? ''
+    if (due <= Date.now() || due > Date.now() + HORIZON_DAYS * 86400000) continue
+    if (title.length == 0) continue
+    const prep = t.getString('prep') ?? ''
+    const content = prep.length > 0 ? `${title}（${prep}）` : title
+    scheduleOne(title, content, due)
+    count++
+  }
+  if (count > 0) {
+    uni.setStorageSync(SYNC_DATE_KEY, today)
+    uni.setStorageSync(SYNC_SIG_KEY, sig)
+  }
+}
+
+/** 完成待办后调用：清除已注册的系统通知（旧基座无此 API 时静默跳过），下次打开按新签名重注册 */
+export function cancelScheduledNotifications(): void {
+  // #ifdef APP
+  const u: any = uni as any
+  try {
+    if (u.clearPushMessage != null) u.clearPushMessage()
+  } catch (e) { /* 清除失败可容忍：通知最多多响一次 */ }
+  // #endif
+  uni.removeStorageSync(SYNC_DATE_KEY)
+  uni.removeStorageSync(SYNC_SIG_KEY)
+}

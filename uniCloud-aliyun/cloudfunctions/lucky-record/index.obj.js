@@ -153,24 +153,72 @@ function scoreEpds(answers) {
   return { score, selfHarm: a[9] > 0 }
 }
 
-/* ---------------- 周期预测（docs/03 M1.1/M1.2） ---------------- */
+/* ---------------- 周期预测（docs/03 M1.1/M1.2；v2：近期加权 + 排卵证据 + 置信度/不确定度） ---------------- */
+
+/** BBT 双相证据：当前周期内低温相（≥3 天）后连续 3 天均值高 ≥0.3°C → 排卵日 = 高温首日 */
+function bbtOvulationDate(events, lastStart) {
+  const temps = events
+    .filter(e => e.type === 'bbt' && e.value && Number.isFinite(e.value.tempC))
+    .map(e => ({ date: e.date, t: e.value.tempC, ts: parseDate(e.date) }))
+    .filter(x => Number.isFinite(x.ts) && x.ts >= lastStart)
+    .sort((a, b) => a.ts - b.ts)
+  if (temps.length < 6) return null
+  for (let i = 3; i <= temps.length - 3; i++) {
+    let low = 0
+    for (let k = 0; k < i; k++) low += temps[k].t
+    low /= i
+    let high = 0
+    for (let k = i; k < i + 3; k++) high += temps[k].t
+    high /= 3
+    if (high - low >= 0.3) return temps[i].date
+  }
+  return null
+}
+
 function predictCycle(cycles, events, now = Date.now()) {
   const starts = cycles.map(c => c.start_date).sort()
   if (starts.length === 0) return null
   const lens = []
   for (let i = 1; i < starts.length; i++) lens.push(Math.round((starts[i] - starts[i - 1]) / DAY))
-  const avgLen = lens.length ? Math.round(lens.reduce((a, b) => a + b, 0) / lens.length) : 28
-  const regular = lens.length >= 2 && lens.every(l => Math.abs(l - avgLen) <= 7)
+  // 近 6 个周期按新旧加权（旧 1 新 3）：紊乱恢复期的预测不被远古数据稀释
+  let wSum = 0, wTotal = 0
+  const recent = lens.slice(-6)
+  for (let i = 0; i < recent.length; i++) {
+    const w = Math.min(3, i + 1)
+    wSum += recent[i] * w
+    wTotal += w
+  }
+  const avgLen = wTotal > 0 ? Math.round(wSum / wTotal) : 28
+  // 波动幅度（标准差）→ 不确定度：随记录增多自然收窄，用户可感知"越记越准"
+  let variance = 0
+  for (const l of lens) variance += (l - avgLen) * (l - avgLen)
+  const std = lens.length >= 2 ? Math.sqrt(variance / lens.length) : 0
+  const regular = lens.length >= 2 && std <= 4
+  const uncertaintyDays = lens.length >= 2 ? Math.min(5, Math.max(1, Math.round(std) || 1)) : 3
+  // 排卵证据优先级：强阳试纸 > 本周期 BBT 双相 > 日历推算（黄体 14 天）
   const lastStart = starts[starts.length - 1]
   const strongOvu = events.filter(e => e.type === 'ovulation_test' && e.value.result === 'strong_positive').map(e => e.date).sort().pop()
+  const bbtOvu = strongOvu ? null : bbtOvulationDate(events, lastStart)
   const nextStart = lastStart + avgLen * DAY
-  const ovuDay = strongOvu ? parseDate(strongOvu) : nextStart - 14 * DAY
+  const basedOn = strongOvu ? 'ovulation_test' : (bbtOvu ? 'bbt' : 'calendar')
+  const ovuDay = strongOvu ? parseDate(strongOvu) : (bbtOvu ? parseDate(bbtOvu) : nextStart - 14 * DAY)
+  // 置信度：记录越多、波动越小、有排卵证据越可信
+  let confidence = 'low'
+  if (lens.length >= 4 && (std <= 3 || strongOvu || bbtOvu)) confidence = 'high'
+  else if (lens.length >= 3 && std <= 5) confidence = 'medium'
+  else if (strongOvu || bbtOvu) confidence = 'medium'
   return {
     avgCycleLength: avgLen, regular,
     nextPeriodDate: dateOf(nextStart),
-    fertileWindow: { from: dateOf(ovuDay - 2 * DAY), to: dateOf(ovuDay + 1 * DAY) },
+    nextPeriodRange: {
+      earliest: dateOf(nextStart - uncertaintyDays * DAY),
+      latest: dateOf(nextStart + uncertaintyDays * DAY)
+    },
+    uncertaintyDays,
+    fertileWindow: { from: dateOf(ovuDay - (2 + uncertaintyDays) * DAY), to: dateOf(ovuDay + (1 + uncertaintyDays) * DAY) },
     ovulationDate: dateOf(ovuDay),
-    basedOn: strongOvu ? 'ovulation_test' : 'calendar'
+    basedOn,
+    confidence
   }
 }
 
@@ -256,15 +304,17 @@ module.exports = {
     const j = await accessibleJourney.call(this, uid, params.journeyId, 'write')
     if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
     const type = params.type
-    if (!['period_start', 'period_end', 'ovulation_test', 'bbt', 'intercourse', 'pregnancy_test'].includes(type)) {
+    if (!['period_start', 'period_end', 'ovulation_test', 'bbt', 'intercourse', 'pregnancy_test', 'mucus'].includes(type)) {
       return auth.fail('PARAM_ERROR', 'type 无效')
     }
     const ts = params.ts || Date.now()
     const value = params.value || {}
     const doc = { user_id: uid, journey_id: j._id, type, value, date: params.date || dateOf(ts), ts, sensitivity: STRICT_SENSITIVE.has(type) ? 'strict' : 'normal', created_at: Date.now() }
     if (type === 'ovulation_test' && !['weak_positive', 'strong_positive', 'negative'].includes(value.result)) return auth.fail('PARAM_ERROR', '试纸结果无效')
+    if (type === 'ovulation_test' && value.photoUrl != null && String(value.photoUrl).length > 300) return auth.fail('PARAM_ERROR', '照片地址无效')
     if (type === 'bbt') { const t = +value.tempC; if (!(t >= 34 && t <= 42)) return auth.fail('PARAM_ERROR', '体温超出范围') }
     if (type === 'pregnancy_test' && !['negative', 'faint', 'positive'].includes(value.result)) return auth.fail('PARAM_ERROR', '验孕结果无效')
+    if (type === 'mucus' && !['dry', 'sticky', 'creamy', 'eggwhite', 'watery', 'unusual'].includes(value.result)) return auth.fail('PARAM_ERROR', '白带状态无效')
     const res = await db.call(this).collection(EVENTS).add(doc)
     // 经期开始：登记周期
     if (type === 'period_start') {
