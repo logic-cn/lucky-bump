@@ -2,9 +2,7 @@
   <view class="page" :class="themeClass()">
     <view class="card lb-rise">
       <text class="label">测量日期</text>
-      <picker mode="date" :value="measureDate" @change="onDateChange">
-        <view class="pick-box wide" hover-class="lb-press" hover-stay-time="120"><text class="pick-text">{{ measureDate }}</text></view>
-      </picker>
+      <lbc-date-field :value="measureDate" @change="onDateChange" placeholder="选择日期" />
       <text class="label">体重（kg）</text>
       <input class="input" type="number" v-model="weightKg" placeholder="如 6.8" placeholder-class="ph" />
       <text class="label">身长（cm，选填）</text>
@@ -100,7 +98,7 @@
     return Math.max(24, Math.round(kg / maxKg.value * 150))
   }
 
-  function onDateChange(e: UniPickerChangeEvent) { measureDate.value = (e.detail.value as string) ?? measureDate.value }
+  function onDateChange(v: string) { measureDate.value = v }
   async function load() {
     try {
       const res = await luckyBaby('getGrowthSeries', { journeyId: journeyState.journeyId, babyId: babyId.value } as UTSJSONObject)

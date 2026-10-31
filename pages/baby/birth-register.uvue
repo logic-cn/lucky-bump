@@ -2,9 +2,7 @@
   <view class="page" :class="themeClass()">
     <view class="card lb-rise">
       <text class="label">分娩日期</text>
-      <picker mode="date" :value="deliveryDate" @change="onDateChange">
-        <view class="date-box" hover-class="lb-press" hover-stay-time="120"><text class="date-text">{{ deliveryDate == '' ? '选择日期' : deliveryDate }}</text></view>
-      </picker>
+      <lbc-date-field :value="deliveryDate" @change="onDateChange" placeholder="选择日期" />
       <text class="label">分娩方式</text>
       <view class="opts">
         <view class="opt" hover-class="lb-press" hover-stay-time="120" v-for="(m, i) in modes" :key="i" :class="mode == m.value ? 'opt-active' : ''" @click="mode = m.value">
@@ -18,9 +16,10 @@
         <text class="baby-tag">{{ babies.length > 1 ? `宝宝 ${i + 1}` : '宝宝' }}</text>
         <view class="row2">
           <input class="input half" v-model="b.nickname" placeholder="小名" placeholder-class="ph" />
-          <picker class="half" mode="selector" :range="sexLabels" @change="(e: UniPickerChangeEvent) => onSexChange(i, e)">
-            <view class="input center"><text class="date-text">{{ sexLabels[b.sex] }}</text></view>
-          </picker>
+          <view class="half sex-row">
+            <view class="sex-chip" :class="b.sex == 1 ? 'sex-chip-sel' : ''" hover-class="lb-press" hover-stay-time="120" @click="babies.value[i].sex = 1"><text class="sex-chip-text" :class="b.sex == 1 ? 'sex-chip-text-sel' : ''">{{ sexLabels[1] }}</text></view>
+            <view class="sex-chip" :class="b.sex == 2 ? 'sex-chip-sel' : ''" hover-class="lb-press" hover-stay-time="120" @click="babies.value[i].sex = 2"><text class="sex-chip-text" :class="b.sex == 2 ? 'sex-chip-text-sel' : ''">{{ sexLabels[2] }}</text></view>
+          </view>
         </view>
         <view class="row2">
           <input class="input half" type="number" v-model="b.weightG" placeholder="出生体重 g" placeholder-class="ph" />
@@ -104,10 +103,7 @@
     uni.reLaunch({ url: '/pages/baby/baby-home' })
   }
 
-  function onDateChange(e: UniPickerChangeEvent) { deliveryDate.value = (e.detail.value as string) ?? '' }
-  function onSexChange(i: number, e: UniPickerChangeEvent) {
-    babies.value[i].sex = (parseInt(e.detail.value as string) || 2)
-  }
+  function onDateChange(v: string) { deliveryDate.value = v }
   function addBaby() { babies.value.push({ nickname: '', sex: 2, weightG: '', lengthCm: '' } as BabyForm) }
   async function save() {
     if (deliveryDate.value.length == 0) { uni.showToast({ title: '请选择分娩日期', icon: 'none' }); return }
@@ -176,6 +172,11 @@
   .bcard-btn { font-size: 26rpx; color: #FFFFFF; background-color: var(--lb-primary); border-radius: 40rpx; padding: 16rpx 28rpx; margin-left: 16rpx; }
   .bcard-btn-ghost { color: var(--lb-text-2); background-color: var(--lb-fill); margin-left: 0; }
 
+  .sex-row { flex-direction: row; }
+  .sex-chip { flex: 1; height: 88rpx; border-radius: 24rpx; background-color: var(--lb-fill); align-items: center; justify-content: center; margin-right: 12rpx; }
+  .sex-chip-sel { background-color: var(--lb-primary-soft); }
+  .sex-chip-text { font-size: 28rpx; color: var(--lb-text-2); }
+  .sex-chip-text-sel { color: var(--lb-primary-deep); font-weight: bold; }
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
   @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }

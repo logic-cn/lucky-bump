@@ -1,0 +1,105 @@
+<template>
+  <!-- 单根模板：App 走原生 picker；Web 端自绘时/分弹层（vapor Web picker 平台缺陷） -->
+  <view class="lbc-tf-host">
+    <!-- #ifdef APP-ANDROID || APP-IOS -->
+    <picker mode="time" :value="props.value" @change="onNative">
+      <view class="lbc-tf-trigger" hover-class="lb-press" hover-stay-time="120">
+        <text class="lbc-tf-trigger-text">{{ displayText }}</text>
+      </view>
+    </picker>
+    <!-- #endif -->
+    <!-- #ifdef WEB -->
+    <view class="lbc-tf-trigger" hover-class="lb-press" hover-stay-time="120" @click="openPanel">
+      <text class="lbc-tf-trigger-text">{{ displayText }}</text>
+    </view>
+    <view class="lbc-tf-mask lb-fade" v-if="visible" @click="closePanel">
+      <view class="lbc-tf-panel lb-pop" @click.stop>
+        <text class="lbc-tf-title">选择时间</text>
+        <text class="lbc-tf-hint">小时</text>
+        <view class="lbc-tf-grid">
+          <view class="lbc-tf-chip" v-for="(h, i) in hours" :key="'h' + i" :class="selHour == h ? 'lbc-tf-chip-sel' : ''" hover-class="lb-press" hover-stay-time="120" @click="selHour = h">
+            <text class="lbc-tf-chip-text" :class="selHour == h ? 'lbc-tf-chip-text-sel' : ''">{{ h }}</text>
+          </view>
+        </view>
+        <text class="lbc-tf-hint">分钟</text>
+        <view class="lbc-tf-grid">
+          <view class="lbc-tf-chip" v-for="(m, i) in minutes" :key="'m' + i" :class="selMinute == m ? 'lbc-tf-chip-sel' : ''" hover-class="lb-press" hover-stay-time="120" @click="selMinute = m">
+            <text class="lbc-tf-chip-text" :class="selMinute == m ? 'lbc-tf-chip-text-sel' : ''">{{ m }}</text>
+          </view>
+        </view>
+        <view class="lbc-tf-actions">
+          <text class="lbc-tf-cancel" @click="closePanel">取消</text>
+          <view class="lbc-tf-ok" hover-class="lb-press" hover-stay-time="120" @click="confirm">
+            <text class="lbc-tf-ok-text">确定</text>
+          </view>
+        </view>
+      </view>
+    </view>
+    <!-- #endif -->
+  </view>
+</template>
+
+<script setup lang="ts">
+  /** 跨端时间选择（v3 精装）：App 走原生 picker；Web 端自绘时/分弹层
+   *（HBuilderX 5.34 vapor Web 端 picker 平台缺陷，2026-10-31 编程式点击实测）。
+   * 统一 emit('change', 'HH:mm')，分钟 5 步进。 */
+  import { computed, ref } from 'vue'
+
+  const props = defineProps({
+    value: { type: String, default: '' },
+    placeholder: { type: String, default: '选择时间' }
+  })
+  const emit = defineEmits(['change'])
+
+  const visible = ref<boolean>(false)
+  const selHour = ref<number>(8)
+  const selMinute = ref<number>(0)
+  const hours = ref<number[]>(Array.from({ length: 24 }, (_, i) => i))
+  const minutes = ref<number[]>(Array.from({ length: 12 }, (_, i) => i * 5))
+
+  function pad2(n: number): string { return n < 10 ? '0' + n : '' + n }
+  const displayText = computed((): string => props.value.length > 0 ? props.value : props.placeholder)
+
+  function openPanel() {
+    const base = props.value.length > 0 ? props.value : '08:00'
+    const parts = base.split(':')
+    selHour.value = Math.max(0, Math.min(23, parseInt(parts[0]) || 0))
+    selMinute.value = Math.max(0, Math.min(55, Math.round((parseInt(parts[1]) || 0) / 5) * 5))
+    visible.value = true
+  }
+  function closePanel() { visible.value = false }
+  function onNative(e: UniPickerChangeEvent) {
+    const v = (e.detail.value as string) ?? ''
+    if (v.length > 0) emit('change', v)
+  }
+  function confirm() {
+    emit('change', `${pad2(selHour.value)}:${pad2(selMinute.value)}`)
+    visible.value = false
+  }
+</script>
+
+<style>
+  .lbc-tf-host { /* 单根容器 */ }
+  .lbc-tf-trigger { width: 620rpx; height: 88rpx; background-color: var(--lb-fill); border-radius: 24rpx; align-items: center; justify-content: center; }
+  .lbc-tf-trigger-text { font-size: 28rpx; color: var(--lb-text-1); }
+  .lbc-tf-mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--lb-mask); justify-content: center; align-items: center; }
+  .lbc-tf-panel { width: 620rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 32rpx; }
+  .lbc-tf-title { font-size: 30rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 20rpx; }
+  .lbc-tf-hint { font-size: 24rpx; color: var(--lb-text-3); margin: 12rpx 0 8rpx 0; }
+  .lbc-tf-grid { flex-direction: row; flex-wrap: wrap; }
+  .lbc-tf-chip { width: 88rpx; height: 64rpx; border-radius: 18rpx; background-color: var(--lb-fill); align-items: center; justify-content: center; margin: 4rpx; }
+  .lbc-tf-chip-sel { background-color: var(--lb-primary); }
+  .lbc-tf-chip-text { font-size: 26rpx; color: var(--lb-text-1); }
+  .lbc-tf-chip-text-sel { color: var(--lb-white); font-weight: bold; }
+  .lbc-tf-actions { flex-direction: row; align-items: center; justify-content: space-between; margin-top: 28rpx; }
+  .lbc-tf-cancel { font-size: 26rpx; color: var(--lb-text-3); padding: 12rpx 24rpx; }
+  .lbc-tf-ok { padding: 16rpx 56rpx; border-radius: 999rpx; background-image: linear-gradient(135deg, var(--lb-grad-1), var(--lb-grad-2)); }
+  .lbc-tf-ok-text { font-size: 28rpx; color: var(--lb-white); font-weight: bold; }
+  @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+  @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
+  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-fade { animation: lb-fade 200ms ease-out both; }
+  .lb-press { opacity: 0.72; transform: scale(0.98); }
+</style>

@@ -2,11 +2,7 @@
   <view class="page" :class="themeClass()">
     <view class="card lb-rise">
       <text class="label">记录日期</text>
-      <picker mode="date" :value="recordDate" :end="todayEnd" @change="onDateChange">
-        <view class="date-box" hover-class="lb-press" hover-stay-time="120">
-          <text class="date-text">{{ recordDate }}{{ isTodayDate ? '（今天）' : '' }}</text>
-        </view>
-      </picker>
+      <lbc-date-field :value="recordDate" :end="todayEnd" @change="onDateChange" placeholder="选择日期" />
       <text class="label">体重（kg）</text>
       <view class="input-row">
         <input class="num-input" type="number" v-model="kg" :focus="focusInput" :placeholder="weightPlaceholder" placeholder-class="ph" confirm-type="done" @confirm="save" />
@@ -46,8 +42,8 @@
   const isTodayDate = computed((): boolean => isToday(recordDate.value))
   const weightPlaceholder = computed((): string => lastWeight.value.length > 0 ? `上次 ${lastWeight.value}` : '58.2')
 
-  function onDateChange(e: UniPickerChangeEvent) {
-    recordDate.value = (e.detail.value as string) ?? recordDate.value
+  function onDateChange(v: string) {
+    recordDate.value = v
     saved.value = false
   }
   function goCharts() { uni.navigateTo({ url: '/pages/data/charts' }) }

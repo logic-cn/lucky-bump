@@ -1,0 +1,146 @@
+<template>
+  <!-- 单根模板（uni-app x 组件要求）：App 走原生 picker；Web 端自绘日历弹层 -->
+  <view class="lbc-df-host">
+    <!-- #ifdef APP-ANDROID || APP-IOS -->
+    <picker mode="date" :value="props.value" :end="props.end" @change="onNative">
+      <view class="lbc-df-trigger" hover-class="lb-press" hover-stay-time="120">
+        <text class="lbc-df-trigger-text">{{ displayText }}</text>
+      </view>
+    </picker>
+    <!-- #endif -->
+    <!-- #ifdef WEB -->
+    <view class="lbc-df-trigger" hover-class="lb-press" hover-stay-time="120" @click="openPanel">
+      <text class="lbc-df-trigger-text">{{ displayText }}</text>
+    </view>
+    <view class="lbc-df-mask lb-fade" v-if="visible" @click="closePanel">
+      <view class="lbc-df-panel lb-pop" @click.stop>
+        <view class="lbc-df-head">
+          <view class="lbc-df-nav" hover-class="lb-press" hover-stay-time="120" @click="shiftMonth(-1)"><text class="lbc-df-nav-text">‹</text></view>
+          <text class="lbc-df-title">{{ viewYear }} 年 {{ viewMonth }} 月</text>
+          <view class="lbc-df-nav" hover-class="lb-press" hover-stay-time="120" @click="shiftMonth(1)"><text class="lbc-df-nav-text">›</text></view>
+        </view>
+        <view class="lbc-df-week">
+          <text class="lbc-df-wd" v-for="(w, i) in weekdays" :key="i">{{ w }}</text>
+        </view>
+        <view class="lbc-df-grid">
+          <view class="lbc-df-cell" v-for="(c, i) in cells" :key="i" @click="pick(c)">
+            <view class="lbc-df-day" :class="dayClass(c)">
+              <text class="lbc-df-day-text" :class="c.selectable && c.date == props.value ? 'lbc-df-day-sel-text' : ''">{{ c.empty ? '' : c.day }}</text>
+            </view>
+          </view>
+        </view>
+        <text class="lbc-df-cancel" @click="closePanel">取消</text>
+      </view>
+    </view>
+    <!-- #endif -->
+  </view>
+</template>
+
+<script setup lang="ts">
+  /** 跨端日期选择（v3 精装）：App 走原生 picker；Web 端 HBuilderX 5.34 vapor 的
+   * picker 组件点击不创建弹层（平台缺陷，2026-10-31 编程式点击实测），
+   * 自绘日历弹层替代。统一 emit('change', 'YYYY-MM-DD')。 */
+  import { computed, ref } from 'vue'
+
+  type DCell = { day: number, date: string, empty: boolean, selectable: boolean }
+
+  const props = defineProps({
+    value: { type: String, default: '' },
+    end: { type: String, default: '' },        // 可选上限 YYYY-MM-DD（含当日）
+    placeholder: { type: String, default: '选择日期' },
+    showToday: { type: Boolean, default: true }
+  })
+  const emit = defineEmits(['change'])
+
+  const visible = ref<boolean>(false)
+  const weekdays = ref<string[]>(['一', '二', '三', '四', '五', '六', '日'])
+  const now = new Date()
+  const viewYear = ref<number>(now.getFullYear())
+  const viewMonth = ref<number>(now.getMonth() + 1)
+
+  function pad2(n: number): string { return n < 10 ? '0' + n : '' + n }
+  const todayStr = computed((): string => { const d = new Date(); return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}` })
+  const displayText = computed((): string => {
+    if (props.value.length == 0) return props.placeholder
+    if (props.showToday && props.value == todayStr.value) return `${props.value}（今天）`
+    return props.value
+  })
+
+  function openPanel() {
+    const base = props.value.length > 0 ? props.value : props.end
+    const d = base.length > 0 ? new Date(Date.parse(base + 'T12:00:00')) : new Date()
+    if (Number.isFinite(d.getTime())) { viewYear.value = d.getFullYear(); viewMonth.value = d.getMonth() + 1 }
+    visible.value = true
+  }
+  function closePanel() { visible.value = false }
+  function shiftMonth(delta: number) {
+    let m = viewMonth.value + delta
+    let y = viewYear.value
+    if (m < 1) { m = 12; y -= 1 }
+    if (m > 12) { m = 1; y += 1 }
+    viewMonth.value = m
+    viewYear.value = y
+  }
+  function onNative(e: UniPickerChangeEvent) {
+    const v = (e.detail.value as string) ?? ''
+    if (v.length > 0) emit('change', v)
+  }
+  function pick(c: DCell) {
+    if (c.empty || !c.selectable) return
+    emit('change', c.date)
+    visible.value = false
+  }
+
+  const cells = computed((): DCell[] => {
+    const out: DCell[] = []
+    const y = viewYear.value
+    const m = viewMonth.value
+    const offset = (new Date(y, m - 1, 1).getDay() + 6) % 7
+    const blank: DCell = { day: 0, date: '', empty: true, selectable: false }
+    for (let i = 0; i < offset; i++) out.push(blank)
+    const days = new Date(y, m, 0).getDate()
+    for (let d = 1; d <= days; d++) {
+      const ds = `${y}-${pad2(m)}-${pad2(d)}`
+      const selectable = props.end.length == 0 || ds <= props.end
+      out.push({ day: d, date: ds, empty: false, selectable })
+    }
+    return out
+  })
+  function dayClass(c: DCell): string {
+    if (c.empty) return 'lbc-df-day-empty'
+    if (!c.selectable) return 'lbc-df-day-disabled'
+    if (c.date == props.value) return 'lbc-df-day-sel'
+    return 'lbc-df-day-normal'
+  }
+</script>
+
+<style>
+  .lbc-df-host { /* 单根容器 */ }
+  .lbc-df-trigger { width: 620rpx; height: 88rpx; background-color: var(--lb-fill); border-radius: 24rpx; align-items: center; justify-content: center; }
+  .lbc-df-trigger-text { font-size: 28rpx; color: var(--lb-text-1); }
+  .lbc-df-mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--lb-mask); justify-content: center; align-items: center; }
+  .lbc-df-panel { width: 620rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 32rpx; }
+  .lbc-df-head { flex-direction: row; align-items: center; justify-content: space-between; margin-bottom: 20rpx; }
+  .lbc-df-nav { width: 72rpx; height: 72rpx; align-items: center; justify-content: center; border-radius: 24rpx; background-color: var(--lb-fill); }
+  .lbc-df-nav-text { font-size: 36rpx; color: var(--lb-text-2); }
+  .lbc-df-title { font-size: 30rpx; font-weight: bold; color: var(--lb-text-1); }
+  .lbc-df-week { flex-direction: row; margin-bottom: 8rpx; }
+  .lbc-df-wd { width: 78rpx; text-align: center; font-size: 24rpx; color: var(--lb-text-3); }
+  .lbc-df-grid { flex-direction: row; flex-wrap: wrap; }
+  .lbc-df-cell { width: 78rpx; align-items: center; padding: 4rpx 0; }
+  .lbc-df-day { width: 66rpx; height: 66rpx; border-radius: 33rpx; align-items: center; justify-content: center; }
+  .lbc-df-day-text { font-size: 26rpx; color: var(--lb-text-1); }
+  .lbc-df-day-empty { background-color: transparent; }
+  .lbc-df-day-normal { background-color: transparent; }
+  .lbc-df-day-disabled { background-color: transparent; opacity: 0.3; }
+  .lbc-df-day-sel { background-color: var(--lb-primary); }
+  .lbc-df-day-sel-text { color: var(--lb-white); font-weight: bold; }
+  .lbc-df-cancel { margin-top: 20rpx; text-align: center; font-size: 26rpx; color: var(--lb-text-3); padding: 12rpx 0; }
+  @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+  @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
+  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-fade { animation: lb-fade 200ms ease-out both; }
+  .lb-press { opacity: 0.72; transform: scale(0.98); }
+</style>

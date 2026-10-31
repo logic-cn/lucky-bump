@@ -27,9 +27,7 @@
           <text class="opt-text" :class="type == t.value ? 'opt-text-active' : ''">{{ t.label }}</text>
         </view>
       </view>
-      <picker v-if="type == 'absolute'" mode="date" :value="anchorDate.length > 0 ? anchorDate : anchorFallback" @change="onAnchorChange">
-        <view class="pick-box" hover-class="lb-press" hover-stay-time="120"><text class="pick-text">{{ anchorDate == '' ? '选择日期' : anchorDate }}</text></view>
-      </picker>
+      <lbc-date-field v-if="type == 'absolute'"  :value="anchorDate" @change="onAnchorChange" placeholder="选择日期" />
       <input v-if="type == 'by_week'" class="input" type="number" v-model="week" placeholder="孕周，如 28" placeholder-class="ph" />
       <input v-if="type == 'by_month'" class="input" type="number" v-model="month" placeholder="月龄，如 6" placeholder-class="ph" />
       <input v-if="type == 'recurring'" class="input" type="number" v-model="intervalDays" placeholder="间隔天数，如 1" placeholder-class="ph" />
@@ -41,15 +39,11 @@
       <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">免打扰时段</text></view>
       <view class="p-row">
         <text class="p-label">开始</text>
-        <picker mode="time" :value="quietStartTime" @change="onQuietStartChange">
-          <text class="pick-text">{{ quietStartTime }}</text>
-        </picker>
+        <lbc-time-field :value="quietStartTime" @change="onQuietStartChange" placeholder="选择时间" />
       </view>
       <view class="p-row">
         <text class="p-label">结束</text>
-        <picker mode="time" :value="quietEndTime" @change="onQuietEndChange">
-          <text class="pick-text">{{ quietEndTime }}</text>
-        </picker>
+        <lbc-time-field :value="quietEndTime" @change="onQuietEndChange" placeholder="选择时间" />
       </view>
       <text class="hint">默认 22:00-7:00；仅影响前台提醒弹层，不隐藏待办</text>
     </view>
@@ -142,6 +136,7 @@
   import { themeState, setThemeMode, themeClass } from '../../store/themeStore.uts'
   import { quietStart, quietEnd, setQuietRange } from '../../utils/quiet.uts'
   import { notifyEnabled, notifyPermission, setNotifyEnabled } from '../../utils/webNotify.uts'
+  import { todayDateStr } from '../../utils/recordDate.uts'
 
   type TOpt = { value: string, label: string }
 
@@ -150,8 +145,6 @@
   const title = ref<string>('')
   const type = ref<string>('absolute')
   const anchorDate = ref<string>('')
-  // picker 空起始值在部分端不弹窗：兜底为今天（显示文案仍保持'选择日期'）
-  const anchorFallback = ref<string>(todayDateStr())
   const week = ref<string>('')
   const month = ref<string>('')
   const intervalDays = ref<string>('')
@@ -242,12 +235,12 @@
       uni.showToast({ title: (e as Error).message, icon: 'none' })
     } finally { pwdSaving.value = false }
   }
-  function onQuietStartChange(e: UniPickerChangeEvent) {
-    quietStartTime.value = (e.detail.value as string) ?? '22:00'
+  function onQuietStartChange(v: string) {
+    quietStartTime.value = v
     setQuietRange(quietStartTime.value, quietEndTime.value)
   }
-  function onQuietEndChange(e: UniPickerChangeEvent) {
-    quietEndTime.value = (e.detail.value as string) ?? '07:00'
+  function onQuietEndChange(v: string) {
+    quietEndTime.value = v
     setQuietRange(quietStartTime.value, quietEndTime.value)
   }
   const types = ref<TOpt[]>([
@@ -261,7 +254,7 @@
     for (let i = 0; i < types.value.length; i++) { if (types.value[i].value == t) return types.value[i].label }
     return t
   }
-  function onAnchorChange(e: UniPickerChangeEvent) { anchorDate.value = (e.detail.value as string) ?? '' }
+  function onAnchorChange(v: string) { anchorDate.value = v }
   function onDark(e: UniSwitchChangeEvent) {
     darkMode.value = e.detail.value
     setThemeMode(e.detail.value ? 'dark' : 'light')

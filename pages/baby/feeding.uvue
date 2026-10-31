@@ -23,11 +23,7 @@
       </view>
       <view class="time-row">
         <text class="label-inline">时间</text>
-        <picker mode="time" :value="feedTime.length > 0 ? feedTime : feedFallback" @change="onTimeChange">
-          <view class="time-box" hover-class="lb-press" hover-stay-time="120">
-            <text class="time-text">{{ feedTime == '' ? '现在' : feedTime }}</text>
-          </view>
-        </picker>
+        <lbc-time-field :value="feedTime" @change="onTimeChange" placeholder="现在" />
         <text class="time-reset" v-if="feedTime.length > 0" @click="feedTime = ''">恢复现在</text>
       </view>
       <text class="hint">可补记今天早些时候的奶量（如夜奶）</text>
@@ -68,9 +64,6 @@
   const mode = ref<string>('breastmilk_bottle')
   const mlText = ref<string>('60')
   const feedTime = ref<string>('')
-  // time picker 空起始值兜底：默认当前时分（显示仍为'现在'）
-  const feedFallback = ref<string>('')
-  function refreshFeedFallback() { const d = new Date(); feedFallback.value = `${d.getHours() < 10 ? '0' + d.getHours() : '' + d.getHours()}:${d.getMinutes() < 10 ? '0' + d.getMinutes() : '' + d.getMinutes()}` }
   const saving = ref<boolean>(false)
   const loadFailed = ref<boolean>(false)
   const errorMsg = ref<string>('')
@@ -120,8 +113,8 @@
     const cur = Math.round(parseFloat(mlText.value) || 0)
     mlText.value = `${Math.max(0, cur + d)}`
   }
-  function onTimeChange(e: UniPickerChangeEvent) {
-    feedTime.value = (e.detail.value as string) ?? ''
+  function onTimeChange(v: string) {
+    feedTime.value = v
   }
   async function load() {
     try {
@@ -158,7 +151,6 @@
   }
 
   onPageReady(() => {
-    refreshFeedFallback()
     const storedMode = uni.getStorageSync(MODE_KEY) as string
     if (storedMode != null && VALID_MODES.indexOf(storedMode) >= 0) mode.value = storedMode
     const storedMl = uni.getStorageSync(ML_KEY) as string

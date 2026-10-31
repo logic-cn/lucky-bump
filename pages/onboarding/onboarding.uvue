@@ -21,9 +21,7 @@
 
     <view v-if="step == 1" class="card lb-rise-1">
       <text class="q">{{ questionText }}</text>
-      <picker mode="date" :value="dateValue" :end="todayEnd" @change="onDateChange">
-        <view class="date-box" hover-class="lb-press" hover-stay-time="120"><text class="date-text">{{ dateValue == '' ? '点这里选择日期' : dateValue }}</text></view>
-      </picker>
+      <lbc-date-field :value="dateValue" :end="todayEnd" @change="onDateChange" placeholder="点这里选择日期" />
       <text class="q q-top">身高与孕前体重（选填，用于个性化增重区间）</text>
       <view class="row-inputs">
         <input class="mini-input" type="number" v-model="heightCm" placeholder="身高 cm" placeholder-class="ph" confirm-type="next" />
@@ -65,8 +63,8 @@
     dateValue.value = ''
     step.value = 1
   }
-  function onDateChange(e: UniPickerChangeEvent) {
-    dateValue.value = (e.detail.value as string) ?? ''
+  function onDateChange(v: string) {
+    dateValue.value = v
   }
   async function submit() {
     if (loading.value) return

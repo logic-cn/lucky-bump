@@ -92,11 +92,7 @@
       <text class="card-title">白带（宫颈黏液）</text>
       <view class="bbt-date-row">
         <text class="label-inline">日期</text>
-        <picker mode="date" :value="mucusDate" :end="todayEnd" @change="onMucusDateChange">
-          <view class="bbt-date-box" hover-class="lb-press" hover-stay-time="120">
-            <text class="bbt-date-text">{{ mucusDate }}</text>
-          </view>
-        </picker>
+        <lbc-date-field :value="mucusDate" :end="todayEnd" @change="onMucusDateChange" placeholder="选择日期" />
       </view>
       <view class="flow-row">
         <view class="flow-chip" v-for="(m, i) in mucusOpts" :key="i" :class="mucus == m.value ? 'flow-chip-active' : ''" hover-class="lb-press" hover-stay-time="120" @click="mucus = m.value">
@@ -113,11 +109,7 @@
       <text class="card-title">基础体温</text>
       <view class="bbt-date-row">
         <text class="label-inline">测量日期</text>
-        <picker mode="date" :value="bbtDate" :end="todayEnd" @change="onBbtDateChange">
-          <view class="bbt-date-box" hover-class="lb-press" hover-stay-time="120">
-            <text class="bbt-date-text">{{ bbtDate }}</text>
-          </view>
-        </picker>
+        <lbc-date-field :value="bbtDate" :end="todayEnd" @change="onBbtDateChange" placeholder="选择日期" />
       </view>
       <text class="label">晨起未活动时，°C</text>
       <view class="input-row">
@@ -472,11 +464,11 @@
     } finally { reminderSaving.value = false }
   }
 
-  function onBbtDateChange(e: UniPickerChangeEvent) {
-    bbtDate.value = (e.detail.value as string) ?? bbtDate.value
+  function onBbtDateChange(v: string) {
+    bbtDate.value = v
   }
-  function onMucusDateChange(e: UniPickerChangeEvent) {
-    mucusDate.value = (e.detail.value as string) ?? mucusDate.value
+  function onMucusDateChange(v: string) {
+    mucusDate.value = v
   }
 
   async function saveMucus() {

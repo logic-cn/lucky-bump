@@ -246,7 +246,7 @@ test('低频指标支持补录日期（体重/血压/血糖）', () => {
   const pages = ['pages/record/weight.uvue', 'pages/record/blood-pressure.uvue', 'pages/record/blood-glucose.uvue']
   for (const p of pages) {
     const src = fs.readFileSync(path.join(ROOT, p), 'utf-8')
-    assert.ok(src.includes('picker mode="date"'), `${p} 缺少日期选择`)
+    assert.ok(src.includes('<lbc-date-field'), `${p} 缺少跨端日期选择（Web 端原生 picker 失效）`)
     assert.ok(src.includes('dateToTs('), `${p} 未把日期转为 ts 传给服务端`)
     assert.ok(src.includes('recordDate.value'), `${p} 未使用所选日期`)
   }

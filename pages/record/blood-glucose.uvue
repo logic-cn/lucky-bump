@@ -2,11 +2,7 @@
   <view class="page" :class="themeClass()">
     <view class="card lb-rise">
       <text class="label">记录日期</text>
-      <picker mode="date" :value="recordDate" :end="todayEnd" @change="onDateChange">
-        <view class="date-box" hover-class="lb-press" hover-stay-time="120">
-          <text class="date-text">{{ recordDate }}{{ isTodayDate ? '（今天）' : '' }}</text>
-        </view>
-      </picker>
+      <lbc-date-field :value="recordDate" :end="todayEnd" @change="onDateChange" placeholder="选择日期" />
       <text class="label">测量时段</text>
       <view class="slots">
         <view class="slot" v-for="(s, i) in slots" :key="i" :class="slot == s.value ? 'slot-active' : ''" hover-class="lb-press" hover-stay-time="120" @click="slot = s.value">
@@ -62,8 +58,8 @@
   const isTodayDate = computed((): boolean => isToday(recordDate.value))
   const glucosePlaceholder = computed((): string => lastGlucose.value.length > 0 ? `上次 ${lastGlucose.value}` : '5.2')
 
-  function onDateChange(e: UniPickerChangeEvent) {
-    recordDate.value = (e.detail.value as string) ?? recordDate.value
+  function onDateChange(v: string) {
+    recordDate.value = v
     saved.value = false
   }
 

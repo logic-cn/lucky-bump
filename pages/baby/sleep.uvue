@@ -8,13 +8,13 @@
       </view>
       <text class="label">入睡时间</text>
       <view class="row2">
-        <picker class="half" mode="date" :value="startDate" @change="onStartDateChange"><view class="pick-box" hover-class="lb-press" hover-stay-time="120"><text class="pick-text">{{ startDate }}</text></view></picker>
-        <picker class="half" mode="time" :value="startTime" @change="onStartTimeChange"><view class="pick-box" hover-class="lb-press" hover-stay-time="120"><text class="pick-text">{{ startTime }}</text></view></picker>
+        <lbc-date-field class="half"  :value="startDate" @change="onStartDateChange" placeholder="选择日期" />
+        <lbc-time-field class="half"  :value="startTime" @change="onStartTimeChange" placeholder="选择时间" />
       </view>
       <text class="label">醒来时间</text>
       <view class="row2">
-        <picker class="half" mode="date" :value="endDate" @change="onEndDateChange"><view class="pick-box" hover-class="lb-press" hover-stay-time="120"><text class="pick-text">{{ endDate }}</text></view></picker>
-        <picker class="half" mode="time" :value="endTime" @change="onEndTimeChange"><view class="pick-box" hover-class="lb-press" hover-stay-time="120"><text class="pick-text">{{ endTime }}</text></view></picker>
+        <lbc-date-field class="half"  :value="endDate" @change="onEndDateChange" placeholder="选择日期" />
+        <lbc-time-field class="half"  :value="endTime" @change="onEndTimeChange" placeholder="选择时间" />
       </view>
       <view class="wak-row" v-if="kind == 'night'">
         <text class="label-inline">夜醒次数</text>
@@ -57,10 +57,10 @@
   const sleepTotalMin = computed((): number => ((summary.value as UTSJSONObject | null)?.getJSON('sleep') as UTSJSONObject | null)?.getNumber('totalMin')?.toInt() ?? 0)
   const nightWakings = computed((): number => ((summary.value as UTSJSONObject | null)?.getJSON('sleep') as UTSJSONObject | null)?.getNumber('nightWakings')?.toInt() ?? 0)
 
-  function onStartDateChange(e: UniPickerChangeEvent) { startDate.value = (e.detail.value as string) ?? startDate.value }
-  function onStartTimeChange(e: UniPickerChangeEvent) { startTime.value = (e.detail.value as string) ?? startTime.value }
-  function onEndDateChange(e: UniPickerChangeEvent) { endDate.value = (e.detail.value as string) ?? endDate.value }
-  function onEndTimeChange(e: UniPickerChangeEvent) { endTime.value = (e.detail.value as string) ?? endTime.value }
+  function onStartDateChange(v: string) { startDate.value = v }
+  function onStartTimeChange(v: string) { startTime.value = v }
+  function onEndDateChange(v: string) { endDate.value = v }
+  function onEndTimeChange(v: string) { endTime.value = v }
   async function load() {
     try { summary.value = await luckyBaby('dailySummary', { journeyId: journeyState.journeyId, babyId: babyId.value } as UTSJSONObject) } catch (e) { /* 忽略 */ }
   }

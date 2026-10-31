@@ -2,9 +2,7 @@
   <view class="page" :class="themeClass()">
     <view class="card lb-rise">
       <text class="label">产检日期</text>
-      <picker mode="date" :value="visitDate" @change="onDateChange">
-        <view class="date-box" hover-class="lb-press" hover-stay-time="120"><text class="date-text">{{ visitDate }}</text></view>
-      </picker>
+      <lbc-date-field :value="visitDate" @change="onDateChange" placeholder="选择日期" />
       <text class="label">孕周（周）</text>
       <input class="input" type="number" v-model="week" placeholder="如 24" placeholder-class="ph" />
       <text class="label">医院 / 医生</text>
@@ -33,9 +31,7 @@
       </view>
       <text class="hint" v-if="uploading">上传中…</text>
       <text class="label">下次产检时间（医生口径优先）</text>
-      <picker mode="date" :value="nextDate" @change="onNextChange">
-        <view class="date-box" hover-class="lb-press" hover-stay-time="120"><text class="date-text">{{ nextDate == '' ? '选填' : nextDate }}</text></view>
-      </picker>
+      <lbc-date-field :value="nextDate" @change="onNextChange" placeholder="选择日期" />
     </view>
     <button class="btn-save lb-rise-1" hover-class="lb-press" hover-stay-time="120" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存本次产检' }}</button>
 
@@ -85,8 +81,8 @@
   }
   const visitDate = ref<string>(todayStr())
 
-  function onDateChange(e: UniPickerChangeEvent) { visitDate.value = (e.detail.value as string) ?? visitDate.value }
-  function onNextChange(e: UniPickerChangeEvent) { nextDate.value = (e.detail.value as string) ?? '' }
+  function onDateChange(v: string) { visitDate.value = v }
+  function onNextChange(v: string) { nextDate.value = v }
   /** 报告照片：选择 → 上传 uniCloud 存储 → 记录 fileID（预览用本地临时路径） */
   function chooseReport() {
     uni.chooseImage({
