@@ -189,3 +189,11 @@ Web 端已可用。后续运行只涉及：1) `npm test` 保持 70/70；2) 上�
 - adb（HBuilderX 自带 1.0.36）`devices list` 确认无设备连接（USB/无线均无）→ 真机回归物理阻塞，无法在本会话执行
 - 新增 `scripts/device-regression.sh`：手机插入并允许 USB 调试后一键执行「安装 APK → 启动 → 分步截图 → dumpsys 通知证据 → logcat 快照」，回归结果自动落盘 `.screenshots/device-regression/`
 - schema mucus 枚举：HBuilderX CLI 全量帮助确认无删除/强制更新 schema 的命令（仅 hosting delete），GUI 右键上传为唯一路径；已再次确认云对象走管理上下文写入，mucus 服务端强校验在产线即时生效，schema 属文档层差异
+
+## 设计升级 v3「幸运小山丘」（2026-10-31，回应"毛坯房"反馈）
+
+- [x] 品牌：新 logo（日出渐变圆角方 + bump 山丘弧线 + 幸运金 sparkle），重绘 app 图标/tabBar 图标/512 品牌标；`scripts/gen_icons.py` 重写（4× 超采样），品牌曲线语言贯穿 logo→tab→英雄卡
+- [x] 首页英雄卡品牌化、宫格渐变芯片（首页+记录页）、卡题玫瑰短条、引导页品牌位、全仓渐变统一、同房入口锁形语义
+- [x] 可读性：text-3 对比度 #B6AABB→#9E8DA5（4.5:1 基线），暗色同步
+- [x] 门禁：109/109 测试全绿 + 云打包 44 页编译通过（新 APK 已含新品牌）
+- [ ] 后续可选：emoji 字形替换为自绘图标字体（uni-app x iconfont 接入）、插画级空态、动画 fill-mode 适配（both→forwards+基态，需真机验证不改坏进场）
