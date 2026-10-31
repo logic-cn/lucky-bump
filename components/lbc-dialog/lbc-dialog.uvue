@@ -1,0 +1,49 @@
+<template>
+  <view class="lbc-dlg-mask lb-fade" v-if="props.visible" @click="onCancel">
+    <view class="lbc-dlg lb-pop" @click.stop>
+      <text class="lbc-dlg-title">{{ props.title }}</text>
+      <text class="lbc-dlg-content" v-if="props.content.length > 0">{{ props.content }}</text>
+      <slot />
+      <view class="lbc-dlg-actions">
+        <text class="lbc-dlg-btn lbc-dlg-btn-ghost" v-if="props.showCancel" hover-class="lb-press" hover-stay-time="120" @click="onCancel">{{ props.cancelText }}</text>
+        <text class="lbc-dlg-btn lbc-dlg-btn-ok" :class="props.tone == 'danger' ? 'lbc-dlg-btn-danger' : ''" hover-class="lb-press" hover-stay-time="120" @click="onConfirm">{{ props.confirmText }}</text>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script setup lang="ts">
+  /** 统一确认弹窗（v3 精装）：此前四页四种圆角/按钮规格，收口为一个组件。
+   * 用法：<lbc-dialog :visible="x" title=".." content=".." tone="danger" @confirm=".." @cancel=".." />
+   * 富内容用默认 slot 覆盖 content。遮罩点击 = 取消（防误触不阻断）。 */
+  const props = defineProps({
+    visible: { type: Boolean, default: false },
+    title: { type: String, default: '' },
+    content: { type: String, default: '' },
+    confirmText: { type: String, default: '确定' },
+    cancelText: { type: String, default: '取消' },
+    showCancel: { type: Boolean, default: true },
+    tone: { type: String, default: 'primary' }   // primary | danger
+  })
+  const emit = defineEmits(['confirm', 'cancel'])
+  function onConfirm() { emit('confirm') }
+  function onCancel() { if (props.showCancel) emit('cancel') }
+</script>
+
+<style>
+  .lbc-dlg-mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--lb-mask); justify-content: center; align-items: center; }
+  .lbc-dlg { width: 560rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 40rpx 32rpx 28rpx 32rpx; }
+  .lbc-dlg-title { font-size: 32rpx; font-weight: bold; color: var(--lb-text-1); text-align: center; }
+  .lbc-dlg-content { font-size: 27rpx; color: var(--lb-text-2); margin-top: 20rpx; text-align: center; line-height: 44rpx; }
+  .lbc-dlg-actions { flex-direction: row; justify-content: space-between; margin-top: 36rpx; }
+  .lbc-dlg-btn { width: 240rpx; height: 80rpx; line-height: 80rpx; text-align: center; font-size: 28rpx; color: var(--lb-white); background-image: linear-gradient(135deg, var(--lb-grad-1), var(--lb-grad-2)); border-radius: 999rpx; }
+  .lbc-dlg-btn-ghost { color: var(--lb-text-2); background-image: none; background-color: var(--lb-fill); }
+  .lbc-dlg-btn-danger { background-image: none; background-color: var(--lb-danger); }
+  @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+  @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
+  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-fade { animation: lb-fade 200ms ease-out both; }
+  .lb-press { opacity: 0.72; transform: scale(0.98); }
+</style>

@@ -1,0 +1,39 @@
+<template>
+  <view class="lbc-empty lb-rise">
+    <view class="lbc-empty-badge">
+      <view class="lbc-empty-spark-v" />
+      <view class="lbc-empty-spark-h" />
+    </view>
+    <text class="lbc-empty-title">{{ props.title }}</text>
+    <text class="lbc-empty-hint" v-if="props.hint.length > 0">{{ props.hint }}</text>
+    <view class="lbc-empty-cta" v-if="props.ctaText.length > 0" hover-class="lb-press" hover-stay-time="120" @click="onCta">
+      <text class="lbc-empty-cta-text">{{ props.ctaText }}</text>
+    </view>
+  </view>
+</template>
+
+<script setup lang="ts">
+  /** 品牌空态（v3 精装）：替代"两行灰字"——山丘渐变圆底 + 幸运星 + 引导按钮。
+   * 用法：<lbc-empty title="还没有体重记录" hint="..." ctaText="去记一条" @cta="go" /> */
+  const props = defineProps({
+    title: { type: String, default: '这里还是空的' },
+    hint: { type: String, default: '' },
+    ctaText: { type: String, default: '' }
+  })
+  const emit = defineEmits(['cta'])
+  function onCta() { emit('cta') }
+</script>
+
+<style>
+  .lbc-empty { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 56rpx 40rpx 48rpx 40rpx; align-items: center; box-shadow: 0 8rpx 28rpx rgba(61,35,48,0.05); }
+  .lbc-empty-badge { width: 136rpx; height: 136rpx; border-radius: 999rpx; background-image: linear-gradient(160deg, var(--lb-primary-soft), var(--lb-fill)); align-items: center; justify-content: center; }
+  .lbc-empty-spark-v { position: absolute; width: 8rpx; height: 52rpx; border-radius: 4rpx; background-color: var(--lb-gold); }
+  .lbc-empty-spark-h { position: absolute; width: 52rpx; height: 8rpx; border-radius: 4rpx; background-color: var(--lb-gold); }
+  .lbc-empty-title { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); margin-top: 28rpx; }
+  .lbc-empty-hint { font-size: 24rpx; color: var(--lb-text-3); margin-top: 12rpx; text-align: center; line-height: 38rpx; }
+  .lbc-empty-cta { margin-top: 32rpx; padding: 18rpx 52rpx; border-radius: 999rpx; background-image: linear-gradient(135deg, var(--lb-grad-1), var(--lb-grad-2)); }
+  .lbc-empty-cta-text { font-size: 28rpx; color: var(--lb-white); font-weight: bold; }
+  @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
+  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-press { opacity: 0.72; transform: scale(0.98); }
+</style>
