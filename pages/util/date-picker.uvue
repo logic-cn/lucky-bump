@@ -3,7 +3,7 @@
     <view class="head lb-rise">
       <view class="head-btn" hover-class="lb-press" hover-stay-time="120" @click="cancel"><text class="head-cancel">取消</text></view>
       <text class="head-title">{{ mode == 'date' ? '选择日期' : '选择时间' }}</text>
-      <view class="head-btn" hover-class="lb-press" hover-stay-time="120" @click="doConfirm"><text class="head-ok">{{ mode == 'date' ? '今天' : '现在' }}</text></view>
+      <text class="head-tip">点选即完成</text>
     </view>
 
     <!-- 日期模式：月历 -->
@@ -36,7 +36,7 @@
       </view>
       <text class="hint">分钟</text>
       <view class="grid">
-        <view class="chip" v-for="(m, i) in minutes" :key="'m' + i" :class="selMinute == m ? 'chip-sel' : ''" hover-class="lb-press" hover-stay-time="120" @click="selMinute = m">
+        <view class="chip" v-for="(m, i) in minutes" :key="'m' + i" :class="selMinute == m ? 'chip-sel' : ''" hover-class="lb-press" hover-stay-time="120" @click="pickMinute(m)">
           <text class="chip-text" :class="selMinute == m ? 'chip-text-sel' : ''">{{ m }}</text>
         </view>
       </view>
@@ -84,6 +84,11 @@
     }
   })
 
+  function pickMinute(m: number) {
+    selMinute.value = m
+    // 点分钟即完成：关键路径不经过头部按钮（缺陷③规避）
+    emitBack(`${pad2(selHour.value)}:${pad2(selMinute.value)}`)
+  }
   function emitBack(v: string) {
     if (pickId.value.length == 0) return
     // 回传走本地存储：Web 端页面栈回退重建实例，$once 监听不可靠
@@ -91,14 +96,6 @@
     uni.navigateBack({ delta: 1 })
   }
   function cancel() { uni.navigateBack({ delta: 1 }) }
-  function doConfirm() {
-    if (mode.value == 'date') {
-      const today = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`
-      emitBack(picked.value.length > 0 ? picked.value : today)
-    } else {
-      emitBack(`${pad2(selHour.value)}:${pad2(selMinute.value)}`)
-    }
-  }
   function shiftMonth(delta: number) {
     let m = viewMonth.value + delta
     let y = viewYear.value
@@ -110,6 +107,8 @@
   function pickDay(c: DCell) {
     if (c.empty || !c.selectable) return
     picked.value = c.date
+    // 点日即选即回传：Web 端头部按钮事件存在水合不稳定（缺陷③），关键路径只依赖可靠的格子点击
+    emitBack(c.date)
   }
   function dayClass(c: DCell): string {
     if (c.empty) return 'cal-day-empty'
@@ -141,6 +140,7 @@
   .head { width: 702rpx; flex-direction: row; align-items: center; justify-content: space-between; padding: 12rpx 8rpx 24rpx 8rpx; }
   .head-btn { padding: 12rpx 20rpx; }
   .head-cancel { font-size: 28rpx; color: var(--lb-text-2); }
+  .head-tip { font-size: 24rpx; color: var(--lb-text-3); }
   .head-title { font-size: 32rpx; font-weight: bold; color: var(--lb-text-1); }
   .head-ok { font-size: 28rpx; color: var(--lb-primary); font-weight: bold; }
   .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 32rpx; box-shadow: 0 8rpx 28rpx rgba(61,35,48,0.05); }
