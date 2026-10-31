@@ -15,7 +15,7 @@
       </view>
 
       <view class="summary lb-rise-2" v-if="currentBabyId == b.getString('_id') && summary != null">
-        <text class="card-title">今天</text>
+        <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">今天</text></view>
         <view class="sum-row">
           <view class="sum-col"><text class="sum-num">{{ sumFeedCount }}</text><text class="sum-cap">喂养</text></view>
           <view class="sum-col"><text class="sum-num">{{ sumMl }}ml</text><text class="sum-cap">奶量</text></view>
@@ -31,17 +31,18 @@
     </view>
 
     <view class="card lb-rise-2" v-if="feedingGuide.length > 0">
-      <text class="card-title">本月龄喂养参考</text>
+      <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">本月龄喂养参考</text></view>
       <text class="guide-text">{{ feedingGuide }}</text>
       <text class="hint">参考范围，不代表处方；按需喂养，儿保时与医生确认。</text>
     </view>
 
     <view class="card lb-rise-3">
-      <text class="card-title">成长与照护</text>
+      <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">成长与照护</text></view>
       <view class="nav-row" hover-class="lb-press" hover-stay-time="120" @click="go('/pages/baby/growth')"><text class="nav-text">📏 成长记录与百分位</text><text class="nav-arrow">›</text></view>
       <view class="nav-row" hover-class="lb-press" hover-stay-time="120" @click="go('/pages/baby/album')"><text class="nav-text">📷 成长相册</text><text class="nav-arrow">›</text></view>
       <view class="nav-row" hover-class="lb-press" hover-stay-time="120" @click="go('/pages/baby/vaccines')"><text class="nav-text">💉 疫苗接种计划</text><text class="nav-arrow">›</text></view>
       <view class="nav-row" hover-class="lb-press" hover-stay-time="120" @click="go('/pages/record/nursing-timer')"><text class="nav-text">⏱ 亲喂计时器</text><text class="nav-arrow">›</text></view>
+      <view class="nav-row" hover-class="lb-press" hover-stay-time="120" @click="goRegister"><text class="nav-text">➕ 添加宝宝档案</text><text class="nav-arrow">›</text></view>
     </view>
   </view>
 </template>
@@ -161,6 +162,9 @@
   .nav-text { font-size: 28rpx; color: var(--lb-text-1); flex: 1; }
   .nav-arrow { font-size: 36rpx; color: var(--lb-arrow); }
 
+.card-head { flex-direction: row; align-items: center; margin-bottom: 20rpx; }
+  .title-bar { width: 8rpx; height: 30rpx; border-radius: 4rpx; background-image: linear-gradient(180deg, var(--lb-grad-1), var(--lb-grad-2)); margin-right: 14rpx; }
+  .card-title-flush { margin-bottom: 0; }
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
   @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }

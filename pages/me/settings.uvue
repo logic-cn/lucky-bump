@@ -1,7 +1,7 @@
 <template>
   <view class="page" :class="themeClass()">
     <view class="card lb-rise">
-      <text class="card-title">提醒</text>
+      <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">提醒</text></view>
       <view class="r-row" v-for="(r, i) in rules" :key="i">
         <view class="r-body">
           <text class="r-title">{{ r.getString('title') ?? '' }}</text>
@@ -14,7 +14,7 @@
     </view>
 
     <view class="card lb-rise-1">
-      <text class="card-title">新建提醒</text>
+      <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">新建提醒</text></view>
       <input class="input" v-model="title" placeholder="提醒名称，如：叶酸打卡" placeholder-class="ph" />
       <view class="opts">
         <view class="opt" hover-class="lb-press" hover-stay-time="120" v-for="(t, i) in medTemplates" :key="i" @click="applyMedTemplate(t)">
@@ -38,7 +38,7 @@
     </view>
 
     <view class="card lb-rise-1">
-      <text class="card-title">免打扰时段</text>
+      <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">免打扰时段</text></view>
       <view class="p-row">
         <text class="p-label">开始</text>
         <picker mode="time" :value="quietStartTime" @change="onQuietStartChange">
@@ -55,7 +55,7 @@
     </view>
 
     <view class="card lb-rise-2">
-      <text class="card-title">通用</text>
+      <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">通用</text></view>
       <view class="p-row"><text class="p-label">暗色模式</text><switch :checked="darkMode" @change="onDark" color="#E4537F" /></view>
       <!-- #ifdef WEB -->
       <view class="p-row"><text class="p-label">浏览器通知</text><switch :checked="webNotify" @change="onWebNotify" color="#E4537F" /></view>
@@ -68,7 +68,7 @@
     </view>
 
     <view class="card lb-rise-3">
-      <text class="card-title">身体档案</text>
+      <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">身体档案</text></view>
       <view class="p-row">
         <text class="p-label">身高（cm）</text>
         <input class="mini-input" type="number" v-model="heightCm" placeholder="如 165" placeholder-class="ph" />
@@ -82,7 +82,7 @@
     </view>
 
     <view class="card lb-rise-3">
-      <text class="card-title">账号安全</text>
+      <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">账号安全</text></view>
       <view class="p-row" hover-class="lb-press" hover-stay-time="120" @click="openRecovery">
         <text class="p-label">找回凭证</text>
         <text class="p-value">{{ recoverySaving ? '生成中…' : '生成 ›' }}</text>
@@ -357,6 +357,9 @@
   .dlg-btn { width: 230rpx; height: 80rpx; line-height: 80rpx; text-align: center; font-size: 29rpx; color: var(--lb-text-2); background-color: var(--lb-fill); border-radius: 40rpx; }
   .dlg-btn-ok { color: #FFFFFF; background-color: var(--lb-primary); }
 
+.card-head { flex-direction: row; align-items: center; margin-bottom: 16rpx; }
+  .title-bar { width: 8rpx; height: 30rpx; border-radius: 4rpx; background-image: linear-gradient(180deg, var(--lb-grad-1), var(--lb-grad-2)); margin-right: 14rpx; }
+  .card-title-flush { margin-bottom: 0; }
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
   @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }

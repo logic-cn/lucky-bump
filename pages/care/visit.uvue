@@ -40,7 +40,7 @@
     <button class="btn-save lb-rise-1" hover-class="lb-press" hover-stay-time="120" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存本次产检' }}</button>
 
     <view class="list lb-rise-2" v-if="visits.length > 0">
-      <text class="list-title">历史产检</text>
+      <view class="card-head"><view class="title-bar" /><text class="list-title list-title-flush">历史产检</text></view>
       <view class="v-item" v-for="(v, i) in visits" :key="i">
         <view class="v-row1">
           <text class="v-date">{{ v.getString('visitDate') ?? '' }}</text>
@@ -192,6 +192,9 @@
   .v-week { font-size: 24rpx; color: var(--lb-text-3); }
   .v-conclusion { font-size: 24rpx; color: var(--lb-text-2); margin-top: 10rpx; }
 
+.card-head { flex-direction: row; align-items: center; margin-bottom: 16rpx; }
+  .title-bar { width: 8rpx; height: 30rpx; border-radius: 4rpx; background-image: linear-gradient(180deg, var(--lb-grad-1), var(--lb-grad-2)); margin-right: 14rpx; }
+  .list-title-flush { margin-bottom: 0; }
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
   @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }

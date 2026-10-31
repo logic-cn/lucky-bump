@@ -10,13 +10,13 @@
 
     <!-- 本周要点 -->
     <view class="card lb-rise" v-if="query.length == 0">
-      <text class="card-title">本周要点</text>
+      <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">本周要点</text></view>
       <text class="focus-item" v-for="(f, i) in focus" :key="i">· {{ f }}</text>
     </view>
 
     <!-- 工具速查 -->
     <view class="card lb-rise-1">
-      <text class="card-title">能不能吃 / 能不能做</text>
+      <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">能不能吃 / 能不能做</text></view>
       <view class="tool-row" v-for="(t, i) in visibleTools" :key="i">
         <view class="tool-head">
           <text class="tool-name">{{ t.name }}</text>
@@ -32,7 +32,7 @@
 
     <!-- 文章库 -->
     <view class="card lb-rise-2">
-      <text class="card-title">文章库</text>
+      <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">文章库</text></view>
       <view class="scope-row">
         <view class="scope-chip" :class="scope == 'stage' ? 'scope-active' : ''" hover-class="lb-press" hover-stay-time="120" @click="scope = 'stage'">
           <text class="scope-text" :class="scope == 'stage' ? 'scope-text-active' : ''">我的阶段</text>
@@ -58,17 +58,17 @@
 
     <!-- 红线 -->
     <view class="card lb-rise-3">
-      <text class="card-title">红线提醒（出现这些请立即就医）</text>
+      <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">红线提醒（出现这些请立即就医）</text></view>
       <text class="red">孕期：出血、剧烈腹痛、胎动明显减少、破水、血压 ≥160/110 或伴头痛视物模糊</text>
       <text class="red">产后：突然大量出血、恶露异味伴发热、伤口红肿渗液</text>
       <text class="red">宝宝：血便、陶土色大便、精神差拒奶、发热（3 月内）或持续高热、呼吸急促</text>
     </view>
     <view class="card lb-rise-3">
-      <text class="card-title">内容来源与边界</text>
+      <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">内容来源与边界</text></view>
       <text class="gray">产检与孕期知识参考《孕前和孕期保健指南（2018）》；疫苗依据国家免疫规划（2021 版）；增重参考 IOM 指南；成长曲线参照 WHO 标准。以上均为通用科普，具体方案以你的医生意见为准。</text>
     </view>
     <view class="card lb-rise-3">
-      <text class="card-title">本应用不能做什么</text>
+      <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">本应用不能做什么</text></view>
       <text class="gray">幸孕记是健康记录工具，不提供诊断与治疗建议；所有解读均为参考信息；用药请遵说明书与医嘱。</text>
     </view>
   </view>
@@ -193,6 +193,9 @@
   .art-body { font-size: 26rpx; color: var(--lb-text-2); line-height: 44rpx; margin-top: 14rpx; }
   .art-source { font-size: 24rpx; color: var(--lb-text-3); margin-top: 10rpx; }
 
+.card-head { flex-direction: row; align-items: center; margin-bottom: 20rpx; }
+  .title-bar { width: 8rpx; height: 30rpx; border-radius: 4rpx; background-image: linear-gradient(180deg, var(--lb-grad-1), var(--lb-grad-2)); margin-right: 14rpx; }
+  .card-title-flush { margin-bottom: 0; }
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
   @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }

@@ -1,6 +1,6 @@
 <template>
   <view class="page" :class="themeClass()">
-    <text class="lock-icon">🔒</text>
+    <image class="lock-mark" src="/static/mark.png" mode="aspectFit" />
     <text class="lock-title">幸孕记已锁定</text>
     <text class="lock-sub">{{ subText }}</text>
     <input class="lock-input" type="text" :password="true" v-model="password" placeholder="输入登录密码解锁" placeholder-class="ph" />
@@ -57,7 +57,7 @@
 <style>
   @import '../../theme.scss';
   .page { flex: 1; background-color: var(--lb-bg); align-items: center; justify-content: center; padding: 48rpx; }
-  .lock-icon { font-size: 96rpx; }
+  .lock-mark { width: 128rpx; height: 128rpx; margin-bottom: 28rpx; }
   .lock-title { font-size: 38rpx; font-weight: bold; color: var(--lb-text-1); margin-top: 24rpx; }
   .lock-sub { font-size: 26rpx; color: var(--lb-text-3); margin-top: 12rpx; text-align: center; }
   .lock-input { width: 520rpx; height: 88rpx; background-color: var(--lb-card); border-radius: 24rpx; padding: 0 24rpx; font-size: 28rpx; color: var(--lb-text-1); margin-top: 40rpx; text-align: center; }
