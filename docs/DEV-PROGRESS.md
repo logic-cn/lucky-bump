@@ -214,3 +214,15 @@ Web 端已可用。后续运行只涉及：1) `npm test` 保持 70/70；2) 上�
 - [x] 宝宝页『添加宝宝档案』常驻入口
 - [x] 门禁：109/109 + 云打包编译通过
 - [x] 至此 v3 覆盖：5 tab 页 + account 全链路 + care/baby/me 高频子页；仅剩低频页（agreement/about/privacy-policy 等静态文本页）为通用样式，无需强改
+
+## Web 端 picker 平台缺陷排查与绕过（2026-10-31）
+
+- 实测（浏览器自动化 + dev server）确认 HBuilderX 5.34 vapor Web 运行时三项缺陷：
+  ①原生 picker 点击不创建弹层（从未工作）；②easycom 自定义组件模板不渲染（lbc-* 全体失效）；
+  ③事件水合存在随机不稳定性
+- 绕过：独立选择器页 pages/util/date-picker（月历/时+分芯片）+ utils/pickDate.uts
+  （navigateTo + 本地存储轮询回传，跨页面实例可靠）；12 页 19 处全部接入；
+  App 端保留组件原生 picker 路径
+- 验证矩阵：跳转 ✓ / 日历渲染 ✓ / 选值 ✓ / 取消返回 ✓ / 确认回写在部分会话可复现、
+  部分会话受③影响不稳定 → Web 渠道在此 HBuilderX 版本下不建议作为生产渠道
+- 待办：真机回归（APK 走原生 picker 路径）+ HBuilderX 升级后 Web 复验 + schema 右键上传
