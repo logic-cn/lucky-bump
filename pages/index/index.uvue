@@ -1,7 +1,7 @@
 <template>
   <view class="page" :class="themeClass()">
-    <!-- 阶段大卡 -->
-    <view class="hero-card lb-rise">
+    <!-- 阶段大卡（可点：进入生命故事时间线） -->
+    <view class="hero-card lb-rise" hover-class="lb-press" hover-stay-time="120" @click="goStory">
       <view class="hero-row">
         <text class="hero-week" :lines="1">{{ weekLabel }}</text>
         <text class="hero-stage" v-if="stageLabel.length > 0 && stageLabel != weekLabel">{{ stageLabel }}</text>
@@ -9,10 +9,22 @@
       <text class="hero-sub" v-if="showBabySize">宝宝现在{{ babySizeText }}，距预产期还有 {{ journeyState.daysToEdd }} 天</text>
       <text class="hero-sub" v-else-if="isPostpartum">产后第 {{ journeyState.postpartumDays }} 天 · 照顾好你自己也是宝宝的事</text>
       <text class="hero-sub" v-else-if="isTtc">距预测下次月经还有 {{ daysToPeriod }} 天 · 记录身体信号，好孕自来</text>
+      <text class="hero-link">查看生命故事 ›</text>
+    </view>
+
+    <!-- 数据加载失败：显式可重试，不再静默显示空态 -->
+    <lbc-error v-if="loadFailed" :message="errorMsg" @retry="load" />
+
+    <!-- 家人视角卡（爸爸端）：角色说明 + 行动指引 + 下一项日程 -->
+    <view class="card lb-rise-1" v-if="isFamilyView && !loadFailed">
+      <text class="card-title">家人视角</text>
+      <text class="empty-text">{{ familyRoleText }}</text>
+      <text class="empty-text" v-if="familyTipText.length > 0">{{ familyTipText }}</text>
+      <text class="empty-text" v-if="weekNextVisit.length > 0">下一项：{{ weekNextVisit }}</text>
     </view>
 
     <!-- 今日待办 -->
-    <view class="card lb-rise-1" v-if="todos.length > 0">
+    <view class="card lb-rise-1" v-if="todos.length > 0 && !loadFailed">
       <text class="card-title">今日待办</text>
       <view class="todo-row" v-for="(t, i) in todos" :key="i" hover-class="lb-press" hover-stay-time="120" @click="openTodo(t)">
         <view class="todo-dot" :class="t.getBoolean('urgent') == true ? 'todo-dot-urgent' : ''" />
@@ -21,12 +33,12 @@
           <text class="todo-sub">{{ todoDateText(t) }}</text>
         </view>
         <text class="arrow">›</text>
-        <view class="todo-check" v-if="t.getString('source') == 'rule'" hover-class="lb-press" hover-stay-time="120" @click="completeTodo(t)">
+        <view class="todo-check" v-if="t.getString('source') == 'rule'" hover-class="lb-press" hover-stay-time="120" @click.stop="completeTodo(t)">
           <text class="todo-check-text">✓</text>
         </view>
       </view>
     </view>
-    <view class="card lb-rise-1" v-else>
+    <view class="card lb-rise-1" v-else-if="!loadFailed">
       <text class="card-title">今日待办</text>
       <text class="empty-text">暂无待办，按节奏来就好 ☺</text>
     </view>
@@ -59,11 +71,14 @@
       </view>
     </view>
 
-    <!-- 本周小结（周报最小版） -->
-    <view class="card lb-rise-2" v-if="weeklyVisible">
+    <!-- 本周小结（周报卡：服务端聚合） -->
+    <view class="card lb-rise-2" v-if="weeklyVisible && !loadFailed">
       <text class="card-title">本周小结</text>
       <text class="trend-text">最近 7 天记录 {{ weekRecords }} 条{{ weekDeltaText }}</text>
-      <text class="mom-foot">持续记录，趋势才会说话</text>
+      <text class="trend-text" v-if="weekTodayDone > 0">今日待办已完成 {{ weekTodayDone }} 项 ✓</text>
+      <text class="trend-text" v-if="weekNextVisit.length > 0">下一项：{{ weekNextVisit }}</text>
+      <text class="mom-foot" v-if="weekStreakWeeks >= 2">已连续记录 {{ weekStreakWeeks }} 周，数据资产正在生长 🌱</text>
+      <text class="mom-foot" v-else>持续记录，趋势才会说话</text>
     </view>
 
     <!-- 家庭邀请引导（一次，可关闭） -->
@@ -77,7 +92,7 @@
     </view>
 
     <!-- 产后：妈妈今天 -->
-    <view class="card lb-rise-2" v-if="momCardVisible">
+    <view class="card lb-rise-2" v-if="momCardVisible && !loadFailed">
       <text class="card-title">妈妈今天</text>
       <view class="mom-row">
         <view class="mom-item"><text class="mom-num">{{ momFeedings }}</text><text class="mom-label">喂养</text></view>
@@ -88,7 +103,7 @@
     </view>
 
     <!-- 趋势摘要 -->
-    <view class="card lb-rise-3" v-if="trendText.length > 0">
+    <view class="card lb-rise-3" v-if="trendText.length > 0 && !loadFailed">
       <text class="card-title">最近记录</text>
       <text class="trend-text">{{ trendText }}</text>
     </view>
@@ -117,6 +132,7 @@
   import { recentUrls, rememberRecent, recentRank } from '../../utils/recentGrid.uts'
   import { flushOffline } from '../../utils/offlineQueue.uts'
   import { notifyToday } from '../../utils/webNotify.uts'
+  import { syncLocalNotifications, cancelScheduledNotifications } from '../../utils/notify.uts'
 
   type QuickItem = { icon: string, label: string, url: string }
 
@@ -126,6 +142,11 @@
   const babySizeText = ref('')
   const daysToPeriod = ref(0)
   const trendText = ref('')
+  const loadFailed = ref<boolean>(false)
+  const errorMsg = ref<string>('')
+  const weekStreakWeeks = ref<number>(0)
+  const weekTodayDone = ref<number>(0)
+  const weekNextVisit = ref<string>('')
   const reminderVisible = ref<boolean>(false)
   const reminderText = ref<string>('')
   const momCardVisible = ref<boolean>(false)
@@ -143,6 +164,21 @@
   const showBabySize = computed((): boolean => journeyState.stage == 'T1' || journeyState.stage == 'T2' || journeyState.stage == 'T3')
   const isPostpartum = computed((): boolean => journeyState.deliveryDate.length > 0)
   const isTtc = computed((): boolean => journeyState.stage == 'PRECONCEPTION')
+  // 家人视角（爸爸端）：以 recorder/viewer 加入共享旅程时展示行动指引
+  const isFamilyView = computed((): boolean => journeyState.myRole.length > 0 && journeyState.myRole != 'owner')
+  const familyRoleText = computed((): string => {
+    if (journeyState.myRole == 'recorder') return '你可以记录喂养、尿布与睡眠，和妈妈一起照顾宝宝'
+    if (journeyState.myRole == 'viewer') return '你以只读方式关注这段旅程，重要动态会在首页同步'
+    return '你以家人身份共同守护这段旅程'
+  })
+  const familyTipText = computed((): string => {
+    const s = journeyState.stage
+    if (s == 'PRECONCEPTION') return '规律作息与陪伴，比任何技巧都重要'
+    if (s == 'T1' || s == 'T2' || s == 'T3') return '陪她做一次产检，或记一次胎动，都是很好的参与'
+    if (s == 'POSTPARTUM' || s == 'RECOVERY') return '夜奶时段主动分担，照顾好她也是照顾好宝宝'
+    return ''
+  })
+  function goStory() { uni.navigateTo({ url: '/pages/data/timeline' }) }
   // 快捷记录宫格按最近使用前置；未用过的保持原有顺序
   function orderByRecent(items: QuickItem[]): QuickItem[] {
     if (recent.value.length == 0) return items
@@ -202,6 +238,7 @@
     track('reminder_done', { kind: kind } as UTSJSONObject)
     if (kind.indexOf('prenatal') == 0) uni.navigateTo({ url: '/pages/care/schedule' })
     else if (kind == 'vaccine') uni.navigateTo({ url: '/pages/baby/vaccines' })
+    else uni.navigateTo({ url: '/pages/me/settings' })
   }
   async function completeTodo(t: UTSJSONObject) {
     const ruleId = t.getString('ruleId') ?? ''
@@ -217,6 +254,8 @@
         if (!(sameRule && sameDate)) next.push(r)
       }
       todos.value = next
+      // 已完成的待办不再由系统通知打扰（清除后按新签名重注册）
+      cancelScheduledNotifications()
       uni.showToast({ title: '已完成 ✓', icon: 'none' })
     } catch (e) {
       uni.showToast({ title: (e as Error).message, icon: 'none' })
@@ -254,7 +293,7 @@
     uni.setStorageSync('lb_reminder_shown_date', today)
   }
 
-  async function refresh() {
+  async function load() {
     if (appState.token.length == 0) { uni.reLaunch({ url: '/pages/account/login' }); return }
     try {
       const j = await loadCurrentJourney()
@@ -266,6 +305,8 @@
         const first = todos.value[0].getString('title') ?? ''
         notifyToday('幸孕记 · 今日待办', `今天有 ${todos.value.length} 条待办${first.length > 0 ? '：' + first : ''}`)
       }
+      // App 端：把未来 14 天待办注册为系统本地通知（锁屏/后台可达；每日去重）
+      syncLocalNotifications(todos.value)
       const latest = res.getJSON('latest')
       if (latest != null) {
         const parts: string[] = []
@@ -328,23 +369,31 @@
         } else {
           weekDeltaText.value = ''
         }
+        weekStreakWeeks.value = ws.getNumber('streakWeeks')?.toInt() ?? 0
+        weekTodayDone.value = ws.getNumber('todayDone')?.toInt() ?? 0
+        const nv = ws.getJSON('nextVisit')
+        if (nv != null) weekNextVisit.value = `${nv.getString('title') ?? ''} · ${nv.getString('date') ?? ''}`
+        else weekNextVisit.value = ''
       }
       // 家庭邀请引导：首次有记录后出现一次，可关闭
       const inviteDone = uni.getStorageSync('lb_family_tip_dismissed')
       inviteTipVisible.value = hasRecord != null && inviteDone == null
+      loadFailed.value = false
     } catch (e) {
-      // token 失效已由请求层统一跳登录
+      // token 失效已由请求层统一跳登录；其余失败显式可重试，不再静默落成空态
+      loadFailed.value = true
+      errorMsg.value = (e as Error).message
     }
   }
 
   onPageReady(() => {
     recent.value = recentUrls()
-    refresh()
+    load()
     // 联网后自动补写离线记录
     flushOffline().then((n: number) => {
       if (n > 0) {
         uni.showToast({ title: `已同步 ${n} 条离线记录`, icon: 'none' })
-        refresh()
+        load()
       }
     }).catch(() => {})
   })
@@ -358,6 +407,7 @@
   .hero-week { font-size: 52rpx; font-weight: bold; color: #FFFFFF; flex: 1; margin-right: 12rpx; }
   .hero-stage { font-size: 24rpx; color: #FFFFFF; background-color: rgba(255,255,255,0.28); border-radius: 999rpx; padding: 8rpx 20rpx; }
   .hero-sub { font-size: 26rpx; color: rgba(255,255,255,0.92); margin-top: 16rpx; }
+  .hero-link { font-size: 24rpx; color: rgba(255,255,255,0.85); margin-top: 16rpx; }
   .card { background-color: var(--lb-card); border-radius: 36rpx; padding: 36rpx; margin-bottom: 24rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
   .card-title { font-size: 32rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 24rpx; }
   .todo-row { flex-direction: row; align-items: center; padding: 18rpx 16rpx; border-radius: 24rpx; transition: all 160ms ease-out; }

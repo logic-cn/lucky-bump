@@ -1,6 +1,6 @@
 /** 旅程状态（阶段引擎的客户端镜像；服务端为唯一事实源 docs/06 §4.2） */
 import { reactive } from 'vue'
-import { luckyJourney, luckyData } from '../utils/request.uts'
+import { luckyJourney, luckyData, luckyFamily } from '../utils/request.uts'
 import { appState } from './appStore.uts'
 
 export const journeyState = reactive({
@@ -17,6 +17,7 @@ export const journeyState = reactive({
   highRisk: false,
   title: '',
   currentBabyId: '',
+  myRole: 'owner',    // owner=自己的旅程；recorder/viewer=以家人身份加入的共享旅程（爸爸端）
   loaded: false
 })
 
@@ -46,7 +47,22 @@ export function weekText(): string {
 export async function loadCurrentJourney(): Promise<UTSJSONObject | null> {
   const res = await luckyJourney('listJourneys', {} as UTSJSONObject)
   const currentId = res.getString('currentId') ?? ''
-  if (currentId.length == 0) return null
+  if (currentId.length == 0) {
+    // 家庭成员（如爸爸）没有自己的旅程：经家庭组解析共享旅程与角色，避免被误导向建档引导
+    const fam = await luckyFamily('myFamily', {} as UTSJSONObject)
+    const member = fam.getJSON('member')
+    if (member == null) return null
+    journeyState.journeyId = member.getString('journeyId') ?? ''
+    journeyState.myRole = member.getString('role') ?? 'viewer'
+    journeyState.loaded = true
+    appState.journeyId = journeyState.journeyId
+    // 家人视角的旅程视图经 today 接口取（走 accessibleJourney 鉴权与 strict 过滤）
+    const t = await luckyData('today', { journeyId: journeyState.journeyId } as UTSJSONObject)
+    const jv = t.getJSON('journey')
+    if (jv != null) applyJourney(jv as UTSJSONObject)
+    return member
+  }
+  journeyState.myRole = 'owner'
   const arr = res.getArray('journeys') ?? []
   for (let i = 0; i < arr.length; i++) {
     const j = arr[i] as UTSJSONObject

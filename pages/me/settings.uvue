@@ -17,6 +17,12 @@
       <text class="card-title">新建提醒</text>
       <input class="input" v-model="title" placeholder="提醒名称，如：叶酸打卡" placeholder-class="ph" />
       <view class="opts">
+        <view class="opt" hover-class="lb-press" hover-stay-time="120" v-for="(t, i) in medTemplates" :key="i" @click="applyMedTemplate(t)">
+          <text class="opt-text">💊 {{ t }}</text>
+        </view>
+      </view>
+      <text class="hint" v-if="medTemplates.length > 0">点常用用药模板一键创建每日提醒</text>
+      <view class="opts">
         <view class="opt" hover-class="lb-press" hover-stay-time="120" v-for="(t, i) in types" :key="i" :class="type == t.value ? 'opt-active' : ''" @click="type = t.value">
           <text class="opt-text" :class="type == t.value ? 'opt-text-active' : ''">{{ t.label }}</text>
         </view>
@@ -53,6 +59,9 @@
       <view class="p-row"><text class="p-label">暗色模式</text><switch :checked="darkMode" @change="onDark" color="#E4537F" /></view>
       <!-- #ifdef WEB -->
       <view class="p-row"><text class="p-label">浏览器通知</text><switch :checked="webNotify" @change="onWebNotify" color="#E4537F" /></view>
+      <!-- #endif -->
+      <!-- #ifndef WEB -->
+      <text class="hint">App 端提醒将通过系统通知推送（锁屏可达）；请在系统设置中允许"幸孕记"的通知权限，响铃遵循系统勿扰</text>
       <!-- #endif -->
       <view class="p-row"><text class="p-label">体重单位</text><text class="p-value">kg</text></view>
       <view class="p-row"><text class="p-label">当前版本</text><text class="p-value">1.0.0</text></view>
@@ -144,6 +153,13 @@
   const week = ref<string>('')
   const month = ref<string>('')
   const intervalDays = ref<string>('')
+  // 产褥期/孕期常用用药模板：一键生成每日重复提醒（用药提醒不改诊断边界，仅提醒）
+  const medTemplates = ref<string[]>(['叶酸', '铁剂', '钙片', '维生素 D', 'DHA'])
+  function applyMedTemplate(name: string) {
+    title.value = `${name}（每日）`
+    type.value = 'recurring'
+    intervalDays.value = '1'
+  }
   const darkMode = ref<boolean>(themeState.resolved == 'dark')
   const webNotify = ref<boolean>(notifyEnabled())
   const quietStartTime = ref<string>(quietStart())

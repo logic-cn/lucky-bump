@@ -196,12 +196,15 @@ test('页面显示生命周期使用组合式 onPageShow（禁止选项式 onSho
 test('数据主视图加载失败必须显式可重试（禁止静默空态）', () => {
   // 这些页面的空态与"加载失败"在视觉上完全一致，静默 catch 会让用户误以为数据丢失
   const PAGES = [
+    'pages/index/index.uvue',
     'pages/data/charts.uvue',
     'pages/data/timeline.uvue',
     'pages/care/schedule.uvue',
     'pages/me/family.uvue',
     'pages/baby/baby-home.uvue',
-    'pages/baby/growth.uvue'
+    'pages/baby/growth.uvue',
+    'pages/baby/feeding.uvue',
+    'pages/record/cycle.uvue'
   ]
   const offenders = []
   for (const p of PAGES) {
@@ -343,6 +346,18 @@ test('系统触达（Web）：通知开关与每日待办推送', () => {
   assert.ok(index.includes('isQuietNow'), '通知未遵守免打扰')
 })
 
+test('系统触达（App）：本地通知注册、去重与完成清除', () => {
+  const util = fs.readFileSync(path.join(ROOT, 'utils/notify.uts'), 'utf-8')
+  assert.ok(util.includes('createPushMessage'), '缺少 App 本地通知注册')
+  assert.ok(util.includes('clearPushMessage'), '缺少完成后的通知清除')
+  assert.ok(util.includes('lb_app_notify_day'), '缺少每日去重')
+  assert.ok(util.includes('lb_app_notify_sig'), '缺少内容签名去重')
+  assert.ok(util.includes('HORIZON_DAYS'), '缺少时间窗限制')
+  const index = fs.readFileSync(path.join(ROOT, 'pages/index/index.uvue'), 'utf-8')
+  assert.ok(index.includes('syncLocalNotifications'), '首页未同步本地通知')
+  assert.ok(index.includes('cancelScheduledNotifications'), '完成待办后未清除系统通知')
+})
+
 test('提醒完成闭环：首页打勾回写', () => {
   const index = fs.readFileSync(path.join(ROOT, 'pages/index/index.uvue'), 'utf-8')
   assert.ok(index.includes('completeTodo'), '首页缺少完成回写')
@@ -366,6 +381,24 @@ test('生长曲线与经期提醒：页面能力已接入', () => {
   const babyHome = fs.readFileSync(path.join(ROOT, 'pages/baby/baby-home.uvue'), 'utf-8')
   assert.ok(babyHome.includes('feedingGuide'), '宝宝首页缺少月龄喂养参考')
   assert.ok(babyHome.includes('按需喂养'), '喂养参考缺少按需喂养提示')
+})
+
+test('差异化能力：故事流/家人视角/白带/试纸拍照/用药模板/承诺屏', () => {
+  const timeline = fs.readFileSync(path.join(ROOT, 'pages/data/timeline.uvue'), 'utf-8')
+  assert.ok(timeline.includes('chapter-row'), '时间线缺少故事章节头')
+  assert.ok(timeline.includes('story-title'), '时间线缺少生命故事卡')
+  const index = fs.readFileSync(path.join(ROOT, 'pages/index/index.uvue'), 'utf-8')
+  assert.ok(index.includes('isFamilyView'), '首页缺少家人视角卡（爸爸端）')
+  assert.ok(index.includes('goStory'), '英雄卡未接生命故事入口')
+  const cycle = fs.readFileSync(path.join(ROOT, 'pages/record/cycle.uvue'), 'utf-8')
+  assert.ok(cycle.includes('saveMucus'), '经期页缺少白带记录')
+  assert.ok(cycle.includes('nextPeriodRange'), '周期概览未透出预测区间')
+  const ovu = fs.readFileSync(path.join(ROOT, 'pages/record/ovulation-test.uvue'), 'utf-8')
+  assert.ok(ovu.includes('choosePhoto'), '试纸页缺少拍照上传')
+  const settings = fs.readFileSync(path.join(ROOT, 'pages/me/settings.uvue'), 'utf-8')
+  assert.ok(settings.includes('applyMedTemplate'), '设置页缺少用药提醒模板')
+  const onboarding = fs.readFileSync(path.join(ROOT, 'pages/onboarding/onboarding.uvue'), 'utf-8')
+  assert.ok(onboarding.includes('三个承诺'), '引导页缺少产品承诺屏')
 })
 
 test('Web 可安装：PWA manifest 与主屏幕图标', () => {

@@ -68,6 +68,7 @@
   import { onPageReady } from '../../utils/pageLifecycle.uts'
   import { luckyFamily } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
+  import { appState } from '../../store/appStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
   import { track } from '../../utils/track.uts'
 
@@ -126,7 +127,16 @@
   }
   async function join() {
     try {
-      await luckyFamily('join', { code: joinCode.value, nickname: '我' } as UTSJSONObject)
+      const res = await luckyFamily('join', { code: joinCode.value, nickname: '我' } as UTSJSONObject)
+      track('family_invite', { role: res.getString('role') ?? 'member' } as UTSJSONObject)
+      // 成员没有自己的旅程：立即写入共享旅程与角色，避免回首页被误导向建档引导
+      const jid = res.getString('journeyId') ?? ''
+      if (jid.length > 0) {
+        journeyState.journeyId = jid
+        journeyState.myRole = res.getString('role') ?? 'viewer'
+        appState.journeyId = jid
+        uni.setStorageSync('lb_has_record', true)
+      }
       uni.showToast({ title: '加入成功 🎉', icon: 'success' })
       load()
     } catch (e) { uni.showToast({ title: (e as Error).message, icon: 'none' }) }

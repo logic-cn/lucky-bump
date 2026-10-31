@@ -4,13 +4,16 @@
     <view class="card lb-rise">
       <text class="card-title">今天</text>
       <view class="btn-row">
-        <button class="btn-half btn-primary-bg" hover-class="lb-press" hover-stay-time="120" @click="markToday('start')">今天经期开始</button>
+        <button class="btn-half btn-primary-bg" hover-class="lb-press" hover-stay-time="120" @click="markToday('start')">{{ pendingStartToday ? '↓ 在下方补充经量并保存' : '今天经期开始' }}</button>
         <button class="btn-half btn-gray" hover-class="lb-press" hover-stay-time="120" @click="markToday('end')">今天经期结束</button>
       </view>
     </view>
 
+    <!-- 数据加载失败：显式可重试 -->
+    <lbc-error v-if="loadFailed" :message="errorMsg" @retry="load" />
+
     <!-- 周期日历：点任意日期可补记 -->
-    <view class="card lb-rise-1">
+    <view class="card lb-rise-1" v-if="!loadFailed">
       <view class="cal-head">
         <view class="cal-nav" hover-class="lb-press" hover-stay-time="120" @click="shiftMonth(-1)"><text class="cal-nav-text">‹</text></view>
         <text class="cal-title">{{ viewLabel }}</text>
@@ -28,7 +31,7 @@
       </view>
       <view class="cal-legend">
         <view class="lg"><view class="lg-dot lg-period" /><text class="lg-text">经期</text></view>
-        <view class="lg"><view class="lg-dot lg-predicted" /><text class="lg-text">预测</text></view>
+        <view class="lg"><view class="lg-dot lg-predicted" /><text class="lg-text">预测（±{{ predUncertainty }} 天）</text></view>
         <view class="lg"><view class="lg-dot lg-fertile" /><text class="lg-text">易孕</text></view>
         <view class="lg"><view class="lg-dot lg-ovulation" /><text class="lg-text">排卵</text></view>
       </view>
@@ -58,7 +61,7 @@
     </view>
 
     <!-- 周期概览 -->
-    <view class="card lb-rise-2" v-if="cycles.length > 0 && prediction != null">
+    <view class="card lb-rise-2" v-if="cycles.length > 0 && prediction != null && !loadFailed">
       <text class="card-title">周期概览</text>
       <view class="stat-row">
         <view class="stat"><text class="stat-num">{{ predAvgLen }}</text><text class="stat-cap">平均周期（天）</text></view>
@@ -66,9 +69,10 @@
         <view class="stat"><text class="stat-num">{{ cycles.length }}</text><text class="stat-cap">已记录周期</text></view>
       </view>
       <text class="pred-text" v-if="predRegular">周期规律，预测更可信</text>
-      <text class="pred-text" v-else>周期波动超过 7 天，建议坚持记录排卵试纸与体温</text>
+      <text class="pred-text" v-else>周期波动较大，建议坚持记录排卵试纸与体温</text>
       <text class="pred-sub">易孕窗口：{{ predFrom }} 至 {{ predTo }}</text>
-      <text class="pred-sub">预测下次月经：{{ predNext }}</text>
+      <text class="pred-sub">预测下次月经：{{ predNext }}（最早 {{ predRangeEarliest }} · 最晚 {{ predRangeLatest }}）</text>
+      <text class="pred-sub">预测置信度：{{ predConfidenceText }} · {{ predBasedOnText }}</text>
       <view class="remind-btn" v-if="predNext != '-'" hover-class="lb-press" hover-stay-time="120" @click="setPeriodReminder">
         <text class="remind-text">{{ periodReminded ? '已设置经期提醒' : '设为下个经期提醒' }}</text>
       </view>
@@ -83,18 +87,47 @@
       </view>
     </view>
 
+    <!-- 白带记录：经期类工具的标配维度（对标同类产品） -->
+    <view class="card lb-rise-2">
+      <text class="card-title">白带（宫颈黏液）</text>
+      <view class="bbt-date-row">
+        <text class="label-inline">日期</text>
+        <picker mode="date" :value="mucusDate" :end="todayDateStr()" @change="onMucusDateChange">
+          <view class="bbt-date-box" hover-class="lb-press" hover-stay-time="120">
+            <text class="bbt-date-text">{{ mucusDate }}</text>
+          </view>
+        </picker>
+      </view>
+      <view class="flow-row">
+        <view class="flow-chip" v-for="(m, i) in mucusOpts" :key="i" :class="mucus == m.value ? 'flow-chip-active' : ''" hover-class="lb-press" hover-stay-time="120" @click="mucus = m.value">
+          <text class="flow-text" :class="mucus == m.value ? 'flow-text-active' : ''">{{ m.label }}</text>
+        </view>
+      </view>
+      <button class="btn-small" hover-class="lb-press" hover-stay-time="120" :disabled="saving" @click="saveMucus">{{ saving ? '保存中…' : '记录' }}</button>
+      <text class="hint" v-if="mucus == 'unusual'">异味或异常色持续 2 天以上，建议就医检查（不构成诊断）</text>
+      <text class="hint" v-else>排卵期常见蛋清样拉丝；仅作记录参考</text>
+    </view>
+
     <!-- 基础体温 -->
     <view class="card lb-rise-2">
       <text class="card-title">基础体温</text>
+      <view class="bbt-date-row">
+        <text class="label-inline">测量日期</text>
+        <picker mode="date" :value="bbtDate" :end="todayDateStr()" @change="onBbtDateChange">
+          <view class="bbt-date-box" hover-class="lb-press" hover-stay-time="120">
+            <text class="bbt-date-text">{{ bbtDate }}</text>
+          </view>
+        </picker>
+      </view>
       <text class="label">晨起未活动时，°C</text>
       <view class="input-row">
-        <input class="num-input" type="number" v-model="bbt" placeholder="36.5" placeholder-class="ph" />
+        <input class="num-input" type="number" v-model="bbt" placeholder="36.5" placeholder-class="ph" confirm-type="done" @confirm="saveBbt" />
         <button class="btn-small" hover-class="lb-press" hover-stay-time="120" :disabled="saving" @click="saveBbt">记录</button>
       </view>
     </view>
 
     <!-- 最近记录 -->
-    <view class="card lb-rise-3" v-if="events.length > 0">
+    <view class="card lb-rise-3" v-if="events.length > 0 && !loadFailed">
       <text class="card-title">最近记录</text>
       <view class="ev-row" v-for="(e, i) in events" :key="i">
         <text class="ev-date">{{ e.getString('date') ?? '' }}</text>
@@ -128,7 +161,7 @@
   import { todayDateStr, dateToTs } from '../../utils/recordDate.uts'
 
   type Flow = { value: string, label: string }
-  type Cell = { day: number, date: string, empty: boolean, today: boolean, period: boolean, predicted: boolean, fertile: boolean, ovulation: boolean }
+  type Cell = { day: number, date: string, empty: boolean, today: boolean, period: boolean, predicted: boolean, predRange: boolean, fertile: boolean, ovulation: boolean }
 
   const DAY = 86400000
   const weekdays = ref<string[]>(['一', '二', '三', '四', '五', '六', '日'])
@@ -137,8 +170,17 @@
     { value: 'cramp', label: '痛经' }, { value: 'backache', label: '腰酸' },
     { value: 'headache', label: '头痛' }, { value: 'mood', label: '情绪波动' }
   ] as Flow[])
+  const mucusOpts = ref<Flow[]>([
+    { value: 'dry', label: '干燥' }, { value: 'sticky', label: '黏稠' }, { value: 'creamy', label: '乳白' },
+    { value: 'eggwhite', label: '蛋清样拉丝' }, { value: 'watery', label: '水样' }, { value: 'unusual', label: '异味/异常色' }
+  ] as Flow[])
   const bbt = ref('')
+  const bbtDate = ref<string>(todayDateStr())
+  const mucus = ref<string>('creamy')
+  const mucusDate = ref<string>(todayDateStr())
   const saving = ref(false)
+  const loadFailed = ref<boolean>(false)
+  const errorMsg = ref<string>('')
   const events = ref<UTSJSONObject[]>([])
   const cycles = ref<UTSJSONObject[]>([])
   const prediction = ref<UTSJSONObject | null>(null)
@@ -169,6 +211,26 @@
   const predFrom = computed((): string => fertileEdge('from').length > 0 ? fertileEdge('from') : '-')
   const predTo = computed((): string => fertileEdge('to').length > 0 ? fertileEdge('to') : '-')
   const predNext = computed((): string => predictionString('nextPeriodDate').length > 0 ? predictionString('nextPeriodDate') : '-')
+  // v2 预测：不确定区间 + 置信度透出，让"越记越准"可被感知
+  const predUncertainty = computed((): number => prediction.value?.getNumber('uncertaintyDays')?.toInt() ?? 0)
+  function rangeEdge(key: string): string {
+    const r = (prediction.value as UTSJSONObject | null)?.getJSON('nextPeriodRange')
+    return (r as UTSJSONObject | null)?.getString(key) ?? ''
+  }
+  const predRangeEarliest = computed((): string => rangeEdge('earliest').length > 0 ? rangeEdge('earliest') : '-')
+  const predRangeLatest = computed((): string => rangeEdge('latest').length > 0 ? rangeEdge('latest') : '-')
+  const predConfidenceText = computed((): string => {
+    const c = prediction.value?.getString('confidence') ?? ''
+    if (c == 'high') return '高'
+    if (c == 'medium') return '中'
+    return '低 · 继续记录会更准'
+  })
+  const predBasedOnText = computed((): string => {
+    const b = prediction.value?.getString('basedOn') ?? 'calendar'
+    if (b == 'ovulation_test') return '结合排卵试纸强阳'
+    if (b == 'bbt') return '结合基础体温双相'
+    return '按周期规律推算'
+  })
 
   /** 经期覆盖的日期（按周期起止逐日展开，单段最多 10 天） */
   const periodDays = computed((): string[] => {
@@ -237,7 +299,7 @@
     const y = calYear.value
     const m = calMonth.value
     const offset = (new Date(y, m - 1, 1).getDay() + 6) % 7
-    const blank: Cell = { day: 0, date: '', empty: true, today: false, period: false, predicted: false, fertile: false, ovulation: false }
+    const blank: Cell = { day: 0, date: '', empty: true, today: false, period: false, predicted: false, predRange: false, fertile: false, ovulation: false }
     for (let i = 0; i < offset; i++) out.push(blank)
     const days = new Date(y, m, 0).getDate()
     const todayStr = todayDateStr()
@@ -245,12 +307,15 @@
     const ovu = predictionString('ovulationDate')
     const fFrom = fertileEdge('from')
     const fTo = fertileEdge('to')
+    const rFrom = rangeEdge('earliest')
+    const rTo = rangeEdge('latest')
     for (let d = 1; d <= days; d++) {
       const ds = `${y}-${pad2(m)}-${pad2(d)}`
       out.push({
         day: d, date: ds, empty: false, today: ds == todayStr,
         period: periodDays.value.indexOf(ds) >= 0,
         predicted: nextPeriod.length > 0 && ds == nextPeriod,
+        predRange: rFrom.length > 0 && ds >= rFrom && ds <= rTo && !(nextPeriod.length > 0 && ds == nextPeriod),
         fertile: fFrom.length > 0 && ds >= fFrom && ds <= fTo,
         ovulation: ovu.length > 0 && ds == ovu
       })
@@ -264,6 +329,7 @@
     if (c.ovulation) return 'cal-day-ovulation'
     if (c.fertile) return 'cal-day-fertile'
     if (c.predicted) return 'cal-day-predicted'
+    if (c.predRange) return 'cal-day-pred-range'
     return 'cal-day-normal'
   }
 
@@ -291,10 +357,18 @@
     pickedSymptoms.value = next
   }
 
+  // "今天开始"需要补充经量/症状：展开补记卡并滚动到位，与"结束"的一次保存形成明确反馈；
+  // 两个入口都走防抖，避免快速双击重复提交
+  const pendingStartToday = computed((): boolean => selectedDate.value == todayDateStr() && selectedKind.value == 'start')
+
   function markToday(kind: string) {
+    if (saving.value) return
     selectedDate.value = todayDateStr()
     selectedKind.value = kind
-    if (kind == 'end') markOn('end')
+    if (kind == 'end') { markOn('end'); return }
+    setTimeout(() => {
+      try { uni.pageScrollTo({ scrollTop: 420, duration: 240 }) } catch (e) { /* 滚动失败不影响流程 */ }
+    }, 120)
   }
 
   async function markOn(kind: string) {
@@ -324,7 +398,12 @@
       events.value = res.getArray<UTSJSONObject>('events') ?? []
       cycles.value = res.getArray<UTSJSONObject>('cycles') ?? []
       prediction.value = res.getJSON('prediction')
-    } catch (e) { /* 首屏失败保持空态，不误导 */ }
+      loadFailed.value = false
+    } catch (e) {
+      // 失败时不能落成白板日历，用户会误以为记录丢了
+      loadFailed.value = true
+      errorMsg.value = (e as Error).message
+    }
   }
 
   function symptomLabel(v: string): string {
@@ -354,9 +433,20 @@
       return r == 'strong_positive' ? '🧪 排卵试纸强阳' : (r == 'weak_positive' ? '排卵试纸弱阳' : '排卵试纸阴性')
     }
     if (type == 'bbt') return `🌡 体温 ${(value as UTSJSONObject)?.getNumber('tempC') ?? ''}°C`
+    if (type == 'mucus') return `💧 白带 ${mucusLabel((value as UTSJSONObject)?.getString('result') ?? '')}`
     if (type == 'intercourse') return '💗 同房（仅自己可见）'
     if (type == 'pregnancy_test') return '🤰 验孕记录'
     return type
+  }
+
+  function mucusLabel(v: string): string {
+    if (v == 'dry') return '干燥'
+    if (v == 'sticky') return '黏稠'
+    if (v == 'creamy') return '乳白'
+    if (v == 'eggwhite') return '蛋清样拉丝'
+    if (v == 'watery') return '水样'
+    if (v == 'unusual') return '异味/异常色'
+    return v
   }
 
   function askDelete(id: string) {
@@ -390,12 +480,32 @@
     } finally { reminderSaving.value = false }
   }
 
+  function onBbtDateChange(e: UniPickerChangeEvent) {
+    bbtDate.value = (e.detail.value as string) ?? bbtDate.value
+  }
+  function onMucusDateChange(e: UniPickerChangeEvent) {
+    mucusDate.value = (e.detail.value as string) ?? mucusDate.value
+  }
+
+  async function saveMucus() {
+    saving.value = true
+    try {
+      await luckyRecord('addCycleEvent', { journeyId: journeyState.journeyId, type: 'mucus', date: mucusDate.value, ts: dateToTs(mucusDate.value), value: { result: mucus.value } } as UTSJSONObject)
+      uni.setStorageSync('lb_has_record', true)
+      uni.showToast({ title: '已记录 ✓', icon: 'success' })
+      load()
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    } finally { saving.value = false }
+  }
+
   async function saveBbt() {
     const t = parseFloat(bbt.value)
     if (!(t >= 34 && t <= 42)) { uni.showToast({ title: '请输入有效体温', icon: 'none' }); return }
     saving.value = true
     try {
-      await luckyRecord('addCycleEvent', { journeyId: journeyState.journeyId, type: 'bbt', value: { tempC: t } } as UTSJSONObject)
+      // 体温支持补记历史日期（如凌晨测的算昨天），与经期补记能力对齐
+      await luckyRecord('addCycleEvent', { journeyId: journeyState.journeyId, type: 'bbt', date: bbtDate.value, ts: dateToTs(bbtDate.value), value: { tempC: t } } as UTSJSONObject)
       bbt.value = ''
       uni.showToast({ title: '已记录 ✓', icon: 'success' })
       load()
@@ -424,7 +534,10 @@
   .ev-row { flex-direction: row; align-items: center; padding: 16rpx 0; border-bottom-width: 1px; border-bottom-color: var(--lb-line); }
   .ev-date { width: 190rpx; font-size: 24rpx; color: var(--lb-text-3); }
   .ev-type { flex: 1; font-size: 26rpx; color: var(--lb-text-1); }
-  .ev-del { font-size: 24rpx; color: var(--lb-danger); padding: 10rpx; }
+  .ev-del { font-size: 24rpx; color: var(--lb-danger); padding: 16rpx 24rpx; }
+  .bbt-date-row { flex-direction: row; align-items: center; margin-bottom: 8rpx; }
+  .bbt-date-box { background-color: var(--lb-fill); border-radius: 24rpx; padding: 14rpx 32rpx; transition: all 160ms ease-out; }
+  .bbt-date-text { font-size: 26rpx; color: var(--lb-text-1); }
 
   .cal-head { flex-direction: row; align-items: center; justify-content: space-between; margin-bottom: 20rpx; }
   .cal-nav { width: 72rpx; height: 72rpx; align-items: center; justify-content: center; border-radius: 24rpx; background-color: var(--lb-fill); transition: all 160ms ease-out; }
@@ -442,6 +555,7 @@
   .cal-day-normal { background-color: transparent; }
   .cal-day-period { background-color: var(--lb-primary-soft); }
   .cal-day-predicted { background-color: var(--lb-warning-soft); }
+  .cal-day-pred-range { background-color: var(--lb-warning-soft); opacity: 0.5; }
   .cal-day-fertile { background-color: var(--lb-secondary-soft); }
   .cal-day-ovulation { background-color: var(--lb-primary); }
   .cal-legend { flex-direction: row; flex-wrap: wrap; margin-top: 20rpx; }

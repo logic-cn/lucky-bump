@@ -144,3 +144,32 @@
 ## 中断恢复指引
 
 Web 端已可用。后续运行只涉及：1) `npm test` 保持 70/70；2) 上传云函数前先跑 `scripts/sync_commons.sh`；3) 新增云函数 `lucky-maintenance` 与 `lb-audit-logs` 表需在 HBuilderX 上传/初始化；4) 真机运行/云打包按 docs/08 §5（需 HBuilderX 用户操作）；5) 如用户提出功能修改，按 docs/03 规范实现并回归测试（web 端限制见 docs/08 §8）。
+
+## 同类产品对标三波迭代（2026-10-31，对标同类产品，docs/09）
+
+依据 docs/09-同类产品对标同类产品报告.md 的三波路线完成 18 项开发；`npm test` 101 → 108 全绿。
+
+### 波一 · 体验修复
+- [x] 喂养重做：奶量数字直输 + 6 档预设芯片 + 时间补记（默认现在）+ 方式/奶量记忆（`pages/baby/feeding.uvue`）
+- [x] 图表 Y 轴基线自适应（胎动类保持 0 基线）+ 最新值高亮 + 明细倒序分批加载（`pages/data/charts.uvue`）
+- [x] 时间线时区修复：日期列改本地时区，早 8 点前记录不再显示为前一天
+- [x] lbc-error 接入首页/经期页/喂养页（约定测试门禁从 6 页扩到 9 页）
+- [x] 经期「开始」展开补记卡带滚动与按钮态反馈，「结束」补防抖；双入口统一防重复提交
+- [x] 键盘适配：weight/血压/血糖/BBT/引导页 confirm-type/@confirm；保存成功 toast 统一
+- [x] 日期选择器封顶今天：weight/血压/血糖/验孕 LMP/引导页（`:end="todayDateStr()"`）
+
+### 波二 · 留存三大件
+- [x] 周期预测 v2：近 6 周期加权（旧1新3）、标准差→不确定度区间、置信度输出、BBT 双相参与排卵定位、试纸强阳优先；日历预测区间着色 + 「±N 天」图例 + 置信度文案（`lucky-record.predictCycle` + 3 个新单测）
+- [x] 周报卡升级：`lucky-data.today.weekStats` 增 streakWeeks/todayDone/nextVisit（+单测）；首页本周小结透出连续周数徽标
+- [x] App 端系统本地通知：`utils/notify.uts`（未来 14 天待办注册、每日+签名去重、完成待办清除；createPushMessage/clearPushMessage 运行时探测，旧基座静默降级）；manifest 已含 POST_NOTIFICATIONS
+
+### 波三 · 差异化
+- [x] 生命故事流：时间线按「备孕时光→孕期(孕周标签)→宝宝出生后(天数)」分章 + 生命故事卡（`pages/data/timeline.uvue`）
+- [x] 爸爸端/家人视角：修复成员被误导向建档引导的流程断点——`lucky-family.myFamily`（+单测）、`journeyStore` 成员回退路径、join 回写角色、`today` 旅程视图补齐 weeks/postpartumDays、首页家人视角卡（角色说明+行动指引+下一项日程）
+- [x] 英雄卡可点：进入生命故事时间线
+- [x] 白带记录：schema 枚举 + 服务端校验 + 经期页日期可选芯片卡（+单测）
+- [x] 排卵试纸拍照：chooseImage → uniCloud.uploadFile → photoUrl 随事件落库（服务端限长，+单测）
+- [x] 用药提醒：设置页常用用药模板一键创建每日重复提醒（叶酸/铁剂/钙片/维D/DHA）
+- [x] 引导页承诺屏：敏感仅本人 / 零广告零营销 / 数据可导出
+
+- [ ] 仍需人工：HBuilderX 真机回归（本地通知、拍照上传、暗色 tabBar）；上传 `lucky-record`/`lucky-data`/`lucky-family` 云函数与 `lb-cycle-events` schema 变更到 uniCloud；`uni.createPushMessage` 基座可用性验证（运行时已做探测兜底）

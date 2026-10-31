@@ -1,15 +1,27 @@
 <template>
   <view class="page" :class="themeClass()">
-    <view class="row lb-rise" v-for="(e, i) in events" :key="i">
-      <view class="time-col">
-        <text class="time">{{ timeText(e) }}</text>
-        <text class="date">{{ dateText(e) }}</text>
+    <!-- 生命故事卡：一条不断档的时间线（差异化核心，docs/09-同类产品对标） -->
+    <view class="story lb-rise" v-if="events.length > 0">
+      <text class="story-title">{{ storyTitle }}</text>
+      <text class="story-sub">{{ storySub }}</text>
+    </view>
+
+    <view class="lb-rise-1" v-for="(r, i) in rows" :key="i">
+      <view class="chapter-row" v-if="r.kind == 'chapter'">
+        <text class="chapter-title">{{ r.title }}</text>
+        <text class="chapter-sub" v-if="r.sub.length > 0">{{ r.sub }}</text>
       </view>
-      <view class="dot-line">
-        <view class="dot" :class="'dot-' + (e.getString('type') ?? 'metric')" />
-        <view class="line" v-if="i < events.length - 1" />
+      <view class="row" v-else>
+        <view class="time-col">
+          <text class="time">{{ r.time }}</text>
+          <text class="date">{{ r.date }}</text>
+        </view>
+        <view class="dot-line">
+          <view class="dot" :class="'dot-' + r.dotType" />
+          <view class="line" v-if="r.showLine" />
+        </view>
+        <text class="content">{{ r.content }}</text>
       </view>
-      <text class="content">{{ contentText(e) }}</text>
     </view>
     <lbc-error v-if="loadFailed" :message="errorMsg" @retry="load" />
     <view class="card lb-rise-1" v-if="events.length == 0 && !loadFailed">
@@ -20,10 +32,10 @@
 </template>
 
 <script setup lang="ts">
-  import { ref } from 'vue'
+  import { computed, ref } from 'vue'
   import { onPageReady } from '../../utils/pageLifecycle.uts'
   import { luckyData } from '../../utils/request.uts'
-  import { journeyState } from '../../store/journeyStore.uts'
+  import { journeyState, loadCurrentJourney } from '../../store/journeyStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
 
   const CODE_TEXT: Map<string, string> = new Map([
@@ -32,8 +44,12 @@
     ['lochia', '记录了恶露'], ['kegel', '盆底肌训练'],
     ['period_start', '🌸 经期开始'], ['period_end', '经期结束'],
     ['ovulation_test', '🧪 排卵试纸'], ['bbt', '🌡 基础体温'], ['intercourse', '💗 同房'], ['pregnancy_test', '🤰 验孕'],
+    ['mucus', '💧 白带记录'],
     ['visit', '🏥 产检'], ['prenatal_visit', '🏥 产检'], ['head_up', '👶 学会了抬头'], ['roll_over', '👶 学会了翻身']
   ])
+
+  type Chapter = { title: string, sub: string, tag: string }
+  type Row = { kind: string, title: string, sub: string, time: string, date: string, dotType: string, content: string, tag: string, showLine: boolean }
 
   const events = ref<UTSJSONObject[]>([])
   const loadFailed = ref<boolean>(false)
@@ -41,8 +57,12 @@
 
   async function load() {
     try {
+      // 故事流需要旅程锚点（末次月经/分娩日）；冷启动直接进时间线时补拉一次
+      if (journeyState.lmpDate.length == 0 && journeyState.deliveryDate.length == 0 && journeyState.journeyId.length == 0) {
+        await loadCurrentJourney()
+      }
       const res = await luckyData('timeline', { journeyId: journeyState.journeyId, limit: 80 } as UTSJSONObject)
-      // strict 敏感记录（同房/量表）在非 owner 视角由服务端过滤；owner 视角本地脱敏显示
+      // strict 敏感记录（同房/量表）在非 owner 视角由服务端过滤；owner 视角全量可见
       events.value = res.getArray<UTSJSONObject>('events') ?? []
       loadFailed.value = false
     } catch (e) {
@@ -57,16 +77,65 @@
     const mm = d.getMinutes() < 10 ? '0' + d.getMinutes() : '' + d.getMinutes()
     return `${hh}:${mm}`
   }
+  // 日期用本地时区计算，与时间列同源：早 8 点前的记录不再显示成前一天
   function dateText(e: UTSJSONObject): string {
     const ts = e.getNumber('ts') ?? 0
-    return new Date(ts).toISOString().slice(5, 10)
+    const d = new Date(ts)
+    const mo = d.getMonth() + 1
+    const da = d.getDate()
+    return `${d.getFullYear()}-${mo < 10 ? '0' + mo : '' + mo}-${da < 10 ? '0' + da : '' + da}`
   }
   function contentText(e: UTSJSONObject): string {
     const code = e.getString('code') ?? ''
-    const base = CODE_TEXT.get(code) ?? code
-    if (base.indexOf('🌸') >= 0 || base.indexOf('🤰') >= 0 || base.indexOf('👶') >= 0 || base.indexOf('🏥') >= 0) return base
-    return base
+    return CODE_TEXT.get(code) ?? code
   }
+
+  /** 章节归属：分娩日 → 宝宝出生后；末次月经 → 孕期（带孕周标签）；更早 → 备孕时光 */
+  function chapterOf(e: UTSJSONObject): Chapter {
+    const ts = e.getNumber('ts') ?? 0
+    const delivery = journeyState.deliveryDate
+    if (delivery.length > 0) {
+      const dts = Date.parse(delivery + 'T12:00:00Z')
+      if (Number.isFinite(dts) && ts >= dts) {
+        const days = Math.floor((ts - dts) / 86400000)
+        return { title: '👶 宝宝出生以后', sub: '', tag: days >= 0 ? `出生第 ${days + 1} 天` : '' }
+      }
+    }
+    const lmp = journeyState.lmpDate
+    if (lmp.length > 0) {
+      const lts = Date.parse(lmp + 'T12:00:00Z')
+      if (Number.isFinite(lts) && ts >= lts) {
+        const days = Math.floor((ts - lts) / 86400000)
+        return { title: '🌸 孕期', sub: '', tag: `孕 ${Math.floor(days / 7)} 周` }
+      }
+      return { title: '🌱 备孕时光', sub: '', tag: '' }
+    }
+    return { title: '🌱 备孕时光', sub: '', tag: '' }
+  }
+
+  const storyTitle = computed((): string => {
+    if (events.value.length == 0) return ''
+    if (journeyState.deliveryDate.length > 0) return '从两道杠，到抱在怀里'
+    if (journeyState.lmpDate.length > 0) return '从末次月经开始的故事'
+    return '记录的每一步都在这里'
+  })
+  const storySub = computed((): string => `共 ${events.value.length} 条记录 · 数据只属于你们`)
+
+  /** 事件按章节分组渲染（章节头 + 事件行），构成"生命故事流" */
+  const rows = computed((): Row[] => {
+    const out: Row[] = []
+    let lastChapter = ''
+    for (let i = 0; i < events.value.length; i++) {
+      const e = events.value[i]
+      const ch = chapterOf(e)
+      if (ch.title != lastChapter) {
+        out.push({ kind: 'chapter', title: ch.title, sub: ch.sub, time: '', date: '', dotType: '', content: '', tag: '', showLine: false })
+        lastChapter = ch.title
+      }
+      out.push({ kind: 'event', title: '', sub: '', time: timeText(e), date: dateText(e), dotType: e.getString('type') ?? 'metric', content: ch.tag.length > 0 ? `${contentText(e)} · ${ch.tag}` : contentText(e), tag: '', showLine: i + 1 < events.value.length })
+    }
+    return out
+  })
 
   // 首屏与 tab 切回统一走 onPageReady（uni-app x 5.34 页面钩子不触发，见 utils/pageLifecycle.uts）
   onPageReady(() => { load() })
@@ -75,6 +144,12 @@
 <style>
   @import '../../theme.scss';
   .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
+  .story { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 36rpx; margin-top: 16rpx; align-items: center; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
+  .story-title { font-size: 32rpx; font-weight: bold; color: var(--lb-text-1); }
+  .story-sub { font-size: 24rpx; color: var(--lb-text-3); margin-top: 12rpx; }
+  .chapter-row { width: 702rpx; flex-direction: row; align-items: center; padding: 24rpx 8rpx 8rpx 8rpx; }
+  .chapter-title { font-size: 30rpx; font-weight: bold; color: var(--lb-primary-deep); }
+  .chapter-sub { font-size: 24rpx; color: var(--lb-text-3); margin-left: 16rpx; }
   .row { width: 702rpx; flex-direction: row; }
   .time-col { width: 110rpx; align-items: flex-start; padding-top: 8rpx; }
   .time { font-size: 24rpx; color: var(--lb-text-1); font-weight: bold; }
