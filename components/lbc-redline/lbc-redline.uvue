@@ -7,15 +7,14 @@
   </view>
 </template>
 
-<script>
+<script setup lang="ts">
   /** 红线提示组件（docs/07 §3）：只描述现象 + 建议动作，危险色不挪作它用 */
-  export default {
-    props: {
-      level: { type: String, default: 'warn' },   // warn | critical
-      message: { type: String, default: '' },
-      action: { type: String, default: '' }
-    }
-  }
+  // 蒸汽模式仅支持组合式 <script setup>（选项式 script 编译失败，2026-10-31 云打包发现）
+  const props = defineProps({
+    level: { type: String, default: 'warn' },   // warn | critical
+    message: { type: String, default: '' },
+    action: { type: String, default: '' }
+  })
 </script>
 
 <style>

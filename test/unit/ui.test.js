@@ -58,6 +58,16 @@ test('旧几何禁用（700rpx 宽度 / 44rpx 按钮圆角）', () => {
   assert.deepEqual(offenders, [], `以下文件仍使用旧几何:\n${offenders.join('\n')}`)
 })
 
+test('蒸汽模式：组件与页面一律组合式 script setup（选项式 script 编译失败）', () => {
+  // 2026-10-31 云打包实测：vapor 模式下 <script> 选项式直接编译失败（lbc-redline/lbc-card/lbc-disclaimer）
+  const offenders = []
+  for (const file of [...walkUvue(path.join(ROOT, 'pages')), ...walkUvue(path.join(ROOT, 'components'))]) {
+    const src = fs.readFileSync(file, 'utf-8')
+    if (/<script>/.test(src)) offenders.push(path.relative(ROOT, file))
+  }
+  assert.deepEqual(offenders, [], `以下文件使用选项式 <script>，蒸汽模式编译失败:\n${offenders.join('\n')}`)
+})
+
 test('每个页面内嵌 lb 动效标准块（lbc-disclaimer 豁免）', () => {
   const missing = []
   for (const file of walkUvue(path.join(ROOT, 'pages'))) {

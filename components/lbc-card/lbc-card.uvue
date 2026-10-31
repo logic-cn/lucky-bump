@@ -5,10 +5,9 @@
   </view>
 </template>
 
-<script>
-  export default {
-    props: { title: { type: String, default: '' } }
-  }
+<script setup lang="ts">
+  // 蒸汽模式仅支持组合式 <script setup>（选项式 script 编译失败，2026-10-31 云打包发现）
+  defineProps({ title: { type: String, default: '' } })
 </script>
 
 <style>

@@ -4,13 +4,12 @@
   </view>
 </template>
 
-<script>
+<script setup lang="ts">
   /** 免责声明组件：AI 解读/红线/量表/科普详情页必须挂载（docs/05 §5.1） */
-  export default {
-    props: {
-      text: { type: String, default: '本内容为参考信息，不构成医疗建议；如有不适请及时就医。' }
-    }
-  }
+  // 蒸汽模式仅支持组合式 <script setup>（选项式 script 编译失败，2026-10-31 云打包发现）
+  defineProps({
+    text: { type: String, default: '本内容为参考信息，不构成医疗建议；如有不适请及时就医。' }
+  })
 </script>
 
 <style>
