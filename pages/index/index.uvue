@@ -101,8 +101,7 @@
       <text class="trend-text">最近 7 天记录 {{ weekRecords }} 条{{ weekDeltaText }}</text>
       <text class="trend-text" v-if="weekTodayDone > 0">今日待办已完成 {{ weekTodayDone }} 项 ✓</text>
       <text class="trend-text" v-if="weekNextVisit.length > 0">下一项：{{ weekNextVisit }}</text>
-      <text class="mom-foot" v-if="weekStreakWeeks >= 2">已连续记录 {{ weekStreakWeeks }} 周，数据资产正在生长 🌱</text>
-      <text class="mom-foot" v-else>持续记录，趋势才会说话</text>
+      <text class="mom-foot" v-if="weekStreakWeeks >= 2">已连续记录 {{ weekStreakWeeks }} 周 🌱</text>
     </view>
 
     <!-- 家庭邀请引导（一次，可关闭） -->

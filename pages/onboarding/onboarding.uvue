@@ -17,12 +17,6 @@
         <text class="opt-title">宝宝已出生</text>
         <text class="opt-sub">喂养睡眠记录、成长曲线、疫苗</text>
       </view>
-      <view class="promise">
-        <text class="promise-title">在开始之前，我们的三个承诺</text>
-        <text class="promise-item">🔒 同房、验孕、情绪量表仅你本人可见，任何授权不可覆盖</text>
-        <text class="promise-item">🚫 零广告、零营销推送，记录功能永久免费</text>
-        <text class="promise-item">📤 数据随时可导出带走，你的数据资产属于你</text>
-      </view>
     </view>
 
     <view v-if="step == 1" class="card lb-rise-1">
@@ -41,7 +35,7 @@
       </view>
     </view>
 
-    <text class="tip lb-rise-2">日期不确定也没关系，之后可随时修正（页面会标注"估算"）。</text>
+    <text class="tip lb-rise-2">日期不确定也没关系，之后可在"我的-旅程设置"中修正。</text>
   </view>
 </template>
 
@@ -136,9 +130,6 @@
   .link-wrap { margin-top: 32rpx; padding: 8rpx 24rpx; border-radius: 24rpx; transition: all 160ms ease-out; }
   .link { color: var(--lb-primary); font-size: 26rpx; }
   .tip { font-size: 24rpx; color: var(--lb-text-3); margin-top: 48rpx; width: 640rpx; text-align: center; }
-  .promise { width: 640rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 32rpx 36rpx; margin-top: 8rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
-  .promise-title { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 16rpx; }
-  .promise-item { font-size: 25rpx; color: var(--lb-text-2); line-height: 44rpx; }
 
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }

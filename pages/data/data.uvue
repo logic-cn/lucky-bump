@@ -40,8 +40,7 @@
         <text class="nav-arrow">›</text>
       </view>
     </view>
-    <text class="foot lb-rise-1">记录的意义，是看见时间里的变化</text>
-  
+
     <!-- 自绘提示弹窗（web 端 uni.showModal 回调不触发） -->
     <view class="mask lb-fade" v-if="infoVisible">
       <view class="dialog lb-pop">
@@ -132,7 +131,6 @@
   .nav-text { font-size: 30rpx; color: var(--lb-text-1); }
   .nav-sub { font-size: 24rpx; color: var(--lb-text-3); margin-top: 4rpx; }
   .nav-arrow { font-size: 36rpx; color: var(--lb-arrow); }
-  .foot { font-size: 24rpx; color: var(--lb-text-3); margin-top: 64rpx; }
 
   .mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--lb-mask); justify-content: center; align-items: center; }
   .dialog { width: 560rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 40rpx 32rpx 24rpx 32rpx; }

@@ -408,7 +408,8 @@ test('差异化能力：故事流/家人视角/白带/试纸拍照/用药模板/
   const settings = fs.readFileSync(path.join(ROOT, 'pages/me/settings.uvue'), 'utf-8')
   assert.ok(settings.includes('applyMedTemplate'), '设置页缺少用药提醒模板')
   const onboarding = fs.readFileSync(path.join(ROOT, 'pages/onboarding/onboarding.uvue'), 'utf-8')
-  assert.ok(onboarding.includes('三个承诺'), '引导页缺少产品承诺屏')
+  // 引导页黄金位只放"帮用户开始"的功能内容：宣传性/自我表彰文案属于宣发物料（2026-10-31 用户裁定）
+  assert.ok(!onboarding.includes('三个承诺'), '引导页黄金位不得放置承诺/宣言类卡片')
 })
 
 test('Web 可安装：PWA manifest 与主屏幕图标', () => {
