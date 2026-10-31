@@ -93,7 +93,9 @@
     if (birth.length == 0) return ''
     const days = Math.floor((Date.now() - Date.parse(birth + 'T12:00:00Z')) / 86400000)
     const months = Math.floor(days / 30.4375)
-    return `${months} 个月 ${days % 30} 天`
+    // 余数按真实天数差回算，避免出现"2 个月 29 天 → 3 个月 0 天"的跳变
+    const rem = Math.max(0, Math.round(days - months * 30.4375))
+    return `${months} 个月 ${rem} 天`
   }
   function selectBaby(b: UTSJSONObject) {
     currentBabyId.value = b.getString('_id') ?? ''
@@ -123,7 +125,12 @@
     if (currentBabyId.value.length == 0) { summary.value = null; return }
     try {
       summary.value = await luckyBaby('dailySummary', { journeyId: journeyState.journeyId, babyId: currentBabyId.value } as UTSJSONObject)
-    } catch (e) { summary.value = null }
+    } catch (e) {
+      // 失败时不能落成"今天没喂过"，交由 lbc-error 显式提示并可重试
+      summary.value = null
+      loadFailed.value = true
+      errorMsg.value = (e as Error).message
+    }
   }
 
   onPageReady(() => { load() })

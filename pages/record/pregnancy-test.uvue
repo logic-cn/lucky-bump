@@ -18,7 +18,7 @@
       <text class="celebrate-title">恭喜！要先确认好孕吗？</text>
       <text class="hint">确认后你的备孕记录会无缝带孕展示，还能邀请宝宝爸爸一起记录</text>
       <text class="label">末次月经第一天</text>
-      <picker mode="date" :value="lmp" @change="onLmpChange">
+      <picker mode="date" :value="lmp" :end="todayDateStr()" @change="onLmpChange">
         <view class="date-box"><text class="date-text">{{ lmp == '' ? '选择日期' : lmp }}</text></view>
       </picker>
       <button class="btn-save" :disabled="saving" @click="confirmPregnancy">{{ saving ? '确认中…' : '确认好孕，开始孕期模式' }}</button>
@@ -38,6 +38,7 @@
   import { luckyRecord, luckyJourney } from '../../utils/request.uts'
   import { journeyState, applyJourney, stageText } from '../../store/journeyStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
+  import { todayDateStr } from '../../utils/recordDate.uts'
 
   type Opt = { value: string, label: string, emoji: string }
 

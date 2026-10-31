@@ -3,25 +3,43 @@
     <view class="card lb-rise">
       <text class="label">喂养方式</text>
       <view class="opts">
-        <view class="opt" hover-class="lb-press" hover-stay-time="120" v-for="(m, i) in modes" :key="i" :class="mode == m.value ? 'opt-active' : ''" @click="mode = m.value">
+        <view class="opt" hover-class="lb-press" hover-stay-time="120" v-for="(m, i) in modes" :key="i" :class="mode == m.value ? 'opt-active' : ''" @click="pickMode(m.value)">
           <text class="opt-text" :class="mode == m.value ? 'opt-text-active' : ''">{{ m.label }}</text>
         </view>
       </view>
       <view v-if="mode == 'breastmilk_bottle' || mode == 'formula' || mode == 'mixed'">
         <text class="label">奶量（ml）</text>
-        <view class="stepper">
+        <view class="preset-row">
+          <view class="preset" v-for="(p, i) in presets" :key="i" :class="curMl == p ? 'preset-active' : ''" hover-class="lb-press" hover-stay-time="120" @click="setMl(p)">
+            <text class="preset-text" :class="curMl == p ? 'preset-text-active' : ''">{{ p }}</text>
+          </view>
+        </view>
+        <view class="ml-row">
           <view class="step-btn" hover-class="lb-press" hover-stay-time="120" @click="step(-10)"><text class="step-text">−</text></view>
-          <text class="step-num">{{ ml }}</text>
+          <input class="ml-input" type="digit" v-model="mlText" confirm-type="done" @confirm="save" placeholder="120" placeholder-class="ph" />
+          <text class="ml-unit">ml</text>
           <view class="step-btn" hover-class="lb-press" hover-stay-time="120" @click="step(10)"><text class="step-text">＋</text></view>
         </view>
       </view>
+      <view class="time-row">
+        <text class="label-inline">时间</text>
+        <picker mode="time" :value="feedTime" @change="onTimeChange">
+          <view class="time-box" hover-class="lb-press" hover-stay-time="120">
+            <text class="time-text">{{ feedTime == '' ? '现在' : feedTime }}</text>
+          </view>
+        </picker>
+        <text class="time-reset" v-if="feedTime.length > 0" @click="feedTime = ''">恢复现在</text>
+      </view>
+      <text class="hint">可补记今天早些时候的奶量（如夜奶）</text>
       <view v-if="mode == 'nursing'">
         <button class="btn-save" hover-class="lb-press" hover-stay-time="120" @click="goTimer">⏱ 打开亲喂计时器</button>
       </view>
       <button class="btn-save" hover-class="lb-press" hover-stay-time="120" v-if="mode != 'nursing'" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</button>
     </view>
 
-    <view class="card lb-rise-1" v-if="summary != null">
+    <lbc-error v-if="loadFailed" :message="errorMsg" @retry="load" />
+
+    <view class="card lb-rise-1" v-if="summary != null && !loadFailed">
       <text class="card-title">今天：{{ feedCount }} 次 · 共 {{ totalMl }}ml（亲喂 {{ nursingMin }} 分钟）</text>
       <view class="f-row" v-for="(f, i) in feedings" :key="i">
         <text class="f-time">{{ f.time }}</text>
@@ -38,13 +56,21 @@
   import { journeyState } from '../../store/journeyStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
   import { track } from '../../utils/track.uts'
+  import { todayDateStr } from '../../utils/recordDate.uts'
 
   type FOpt = { value: string, label: string }
   type FRow = { time: string, desc: string }
 
+  const MODE_KEY = 'lb_last_feeding_mode'
+  const ML_KEY = 'lb_last_feeding_ml'
+  const VALID_MODES = ['nursing', 'breastmilk_bottle', 'formula', 'mixed']
+
   const mode = ref<string>('breastmilk_bottle')
-  const ml = ref<number>(60)
+  const mlText = ref<string>('60')
+  const feedTime = ref<string>('')
   const saving = ref<boolean>(false)
+  const loadFailed = ref<boolean>(false)
+  const errorMsg = ref<string>('')
   const babyId = ref<string>('')
   const summary = ref<UTSJSONObject | null>(null)
   const modes = ref<FOpt[]>([
@@ -52,7 +78,8 @@
     { value: 'breastmilk_bottle', label: '瓶喂母乳' },
     { value: 'formula', label: '配方奶' },
     { value: 'mixed', label: '混合' }
-  ])
+  ] as FOpt[])
+  const presets = ref<number[]>([60, 90, 120, 150, 180, 210])
 
   function timeStr(f: UTSJSONObject): string {
     const ts = f.getNumber('ts') ?? 0
@@ -62,6 +89,7 @@
     return `${hh}:${mm}`
   }
 
+  const curMl = computed((): number => Math.round(parseFloat(mlText.value) || 0))
   const feedCount = computed((): number => ((summary.value as UTSJSONObject | null)?.getJSON('feeding') as UTSJSONObject | null)?.getNumber('count')?.toInt() ?? 0)
   const totalMl = computed((): number => ((summary.value as UTSJSONObject | null)?.getJSON('feeding') as UTSJSONObject | null)?.getNumber('totalMl')?.toInt() ?? 0)
   const nursingMin = computed((): number => Math.floor((((summary.value as UTSJSONObject | null)?.getJSON('feeding') as UTSJSONObject | null)?.getNumber('nursingSec')?.toInt() ?? 0) / 60))
@@ -79,19 +107,47 @@
   })
 
   function goTimer() { uni.navigateTo({ url: '/pages/record/nursing-timer' }) }
-  function step(d: number) { ml.value = Math.max(0, ml.value + d) }
+  /** 喂养方式记忆上次选择：夜奶/高频场景不再每次重选 */
+  function pickMode(v: string) {
+    mode.value = v
+    uni.setStorageSync(MODE_KEY, v)
+  }
+  function setMl(p: number) { mlText.value = `${p}` }
+  function step(d: number) {
+    const cur = Math.round(parseFloat(mlText.value) || 0)
+    mlText.value = `${Math.max(0, cur + d)}`
+  }
+  function onTimeChange(e: UniPickerChangeEvent) {
+    feedTime.value = (e.detail.value as string) ?? ''
+  }
   async function load() {
     try {
       summary.value = await luckyBaby('dailySummary', { journeyId: journeyState.journeyId, babyId: babyId.value } as UTSJSONObject)
-    } catch (e) { /* 忽略 */ }
+      loadFailed.value = false
+    } catch (e) {
+      // 失败时不能落成"今天没喂"，否则用户会误以为记录丢了
+      loadFailed.value = true
+      errorMsg.value = (e as Error).message
+    }
   }
   async function save() {
+    if (saving.value) return
+    const mlVal = Math.round(parseFloat(mlText.value) || 0)
+    if (!(mlVal > 0 && mlVal <= 1000)) { uni.showToast({ title: '请输入有效奶量（1-1000ml）', icon: 'none' }); return }
+    let ts = Date.now()
+    if (feedTime.value.length > 0) {
+      const parsed = Date.parse(`${todayDateStr()}T${feedTime.value}:00`)
+      if (parsed > 0) ts = parsed
+    }
+    if (ts > Date.now() + 60 * 1000) { uni.showToast({ title: '记录时间不能在未来', icon: 'none' }); return }
     saving.value = true
     try {
-      await luckyBaby('addFeeding', { journeyId: journeyState.journeyId, babyId: babyId.value, mode: mode.value, ml: ml.value } as UTSJSONObject)
+      await luckyBaby('addFeeding', { journeyId: journeyState.journeyId, babyId: babyId.value, mode: mode.value, ml: mlVal, ts } as UTSJSONObject)
       track('record_create', { type: 'feeding' } as UTSJSONObject)
       uni.setStorageSync('lb_has_record', true)
+      uni.setStorageSync(ML_KEY, `${mlVal}`)
       uni.showToast({ title: '已记录 ✓', icon: 'success' })
+      feedTime.value = ''
       load()
     } catch (e) {
       uni.showToast({ title: (e as Error).message, icon: 'none' })
@@ -99,6 +155,10 @@
   }
 
   onPageReady(() => {
+    const storedMode = uni.getStorageSync(MODE_KEY) as string
+    if (storedMode != null && VALID_MODES.indexOf(storedMode) >= 0) mode.value = storedMode
+    const storedMl = uni.getStorageSync(ML_KEY) as string
+    if (storedMl != null && parseFloat(storedMl) > 0) mlText.value = storedMl
     const stored = uni.getStorageSync('current_baby_id') as string
     babyId.value = stored ?? ''
     if (babyId.value.length == 0) {
@@ -120,10 +180,23 @@
   .opt-active { background-color: var(--lb-primary-soft); }
   .opt-text { font-size: 26rpx; color: var(--lb-text-2); }
   .opt-text-active { color: var(--lb-primary-deep); font-weight: bold; }
-  .stepper { flex-direction: row; align-items: center; margin: 16rpx 0; }
+  .preset-row { flex-direction: row; flex-wrap: wrap; justify-content: center; }
+  .preset { background-color: var(--lb-fill); border-radius: 999rpx; padding: 12rpx 30rpx; margin: 6rpx; transition: all 160ms ease-out; }
+  .preset-active { background-color: var(--lb-primary-soft); }
+  .preset-text { font-size: 26rpx; color: var(--lb-text-2); }
+  .preset-text-active { color: var(--lb-primary-deep); font-weight: bold; }
+  .ml-row { flex-direction: row; align-items: center; margin: 16rpx 0; }
   .step-btn { width: 96rpx; height: 96rpx; border-radius: 24rpx; background-color: var(--lb-primary-soft); align-items: center; justify-content: center; transition: all 160ms ease-out; }
   .step-text { font-size: 44rpx; color: var(--lb-primary-deep); }
-  .step-num { width: 200rpx; text-align: center; font-size: 56rpx; font-weight: bold; color: var(--lb-text-1); }
+  .ml-input { width: 220rpx; height: 96rpx; text-align: center; font-size: 56rpx; font-weight: bold; color: var(--lb-text-1); margin: 0 8rpx; border-bottom-width: 2px; border-bottom-color: var(--lb-primary); }
+  .ml-unit { font-size: 26rpx; color: var(--lb-text-3); margin-right: 8rpx; }
+  .ph { color: var(--lb-text-3); }
+  .time-row { flex-direction: row; align-items: center; margin-top: 8rpx; }
+  .label-inline { font-size: 26rpx; color: var(--lb-text-2); margin-right: 16rpx; }
+  .time-box { background-color: var(--lb-fill); border-radius: 24rpx; padding: 14rpx 32rpx; transition: all 160ms ease-out; }
+  .time-text { font-size: 28rpx; color: var(--lb-text-1); }
+  .time-reset { font-size: 26rpx; color: var(--lb-primary); margin-left: 20rpx; padding: 8rpx 12rpx; }
+  .hint { font-size: 24rpx; color: var(--lb-text-3); margin-top: 12rpx; }
   .btn-save { width: 620rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 24rpx; transition: all 160ms ease-out; }
   .card-title { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 16rpx; }
   .f-row { flex-direction: row; padding: 10rpx 0; border-bottom-width: 1px; border-bottom-color: var(--lb-line); }

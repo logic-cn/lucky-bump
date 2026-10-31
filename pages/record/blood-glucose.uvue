@@ -2,7 +2,7 @@
   <view class="page" :class="themeClass()">
     <view class="card lb-rise">
       <text class="label">记录日期</text>
-      <picker mode="date" :value="recordDate" @change="onDateChange">
+      <picker mode="date" :value="recordDate" :end="todayDateStr()" @change="onDateChange">
         <view class="date-box" hover-class="lb-press" hover-stay-time="120">
           <text class="date-text">{{ recordDate }}{{ isTodayDate ? '（今天）' : '' }}</text>
         </view>
@@ -15,7 +15,7 @@
       </view>
       <text class="label">血糖值（mmol/L）</text>
       <view class="input-row">
-        <input class="num-input" type="number" v-model="mmol" :focus="focusInput" :placeholder="glucosePlaceholder" placeholder-class="ph" />
+        <input class="num-input" type="number" v-model="mmol" :focus="focusInput" :placeholder="glucosePlaceholder" placeholder-class="ph" confirm-type="done" @confirm="save" />
         <text class="unit">mmol/L</text>
       </view>
       <text class="hint">糖耐参考切点：空腹 ≥5.1 / 餐后1h ≥10.0 / 餐后2h ≥8.5，超出将提示与医生确认（不构成诊断）</text>
@@ -114,6 +114,7 @@
       setTimeout(() => { focusInput.value = true }, 50)
     }
     if (queued) uni.showToast({ title: '网络不佳，已离线保存，联网后自动同步', icon: 'none' })
+    else if (saved.value) uni.showToast({ title: '已记录 ✓', icon: 'success' })
     saving.value = false
   }
 </script>

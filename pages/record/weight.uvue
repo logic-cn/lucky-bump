@@ -2,13 +2,16 @@
   <view class="page" :class="themeClass()">
     <view class="card lb-rise">
       <text class="label">记录日期</text>
-      <picker mode="date" :value="recordDate" @change="onDateChange">
+      <picker mode="date" :value="recordDate" :end="todayDateStr()" @change="onDateChange">
         <view class="date-box" hover-class="lb-press" hover-stay-time="120">
           <text class="date-text">{{ recordDate }}{{ isTodayDate ? '（今天）' : '' }}</text>
         </view>
       </picker>
       <text class="label">体重（kg）</text>
-      <input class="num-input" type="number" v-model="kg" :focus="focusInput" :placeholder="weightPlaceholder" placeholder-class="ph" />
+      <view class="input-row">
+        <input class="num-input" type="number" v-model="kg" :focus="focusInput" :placeholder="weightPlaceholder" placeholder-class="ph" confirm-type="done" @confirm="save" />
+        <text class="unit">kg</text>
+      </view>
       <text class="hint" v-if="profileReady">孕期推荐增重 {{ gainRange[0] }}-{{ gainRange[1] }}kg（{{ bmiText }} · IOM 口径）</text>
       <text class="hint" v-else>孕期推荐增重 11.5-16kg（正常 BMI 口径）</text>
       <text class="link" v-if="!profileReady" @click="goProfile">去完善身高与孕前体重 ›</text>
@@ -103,11 +106,11 @@
     lastWeight.value = `${kgVal}`
     uni.setStorageSync('lb_last_weight', lastWeight.value)
     saved.value = true
+    uni.showToast({ title: queued ? '已离线保存，联网后自动同步' : '已记录 ✓', icon: 'success' })
     // 保存后留在页内，便于连续补录；清空输入并重新聚焦
     kg.value = ''
     focusInput.value = false
     setTimeout(() => { focusInput.value = true }, 50)
-    if (queued) uni.showToast({ title: '网络不佳，已离线保存，联网后自动同步', icon: 'none' })
     saving.value = false
   }
 </script>

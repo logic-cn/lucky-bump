@@ -2,7 +2,7 @@
   <view class="page" :class="themeClass()">
     <view class="card lb-rise">
       <text class="label">记录日期</text>
-      <picker mode="date" :value="recordDate" @change="onDateChange">
+      <picker mode="date" :value="recordDate" :end="todayDateStr()" @change="onDateChange">
         <view class="date-box" hover-class="lb-press" hover-stay-time="120">
           <text class="date-text">{{ recordDate }}{{ isTodayDate ? '（今天）' : '' }}</text>
         </view>
@@ -10,16 +10,16 @@
       <text class="label">血压（mmHg）</text>
       <view class="bp-row">
         <view class="bp-col">
-          <input class="bp-input" type="number" v-model="sbp" :focus="focusInput" :placeholder="sbpPlaceholder" placeholder-class="ph" />
+          <input class="bp-input" type="number" v-model="sbp" :focus="focusInput" :placeholder="sbpPlaceholder" placeholder-class="ph" confirm-type="next" />
           <text class="bp-cap">收缩压</text>
         </view>
         <text class="bp-slash">/</text>
         <view class="bp-col">
-          <input class="bp-input" type="number" v-model="dbp" :placeholder="dbpPlaceholder" placeholder-class="ph" />
+          <input class="bp-input" type="number" v-model="dbp" :placeholder="dbpPlaceholder" placeholder-class="ph" confirm-type="next" />
           <text class="bp-cap">舒张压</text>
         </view>
       </view>
-      <input class="hr-input" type="number" v-model="hr" placeholder="心率（选填），如 72" placeholder-class="ph" />
+      <input class="hr-input" type="number" v-model="hr" placeholder="心率（选填），如 72" placeholder-class="ph" confirm-type="done" @confirm="save" />
     </view>
     <button class="btn-save lb-rise-1" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</button>
     <text class="ok-text lb-fade" v-if="saved">已记录 ✓ · 可继续记录下一条</text>
@@ -130,6 +130,7 @@
       setTimeout(() => { focusInput.value = true }, 50)
     }
     if (queued) uni.showToast({ title: '网络不佳，已离线保存，联网后自动同步', icon: 'none' })
+    else if (saved.value) uni.showToast({ title: '已记录 ✓', icon: 'success' })
     saving.value = false
   }
 </script>

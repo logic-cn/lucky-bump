@@ -16,21 +16,32 @@
     <!-- 简易条形趋势图（UTS 自绘，V1.1 换 lbc-chart-line 折线） -->
     <view class="card lb-rise-1" v-if="points.length > 0">
       <text class="card-title">{{ metricLabel }} · 最近 {{ points.length }} 条</text>
-      <view class="chart">
-        <view class="bar-col" v-for="(p, i) in points" :key="i">
-          <view class="bar" :style="{ height: barHeight(p.y) + 'rpx' }" />
-          <text class="bar-date">{{ p.date.slice(5) }}</text>
-          <text class="bar-val">{{ p.y }}</text>
+      <view class="chart-wrap">
+        <view class="axis">
+          <text class="axis-val">{{ axisTopText }}</text>
+          <text class="axis-val">{{ axisBaseText }}</text>
+        </view>
+        <view class="chart">
+          <view class="bar-col" v-for="(p, i) in points" :key="i">
+            <view class="bar" :class="i == points.length - 1 ? 'bar-latest' : ''" :style="{ height: barHeight(p.y) + 'rpx' }" />
+            <text class="bar-date">{{ p.date.slice(5) }}</text>
+            <text class="bar-val" :class="i == points.length - 1 ? 'bar-val-latest' : ''">{{ p.y }}</text>
+          </view>
         </view>
       </view>
+      <text class="hint" v-if="hasBaseline">纵轴已聚焦到 {{ axisBaseText }}-{{ axisTopText }} 区间，微小变化更直观</text>
     </view>
 
     <view class="card lb-rise-2" v-if="points.length > 0">
       <text class="card-title">记录明细</text>
-      <view class="d-row" v-for="(p, i) in points" :key="i">
+      <view class="d-row" v-for="(p, i) in detailRows" :key="i">
         <text class="d-date">{{ p.date }}</text>
         <text class="d-val">{{ p.display }}</text>
       </view>
+      <view class="more-btn" v-if="hasMore" hover-class="lb-press" hover-stay-time="120" @click="loadMore">
+        <text class="more-text">加载更早记录</text>
+      </view>
+      <text class="hint" v-if="!hasMore && points.length > 12">已到最早记录</text>
     </view>
   </view>
 </template>
@@ -56,19 +67,55 @@
   const points = ref<Pt[]>([] as Pt[])
   const loadFailed = ref<boolean>(false)
   const errorMsg = ref<string>('')
+  const visibleCount = ref<number>(12)
 
   const metricLabel = computed((): string => {
     for (let i = 0; i < metricList.value.length; i++) { if (metricList.value[i].value == code.value) return metricList.value[i].label }
     return ''
+  })
+  const minVal = computed((): number => {
+    let mn = Number.MAX_VALUE
+    for (let i = 0; i < points.value.length; i++) { if (points.value[i].y < mn) mn = points.value[i].y }
+    return points.value.length > 0 ? mn : 0
   })
   const maxVal = computed((): number => {
     let mx = 1
     for (let i = 0; i < points.value.length; i++) { if (points.value[i].y > mx) mx = points.value[i].y }
     return mx
   })
+  const spanVal = computed((): number => Math.max(0, maxVal.value - minVal.value))
+  // Y 轴基线自适应：体重 60→70kg 这类小幅波动不再被"从 0 起算"压平；
+  // 数据本身接近 0（如胎动计数）时保持 0 基线，避免视觉夸大
+  const baseline = computed((): number => {
+    const s = spanVal.value
+    if (s < 0.0001) return Math.max(0, minVal.value - Math.abs(minVal.value) * 0.05 - 1)
+    if (minVal.value <= s) return 0
+    return minVal.value - s * 0.2
+  })
+  const axisTop = computed((): number => {
+    const s = spanVal.value
+    if (s < 0.0001) return maxVal.value + Math.abs(maxVal.value) * 0.05 + 1
+    return maxVal.value + s * 0.08
+  })
+  const hasBaseline = computed((): boolean => baseline.value > 0.0001)
+  const axisTopText = computed((): string => fmtNum(axisTop.value))
+  const axisBaseText = computed((): string => fmtNum(baseline.value))
+  // 明细倒序展示（最新在前），支持分批加载更早记录
+  const detailRows = computed((): Pt[] => {
+    const rows: Pt[] = []
+    for (let i = points.value.length - 1; i >= 0 && rows.length < visibleCount.value; i--) rows.push(points.value[i])
+    return rows
+  })
+  const hasMore = computed((): boolean => points.value.length > visibleCount.value)
 
-  function select(c: string) { code.value = c; load() }
-  function barHeight(y: number): number { return Math.max(12, Math.round(y / maxVal.value * 160)) }
+  function fmtNum(n: number): string { return `${Math.round(n * 10) / 10}` }
+  function select(c: string) { code.value = c; visibleCount.value = 12; load() }
+  function loadMore() { visibleCount.value = visibleCount.value + 12 }
+  function barHeight(y: number): number {
+    const range = axisTop.value - baseline.value
+    if (range <= 0) return 80
+    return Math.max(12, Math.round((y - baseline.value) / range * 160))
+  }
   async function load() {
     try {
       const res = await luckyData('series', { journeyId: journeyState.journeyId, code: code.value } as UTSJSONObject)
@@ -110,7 +157,14 @@
   .card-title { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 20rpx; align-self: flex-start; }
   .empty { font-size: 28rpx; color: var(--lb-text-2); margin-top: 16rpx; }
   .hint { font-size: 24rpx; color: var(--lb-text-3); margin-top: 12rpx; }
-  .chart { flex-direction: row; align-items: flex-end; justify-content: space-between; width: 636rpx; height: 240rpx; }
+  .chart-wrap { flex-direction: row; width: 636rpx; align-items: center; }
+  .axis { width: 88rpx; height: 240rpx; justify-content: space-between; align-items: flex-end; padding-bottom: 56rpx; }
+  .axis-val { font-size: 24rpx; color: var(--lb-text-3); }
+  .chart { flex: 1; flex-direction: row; align-items: flex-end; justify-content: space-between; height: 240rpx; }
+  .bar-latest { background-color: var(--lb-primary); }
+  .bar-val-latest { color: var(--lb-primary); }
+  .more-btn { margin-top: 20rpx; padding: 16rpx 40rpx; border-radius: 999rpx; background-color: var(--lb-fill); transition: all 160ms ease-out; }
+  .more-text { font-size: 26rpx; color: var(--lb-text-2); }
   .bar-col { flex: 1; align-items: center; }
   .bar { width: 28rpx; background-color: #F5A3C3; border-radius: 8rpx 8rpx 0 0; }
   .bar-date { font-size: 24rpx; color: var(--lb-text-3); margin-top: 8rpx; }
