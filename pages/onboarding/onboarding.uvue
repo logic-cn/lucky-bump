@@ -21,7 +21,7 @@
 
     <view v-if="step == 1" class="card lb-rise-1">
       <text class="q">{{ questionText }}</text>
-      <picker mode="date" :value="dateValue" :end="todayDateStr()" @change="onDateChange">
+      <picker mode="date" :value="dateValue" :end="todayEnd" @change="onDateChange">
         <view class="date-box" hover-class="lb-press" hover-stay-time="120"><text class="date-text">{{ dateValue == '' ? '点这里选择日期' : dateValue }}</text></view>
       </picker>
       <text class="q q-top">身高与孕前体重（选填，用于个性化增重区间）</text>
@@ -45,6 +45,7 @@
   import { themeClass } from '../../store/themeStore.uts'
   import { track } from '../../utils/track.uts'
   import { todayDateStr } from '../../utils/recordDate.uts'
+  const todayEnd = todayDateStr()
 
   const step = ref<number>(0)        // 0 选阶段 / 1 录日期
   const mode = ref<string>('ttc')

@@ -27,7 +27,7 @@
           <text class="opt-text" :class="type == t.value ? 'opt-text-active' : ''">{{ t.label }}</text>
         </view>
       </view>
-      <picker v-if="type == 'absolute'" mode="date" :value="anchorDate" @change="onAnchorChange">
+      <picker v-if="type == 'absolute'" mode="date" :value="anchorDate.length > 0 ? anchorDate : anchorFallback" @change="onAnchorChange">
         <view class="pick-box" hover-class="lb-press" hover-stay-time="120"><text class="pick-text">{{ anchorDate == '' ? '选择日期' : anchorDate }}</text></view>
       </picker>
       <input v-if="type == 'by_week'" class="input" type="number" v-model="week" placeholder="孕周，如 28" placeholder-class="ph" />
@@ -150,6 +150,8 @@
   const title = ref<string>('')
   const type = ref<string>('absolute')
   const anchorDate = ref<string>('')
+  // picker 空起始值在部分端不弹窗：兜底为今天（显示文案仍保持'选择日期'）
+  const anchorFallback = ref<string>(todayDateStr())
   const week = ref<string>('')
   const month = ref<string>('')
   const intervalDays = ref<string>('')

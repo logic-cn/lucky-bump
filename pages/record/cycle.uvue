@@ -92,7 +92,7 @@
       <text class="card-title">白带（宫颈黏液）</text>
       <view class="bbt-date-row">
         <text class="label-inline">日期</text>
-        <picker mode="date" :value="mucusDate" :end="todayDateStr()" @change="onMucusDateChange">
+        <picker mode="date" :value="mucusDate" :end="todayEnd" @change="onMucusDateChange">
           <view class="bbt-date-box" hover-class="lb-press" hover-stay-time="120">
             <text class="bbt-date-text">{{ mucusDate }}</text>
           </view>
@@ -113,7 +113,7 @@
       <text class="card-title">基础体温</text>
       <view class="bbt-date-row">
         <text class="label-inline">测量日期</text>
-        <picker mode="date" :value="bbtDate" :end="todayDateStr()" @change="onBbtDateChange">
+        <picker mode="date" :value="bbtDate" :end="todayEnd" @change="onBbtDateChange">
           <view class="bbt-date-box" hover-class="lb-press" hover-stay-time="120">
             <text class="bbt-date-text">{{ bbtDate }}</text>
           </view>
@@ -150,6 +150,7 @@
   import { themeClass } from '../../store/themeStore.uts'
   import { track } from '../../utils/track.uts'
   import { todayDateStr, dateToTs } from '../../utils/recordDate.uts'
+  const todayEnd = todayDateStr()
 
   type Flow = { value: string, label: string }
   type Cell = { day: number, date: string, empty: boolean, today: boolean, period: boolean, predicted: boolean, predRange: boolean, fertile: boolean, ovulation: boolean }

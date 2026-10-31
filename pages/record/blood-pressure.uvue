@@ -2,7 +2,7 @@
   <view class="page" :class="themeClass()">
     <view class="card lb-rise">
       <text class="label">记录日期</text>
-      <picker mode="date" :value="recordDate" :end="todayDateStr()" @change="onDateChange">
+      <picker mode="date" :value="recordDate" :end="todayEnd" @change="onDateChange">
         <view class="date-box" hover-class="lb-press" hover-stay-time="120">
           <text class="date-text">{{ recordDate }}{{ isTodayDate ? '（今天）' : '' }}</text>
         </view>
@@ -40,6 +40,7 @@
   import { journeyState } from '../../store/journeyStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
   import { todayDateStr, dateToTs, isToday } from '../../utils/recordDate.uts'
+  const todayEnd = todayDateStr()
   import { newClientId, isNetworkError, enqueueRecord } from '../../utils/offlineQueue.uts'
 
   const sbp = ref<string>('')
