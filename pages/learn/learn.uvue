@@ -47,7 +47,7 @@
       <view class="art-row" v-for="(a, i) in visibleArticles" :key="a.id">
         <view class="art-head">
           <text class="art-title" hover-class="lb-press" hover-stay-time="120" @click="toggleExpand(a.id)">{{ a.title }}</text>
-          <text class="art-star" @click="toggleFav(a.id)">{{ isFav(a.id) ? '★' : '☆' }}</text>
+          <text class="art-star" hover-class="lb-press" hover-stay-time="120" @click="toggleFav(a.id)">{{ isFav(a.id) ? '★' : '☆' }}</text>
         </view>
         <text class="art-tags">{{ a.tags }}</text>
         <text class="art-body" v-if="expandedId == a.id">{{ a.body }}</text>

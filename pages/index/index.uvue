@@ -1,7 +1,7 @@
 <template>
   <view class="page" :class="themeClass()">
-    <!-- 阶段大卡：品牌面（日出渐变 + bump 弧线 + 幸运星），可点进入生命故事 -->
-    <view class="hero-card lb-rise" hover-class="lb-press" hover-stay-time="120" @click="goStory">
+    <!-- 阶段大卡：品牌面（日出渐变 + bump 弧线 + 幸运星），可点进入生命故事；旅程加载前显示骨架 -->
+    <view class="hero-card lb-rise" v-if="journeyState.loaded" hover-class="lb-press" hover-stay-time="120" @click="goStory">
       <view class="hero-deco hero-deco-big" />
       <view class="hero-deco hero-deco-small" />
       <view class="spark-v hero-spark-1v" />
@@ -21,6 +21,10 @@
           <text class="hero-arrow">›</text>
         </view>
       </view>
+    </view>
+    <view class="hero-card hero-skel" v-else>
+      <view class="skel-line" />
+      <view class="skel-line skel-short" />
     </view>
 
     <!-- 数据加载失败：显式可重试，不再静默显示空态 -->
@@ -68,7 +72,7 @@
       </view>
       <view class="grid">
         <view class="grid-item" v-for="(item, i) in quickItems" :key="i" hover-class="lb-press" hover-stay-time="120" @click="goRecord(item.url)">
-          <view class="grid-chip" :class="'grid-chip-' + (i % 5)">
+          <view class="grid-chip" :class="chipClass(item.url)">
             <text class="grid-icon">{{ item.icon }}</text>
           </view>
           <text class="grid-label">{{ item.label }}</text>
@@ -200,6 +204,12 @@
   })
   function goStory() { uni.navigateTo({ url: '/pages/data/timeline' }) }
   // 快捷记录宫格按最近使用前置；未用过的保持原有顺序
+  // 芯片颜色按 url 稳定哈希取色：颜色跟条目走，不随"最近使用"重排漂移（视觉记忆）
+  function chipClass(url: string): string {
+    let h = 0
+    for (let i = 0; i < url.length; i++) { h = (h * 31 + url.charCodeAt(i)) % 997 }
+    return 'grid-chip-' + (h % 5)
+  }
   function orderByRecent(items: QuickItem[]): QuickItem[] {
     if (recent.value.length == 0) return items
     const used: QuickItem[] = []
@@ -230,8 +240,11 @@
       items.push({ icon: '🍼', label: '喂养', url: '/pages/baby/feeding' })
       items.push({ icon: '🧷', label: '尿布', url: '/pages/baby/diaper' })
       items.push({ icon: '😴', label: '睡眠', url: '/pages/baby/sleep' })
+      items.push({ icon: '📏', label: '成长', url: '/pages/baby/growth' })
       items.push({ icon: '🩸', label: '恶露', url: '/pages/record/lochia' })
       items.push({ icon: '💗', label: '情绪自评', url: '/pages/record/epds' })
+      items.push({ icon: '⚖️', label: '体重', url: '/pages/record/weight' })
+      items.push({ icon: '📷', label: '相册', url: '/pages/baby/album' })
     } else {
       items.push({ icon: '⚖️', label: '体重', url: '/pages/record/weight' })
       items.push({ icon: '🩺', label: '血压', url: '/pages/record/blood-pressure' })
@@ -246,7 +259,10 @@
   })
 
   function goRecord(url: string) {
-    recent.value = rememberRecent(url)
+    // 只记忆记录类入口：家庭组/设置等导航页不污染"最近使用"
+    if (url.indexOf('/pages/record/') == 0 || url.indexOf('/pages/baby/') == 0 || url.indexOf('/pages/tools/') == 0) {
+      recent.value = rememberRecent(url)
+    }
     uni.navigateTo({ url })
   }
   function dismissInviteTip() {
@@ -339,6 +355,11 @@
         if (bp != null) {
           const bv = bp.getJSON('value')
           if (bv != null) parts.push(`血压 ${bv.getNumber('sbp') ?? 0}/${bv.getNumber('dbp') ?? 0}`)
+        }
+        const bc = latest.getJSON('blood_glucose')
+        if (bc != null) {
+          const cv = bc.getJSON('value')
+          if (cv != null) parts.push(`血糖 ${cv.getNumber('mmol') ?? 0}`)
         }
         trendText.value = parts.join(' · ')
       }
@@ -440,6 +461,9 @@
   .hero-foot { flex-direction: row; align-items: center; margin-top: 20rpx; }
   .hero-link { font-size: 24rpx; color: #FFFFFF; background-color: rgba(255,255,255,0.18); border-radius: 999rpx; padding: 10rpx 24rpx; }
   .hero-arrow { font-size: 28rpx; color: rgba(255,255,255,0.85); margin-left: 12rpx; }
+  .hero-skel { background-image: none; background-color: var(--lb-fill); box-shadow: none; }
+  .skel-line { width: 340rpx; height: 44rpx; border-radius: 12rpx; background-color: var(--lb-line); }
+  .skel-short { width: 220rpx; margin-top: 22rpx; }
   .card { background-color: var(--lb-card); border-radius: 36rpx; padding: 36rpx; margin-bottom: 24rpx; box-shadow: 0 8rpx 28rpx rgba(61,35,48,0.05); }
   .card-head { flex-direction: row; align-items: center; margin-bottom: 24rpx; }
   .title-bar { width: 8rpx; height: 30rpx; border-radius: 4rpx; background-image: linear-gradient(180deg, #F376A0, #D43770); margin-right: 14rpx; }

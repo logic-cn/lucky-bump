@@ -7,7 +7,7 @@
       </view>
       <view class="grid">
         <view class="grid-item" v-for="(item, i) in g.items" :key="i" hover-class="lb-press" hover-stay-time="120" @click="go(item.url)">
-          <view class="grid-chip" :class="'grid-chip-' + (i % 5)">
+          <view class="grid-chip" :class="chipClass(item.url)">
             <text class="grid-icon">{{ item.icon }}</text>
           </view>
           <text class="grid-label">{{ item.label }}</text>
@@ -95,6 +95,13 @@
         groups.push({ title: '产检', items: [{ icon: '🏥', label: '产检中心', url: '/pages/care/schedule' }] })
         return groups
   })
+
+  // 芯片颜色按 url 稳定哈希：颜色跟条目走，不随重排漂移（与首页同规则）
+  function chipClass(url: string): string {
+    let h = 0
+    for (let i = 0; i < url.length; i++) { h = (h * 31 + url.charCodeAt(i)) % 997 }
+    return 'grid-chip-' + (h % 5)
+  }
 
   function go(url: string) {
     remember(url)
