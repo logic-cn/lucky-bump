@@ -144,24 +144,24 @@
   .label { font-size: 30rpx; color: var(--lb-text-1); margin-bottom: 24rpx; }
   .date-box { width: 620rpx; height: 88rpx; background-color: var(--lb-fill); border-radius: 24rpx; align-items: center; justify-content: center; margin-bottom: 32rpx; transition: all 160ms ease-out; }
   .date-text { font-size: 28rpx; color: var(--lb-text-1); }
-  .ok-text { color: var(--lb-success); font-size: 28rpx; margin-top: 24rpx; }
+  .ok-text { color: var(--lb-success-text); font-size: 28rpx; margin-top: 24rpx; }
   .slots { flex-direction: row; flex-wrap: wrap; justify-content: center; margin-bottom: 40rpx; }
   .slot { background-color: var(--lb-fill); border-radius: 36rpx; padding: 16rpx 32rpx; margin: 8rpx; transition: all 160ms ease-out; }
   .slot-active { background-color: var(--lb-primary-soft); }
   .slot-text { font-size: 26rpx; color: var(--lb-text-2); }
-  .slot-text-active { color: var(--lb-primary); font-weight: bold; }
+  .slot-text-active { color: var(--lb-primary-text); font-weight: bold; }
   .input-row { flex-direction: row; align-items: center; }
   .num-input { width: 320rpx; height: 140rpx; font-size: 88rpx; font-weight: bold; color: var(--lb-text-1); text-align: center; border-bottom-width: 2px; border-bottom-color: var(--lb-primary); }
   .unit { font-size: 26rpx; color: var(--lb-text-3); margin-left: 16rpx; }
   .ph { color: var(--lb-text-3); }
   .hint { font-size: 24rpx; color: var(--lb-text-3); margin-top: 32rpx; }
-  .btn-save { width: 702rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 48rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
+  .btn-save { width: 702rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-action); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 48rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
   .redline { width: 702rpx; background-color: var(--lb-warning-soft); border-radius: 36rpx; padding: 40rpx; margin-top: 32rpx; }
   .redline-title-row { flex-direction: row; align-items: center; }
   .redline-ico { width: 36rpx; height: 36rpx; margin-right: 8rpx; }
-  .redline-title { font-size: 34rpx; font-weight: bold; color: var(--lb-danger); }
+  .redline-title { font-size: 34rpx; font-weight: bold; color: var(--lb-danger-text); }
   .redline-msg { font-size: 28rpx; color: var(--lb-text-1); margin-top: 16rpx; }
-  .redline-action { font-size: 30rpx; font-weight: bold; color: var(--lb-danger); margin-top: 16rpx; }
+  .redline-action { font-size: 30rpx; font-weight: bold; color: var(--lb-danger-text); margin-top: 16rpx; }
 
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }

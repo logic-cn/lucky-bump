@@ -314,8 +314,8 @@
     "backgroundColor": "#F8F4F5"
   },
   "tabBar": {
-    "color": "#9E8DA5",
-    "selectedColor": "#E4537F",
+    "color": "#786779",
+    "selectedColor": "#BE2F5C",
     "backgroundColor": "#FFFFFF",
     "borderStyle": "white",
     "list": [

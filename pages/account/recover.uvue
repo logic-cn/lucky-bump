@@ -65,9 +65,9 @@
   .card { width: 640rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 40rpx; margin-top: 48rpx; align-items: center; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
   .input { width: 560rpx; height: 88rpx; background-color: var(--lb-fill); border-radius: 24rpx; padding: 0 24rpx; font-size: 28rpx; color: var(--lb-text-1); margin-bottom: 20rpx; }
   .ph { color: var(--lb-text-3); }
-  .btn-primary { width: 560rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 12rpx; transition: all 160ms ease-out; }
+  .btn-primary { width: 560rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-action); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 12rpx; transition: all 160ms ease-out; }
   .link-wrap { padding: 8rpx 24rpx; border-radius: 24rpx; margin-top: 24rpx; transition: all 160ms ease-out; }
-  .link { color: var(--lb-primary); font-size: 26rpx; }
+  .link { color: var(--lb-primary-text); font-size: 26rpx; }
   .hint { font-size: 24rpx; color: var(--lb-text-3); line-height: 38rpx; width: 640rpx; margin-top: 32rpx; text-align: center; }
 
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }

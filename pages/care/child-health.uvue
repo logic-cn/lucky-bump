@@ -64,9 +64,7 @@
         </view>
       </view>
 
-      <view class="card lb-rise-2" v-if="records.length == 0">
-        <text class="empty-text">还没有儿保记录。体检后把身高体重和医生建议记下来，复诊时一目了然。</text>
-      </view>
+      <lbc-empty v-if="records.length == 0" title="还没有儿保记录" hint="体检后把身高体重和医生建议记下来，复诊时一目了然" />
     </view>
   </view>
 </template>
@@ -232,11 +230,11 @@
   .ph { color: var(--lb-text-3); }
   .input { width: 630rpx; height: 88rpx; background-color: var(--lb-fill); border-radius: 24rpx; padding: 0 24rpx; font-size: 28rpx; color: var(--lb-text-1); }
   .opt-wrap { flex-direction: row; flex-wrap: wrap; }
-  .opt { padding: 14rpx 28rpx; border-radius: 20rpx; background-color: var(--lb-fill); margin: 0 12rpx 12rpx 0; }
+  .opt { min-height: 64rpx; padding: 0 28rpx; border-radius: 20rpx; background-color: var(--lb-fill); margin: 0 12rpx 12rpx 0; align-items: center; justify-content: center; }
   .opt-active { background-color: var(--lb-primary-soft); }
   .opt-text { font-size: 26rpx; color: var(--lb-text-2); }
   .opt-text-active { color: var(--lb-primary-deep); font-weight: bold; }
-  .btn-save { width: 630rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: var(--lb-white); font-size: 32rpx; border-radius: 48rpx; margin-top: 28rpx; transition: all 160ms ease-out; }
+  .btn-save { width: 630rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-action); color: var(--lb-white); font-size: 32rpx; border-radius: 48rpx; margin-top: 28rpx; transition: all 160ms ease-out; }
   .hint { font-size: 24rpx; color: var(--lb-text-3); line-height: 38rpx; margin-top: 16rpx; }
   .rec-row { padding: 20rpx 0; border-bottom-width: 1px; border-bottom-color: var(--lb-line); }
   .rec-head { flex-direction: row; justify-content: space-between; align-items: center; }
@@ -244,7 +242,7 @@
   .rec-age { font-size: 24rpx; color: var(--lb-primary-deep); background-color: var(--lb-primary-soft); border-radius: 10rpx; padding: 2rpx 10rpx; }
   .rec-metric { font-size: 26rpx; color: var(--lb-text-2); margin-top: 8rpx; }
   .rec-note { font-size: 24rpx; color: var(--lb-text-3); margin-top: 4rpx; line-height: 36rpx; }
-  .rec-next { font-size: 24rpx; color: var(--lb-primary); margin-top: 6rpx; }
+  .rec-next { font-size: 24rpx; color: var(--lb-primary-text); margin-top: 6rpx; }
   .empty-text { font-size: 26rpx; color: var(--lb-text-3); line-height: 40rpx; }
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }

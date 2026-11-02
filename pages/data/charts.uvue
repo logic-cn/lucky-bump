@@ -160,7 +160,7 @@
   .axis-val { font-size: 24rpx; color: var(--lb-text-3); }
   .chart { flex: 1; flex-direction: row; align-items: flex-end; justify-content: space-between; height: 240rpx; }
   .bar-latest { background-color: var(--lb-primary); }
-  .bar-val-latest { color: var(--lb-primary); }
+  .bar-val-latest { color: var(--lb-primary-text); }
   .more-btn { margin-top: 20rpx; padding: 16rpx 40rpx; border-radius: 999rpx; background-color: var(--lb-fill); transition: all 160ms ease-out; }
   .more-text { font-size: 26rpx; color: var(--lb-text-2); }
   .bar-col { flex: 1; align-items: center; }

@@ -176,26 +176,26 @@
   .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 32rpx; margin-top: 24rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
   .card-title { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 20rpx; }
   .m-row { flex-direction: row; align-items: center; padding: 16rpx 0; }
-  .m-avatar { width: 72rpx; height: 72rpx; border-radius: 36rpx; background-color: var(--lb-secondary); align-items: center; justify-content: center; }
+  .m-avatar { width: 72rpx; height: 72rpx; border-radius: 36rpx; background-color: var(--lb-secondary-action); align-items: center; justify-content: center; }
   .m-avatar-text { font-size: 30rpx; color: #FFFFFF; }
   .m-body { flex: 1; margin-left: 20rpx; }
   .m-name { font-size: 28rpx; color: var(--lb-text-1); }
   .m-role { font-size: 24rpx; color: var(--lb-text-3); margin-top: 4rpx; }
   .m-action-wrap { transition: all 160ms ease-out; }
-  .m-action { font-size: 24rpx; color: var(--lb-danger); padding: 14rpx; }
+  .m-action { font-size: 24rpx; color: var(--lb-danger-text); padding: 14rpx; }
   .hint { font-size: 24rpx; color: var(--lb-text-3); margin: 8rpx 0 16rpx 0; }
   .btn-row { flex-direction: row; }
-  .btn-half { flex: 1; height: 88rpx; line-height: 88rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 24rpx; border-radius: 24rpx; margin: 0 8rpx; transition: all 160ms ease-out; }
+  .btn-half { flex: 1; height: 88rpx; line-height: 88rpx; background-color: var(--lb-action); color: #FFFFFF; font-size: 24rpx; border-radius: 24rpx; margin: 0 8rpx; transition: all 160ms ease-out; }
   .btn-gray { background-color: var(--lb-fill); color: var(--lb-text-2); }
   .code-box { background-color: var(--lb-secondary-soft); border-radius: 24rpx; padding: 20rpx; margin-top: 20rpx; align-items: center; }
   .code-text { font-size: 30rpx; font-weight: bold; color: var(--lb-secondary-deep); }
   .input { width: 636rpx; height: 88rpx; background-color: var(--lb-fill); border-radius: 24rpx; padding: 0 24rpx; font-size: 28rpx; color: var(--lb-text-1); margin-bottom: 16rpx; }
   .ph { color: var(--lb-text-3); }
-  .btn-save { width: 636rpx; height: 88rpx; line-height: 88rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 28rpx; border-radius: 24rpx; transition: all 160ms ease-out; }
+  .btn-save { width: 636rpx; height: 88rpx; line-height: 88rpx; background-color: var(--lb-action); color: #FFFFFF; font-size: 28rpx; border-radius: 24rpx; transition: all 160ms ease-out; }
   .p-row { flex-direction: row; align-items: center; justify-content: space-between; padding: 14rpx 0; }
   .p-label { font-size: 26rpx; color: var(--lb-text-1); }
   .link-wrap { margin-top: 12rpx; padding: 8rpx 0; transition: all 160ms ease-out; }
-  .link { font-size: 24rpx; color: var(--lb-primary); }
+  .link { font-size: 24rpx; color: var(--lb-primary-text); }
 
   .mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--lb-mask); justify-content: center; align-items: center; }
   .dialog { width: 560rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 40rpx 32rpx 24rpx 32rpx; }
@@ -203,7 +203,7 @@
   .dlg-content { font-size: 27rpx; color: var(--lb-text-2); margin-top: 20rpx; text-align: center; line-height: 40rpx; }
   .dlg-actions { flex-direction: row; justify-content: space-between; margin-top: 36rpx; }
   .dlg-btn { width: 230rpx; height: 80rpx; line-height: 80rpx; text-align: center; font-size: 29rpx; color: var(--lb-text-2); background-color: var(--lb-fill); border-radius: 40rpx; }
-  .dlg-btn-ok { color: #FFFFFF; background-image: linear-gradient(135deg, #F376A0, #D43770); }
+  .dlg-btn-ok { color: #FFFFFF; background-image: linear-gradient(135deg, var(--lb-grad-1), var(--lb-grad-2)); }
 
 .card-head { flex-direction: row; align-items: center; margin-bottom: 20rpx; }
   .title-bar { width: 8rpx; height: 30rpx; border-radius: 4rpx; background-image: linear-gradient(180deg, var(--lb-grad-1), var(--lb-grad-2)); margin-right: 14rpx; }

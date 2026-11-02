@@ -160,7 +160,7 @@
   .label { font-size: 30rpx; color: var(--lb-text-1); margin-bottom: 40rpx; }
   .date-box { width: 620rpx; height: 88rpx; background-color: var(--lb-fill); border-radius: 24rpx; align-items: center; justify-content: center; margin-bottom: 32rpx; transition: all 160ms ease-out; }
   .date-text { font-size: 28rpx; color: var(--lb-text-1); }
-  .ok-text { color: var(--lb-success); font-size: 28rpx; margin-top: 24rpx; }
+  .ok-text { color: var(--lb-success-text); font-size: 28rpx; margin-top: 24rpx; }
   .bp-row { flex-direction: row; align-items: flex-end; }
   .bp-col { align-items: center; }
   .bp-input { width: 200rpx; height: 140rpx; font-size: 88rpx; font-weight: bold; color: var(--lb-text-1); text-align: center; border-bottom-width: 2px; border-bottom-color: var(--lb-primary); }
@@ -168,15 +168,15 @@
   .bp-slash { font-size: 56rpx; color: var(--lb-arrow); margin: 0 24rpx 40rpx 24rpx; }
   .ph { color: var(--lb-text-3); }
   .hr-input { width: 500rpx; height: 80rpx; font-size: 28rpx; color: var(--lb-text-1); text-align: center; background-color: var(--lb-fill); border-radius: 24rpx; margin-top: 40rpx; }
-  .btn-save { width: 702rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 48rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
+  .btn-save { width: 702rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-action); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 48rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
   .redline { width: 702rpx; border-radius: 36rpx; padding: 40rpx; margin-top: 32rpx; }
   .redline-critical { background-color: var(--lb-danger-soft); }
   .redline-warn { background-color: var(--lb-warning-soft); }
   .redline-title-row { flex-direction: row; align-items: center; }
   .redline-ico { width: 36rpx; height: 36rpx; margin-right: 8rpx; }
-  .redline-title { font-size: 34rpx; font-weight: bold; color: var(--lb-danger); }
+  .redline-title { font-size: 34rpx; font-weight: bold; color: var(--lb-danger-text); }
   .redline-msg { font-size: 28rpx; color: var(--lb-text-1); margin-top: 16rpx; }
-  .redline-action { font-size: 30rpx; font-weight: bold; color: var(--lb-danger); margin-top: 16rpx; }
+  .redline-action { font-size: 30rpx; font-weight: bold; color: var(--lb-danger-text); margin-top: 16rpx; }
   .redline-note { font-size: 24rpx; color: var(--lb-text-3); margin-top: 24rpx; }
 
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }

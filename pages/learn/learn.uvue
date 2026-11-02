@@ -179,19 +179,19 @@
   .card-title { font-size: 30rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 20rpx; }
   .focus-item { font-size: 26rpx; color: var(--lb-text-2); line-height: 44rpx; }
   .empty-text { font-size: 24rpx; color: var(--lb-text-3); margin-top: 12rpx; line-height: 38rpx; }
-  .red { font-size: 24rpx; color: var(--lb-danger); line-height: 44rpx; }
+  .red { font-size: 24rpx; color: var(--lb-danger-text); line-height: 44rpx; }
   .gray { font-size: 24rpx; color: var(--lb-text-3); line-height: 44rpx; }
 
   .tool-row { padding: 18rpx 0; border-bottom-width: 1px; border-bottom-color: var(--lb-line); }
   .tool-head { flex-direction: row; align-items: center; }
   .tool-name { flex: 1; font-size: 28rpx; color: var(--lb-text-1); font-weight: bold; }
   .tool-verdict { font-size: 24rpx; border-radius: 999rpx; padding: 4rpx 16rpx; }
-  .verdict-ok { color: var(--lb-success); background-color: var(--lb-success-soft); }
-  .verdict-caution { color: var(--lb-warning); background-color: var(--lb-warning-soft); }
-  .verdict-no { color: var(--lb-danger); background-color: var(--lb-danger-soft); }
+  .verdict-ok { color: var(--lb-success-text); background-color: var(--lb-success-soft); }
+  .verdict-caution { color: var(--lb-warning-text); background-color: var(--lb-warning-soft); }
+  .verdict-no { color: var(--lb-danger-text); background-color: var(--lb-danger-soft); }
   .tool-note { font-size: 24rpx; color: var(--lb-text-2); line-height: 38rpx; margin-top: 8rpx; }
   .more-wrap { padding-top: 20rpx; transition: all 160ms ease-out; }
-  .more-link { font-size: 24rpx; color: var(--lb-primary); }
+  .more-link { font-size: 24rpx; color: var(--lb-primary-text); }
 
   .scope-row { flex-direction: row; flex-wrap: wrap; margin-bottom: 12rpx; }
   .scope-chip { background-color: var(--lb-fill); border-radius: 999rpx; padding: 12rpx 26rpx; margin: 6rpx 12rpx 6rpx 0; transition: all 160ms ease-out; }
@@ -202,7 +202,7 @@
   .art-row { padding: 20rpx 0; border-bottom-width: 1px; border-bottom-color: var(--lb-line); }
   .art-head { flex-direction: row; align-items: center; }
   .art-title { flex: 1; font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); line-height: 40rpx; }
-  .art-star { width: 64rpx; text-align: center; font-size: 34rpx; color: var(--lb-primary); }
+  .art-star { width: 64rpx; text-align: center; font-size: 34rpx; color: var(--lb-primary-text); }
   .art-tags { font-size: 24rpx; color: var(--lb-text-3); margin-top: 8rpx; }
   .art-body { font-size: 26rpx; color: var(--lb-text-2); line-height: 44rpx; margin-top: 14rpx; }
   .art-source { font-size: 24rpx; color: var(--lb-text-3); margin-top: 10rpx; }

@@ -205,7 +205,7 @@
   .exam-name { flex: 1.2; margin-right: 12rpx; }
   .exam-result { flex: 1; margin-right: 12rpx; }
   .exam-del { font-size: 32rpx; color: var(--lb-text-3); padding: 8rpx; }
-  .add-exam { font-size: 26rpx; color: var(--lb-primary); padding: 8rpx 0; }
+  .add-exam { font-size: 26rpx; color: var(--lb-primary-text); padding: 8rpx 0; }
   .ta { width: 620rpx; height: 140rpx; background-color: var(--lb-fill); border-radius: 24rpx; padding: 20rpx; font-size: 26rpx; color: var(--lb-text-1); }
   .photo-row { flex-direction: row; flex-wrap: wrap; margin-bottom: 8rpx; }
   .photo { width: 140rpx; height: 140rpx; border-radius: 20rpx; margin: 8rpx; position: relative; }
@@ -214,7 +214,7 @@
   .photo-add { width: 140rpx; height: 140rpx; border-radius: 20rpx; background-color: var(--lb-fill); align-items: center; justify-content: center; margin: 8rpx; transition: all 160ms ease-out; }
   .photo-add-text { font-size: 24rpx; color: var(--lb-text-3); }
   .ph { color: var(--lb-text-3); }
-  .btn-save { width: 702rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 32rpx; transition: all 160ms ease-out; }
+  .btn-save { width: 702rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-action); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 32rpx; transition: all 160ms ease-out; }
   .list { width: 702rpx; margin-top: 40rpx; }
   .list-title { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 16rpx; }
   .v-item { background-color: var(--lb-card); border-radius: 36rpx; padding: 28rpx; margin-bottom: 16rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }

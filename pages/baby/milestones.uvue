@@ -215,7 +215,7 @@
   .card-title { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); }
   .card-title-flush { margin-bottom: 0; }
   .prog-row { flex-direction: row; align-items: center; margin-top: 8rpx; }
-  .prog-num { font-size: 56rpx; font-weight: bold; color: var(--lb-primary); }
+  .prog-num { font-size: 56rpx; font-weight: bold; color: var(--lb-primary-text); }
   .prog-cap { font-size: 24rpx; color: var(--lb-text-2); margin-left: 12rpx; }
   .bar { height: 12rpx; background-color: var(--lb-fill); border-radius: 8rpx; margin-top: 16rpx; overflow: hidden; }
   .bar-fill { height: 12rpx; border-radius: 8rpx; background-image: linear-gradient(90deg, var(--lb-grad-1), var(--lb-grad-2)); }
@@ -228,11 +228,11 @@
   .m-body { flex: 1; }
   .m-name { font-size: 30rpx; color: var(--lb-text-1); font-weight: bold; }
   .m-sub { font-size: 24rpx; color: var(--lb-text-3); margin-top: 4rpx; }
-  .m-done { font-size: 24rpx; color: var(--lb-success); margin-top: 4rpx; }
-  .m-watch { font-size: 24rpx; color: var(--lb-warning); margin-top: 4rpx; line-height: 36rpx; }
-  .m-btn { padding: 14rpx 32rpx; border-radius: 999rpx; background-color: var(--lb-primary-soft); }
+  .m-done { font-size: 24rpx; color: var(--lb-success-text); margin-top: 4rpx; }
+  .m-watch { font-size: 24rpx; color: var(--lb-warning-text); margin-top: 4rpx; line-height: 36rpx; }
+  .m-btn { min-height: 64rpx; padding: 0 32rpx; border-radius: 999rpx; background-color: var(--lb-primary-soft); align-items: center; justify-content: center; }
   .m-btn-text { font-size: 26rpx; color: var(--lb-primary-deep); font-weight: bold; }
-  .m-check { font-size: 32rpx; color: var(--lb-success); font-weight: bold; }
+  .m-check { font-size: 32rpx; color: var(--lb-success-text); font-weight: bold; }
   .mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(50,36,48,0.5); align-items: center; justify-content: center; }
   .dialog { width: 620rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 44rpx 36rpx 36rpx 36rpx; align-items: center; }
   .dlg-title { font-size: 32rpx; font-weight: bold; color: var(--lb-text-1); text-align: center; }

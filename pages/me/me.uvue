@@ -73,7 +73,7 @@
   @import '../../theme.scss';
   .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
   .profile { width: 702rpx; flex-direction: row; align-items: center; padding: 36rpx 8rpx; }
-  .avatar { width: 116rpx; height: 116rpx; border-radius: 58rpx; background-image: linear-gradient(135deg, #F376A0, #D43770); align-items: center; justify-content: center; box-shadow: 0 8rpx 24rpx rgba(228,83,127,0.28); }
+  .avatar { width: 116rpx; height: 116rpx; border-radius: 58rpx; background-image: linear-gradient(135deg, var(--lb-grad-1), var(--lb-grad-2)); align-items: center; justify-content: center; box-shadow: 0 8rpx 24rpx rgba(228,83,127,0.28); }
   .avatar-text { font-size: 46rpx; color: #FFFFFF; font-weight: bold; }
   .profile-body { margin-left: 26rpx; }
   .nickname { font-size: 36rpx; font-weight: bold; color: var(--lb-text-1); }
@@ -83,7 +83,7 @@
   .row-text { flex: 1; font-size: 30rpx; color: var(--lb-text-1); }
   .row-icon { width: 40rpx; height: 40rpx; margin-right: 16rpx; }
   .arrow { font-size: 36rpx; color: var(--lb-arrow); }
-  .btn-logout { width: 702rpx; height: 100rpx; line-height: 100rpx; background-color: var(--lb-card); color: var(--lb-danger); font-size: 30rpx; border-radius: 36rpx; margin-top: 40rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
+  .btn-logout { width: 702rpx; height: 100rpx; line-height: 100rpx; background-color: var(--lb-card); color: var(--lb-danger-text); font-size: 30rpx; border-radius: 36rpx; margin-top: 40rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
 
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }

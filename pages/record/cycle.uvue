@@ -546,7 +546,7 @@
   .label { font-size: 28rpx; color: var(--lb-text-1); margin: 16rpx 0 16rpx 0; }
   .btn-row { flex-direction: row; }
   .btn-half { flex: 1; height: 88rpx; line-height: 88rpx; font-size: 28rpx; border-radius: 48rpx; margin: 0 8rpx; }
-  .btn-primary-bg { background-color: var(--lb-primary); color: #FFFFFF; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
+  .btn-primary-bg { background-color: var(--lb-action); color: #FFFFFF; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
   .btn-gray { background-color: var(--lb-fill); color: var(--lb-text-2); }
   .input-row { flex-direction: row; align-items: center; }
   .num-input { flex: 1; height: 88rpx; background-color: var(--lb-fill); border-radius: 24rpx; padding: 0 24rpx; font-size: 30rpx; color: var(--lb-text-1); margin-right: 16rpx; }
@@ -557,7 +557,7 @@
   .ev-row { flex-direction: row; align-items: center; padding: 16rpx 0; border-bottom-width: 1px; border-bottom-color: var(--lb-line); }
   .ev-date { width: 190rpx; font-size: 24rpx; color: var(--lb-text-3); }
   .ev-type { flex: 1; font-size: 26rpx; color: var(--lb-text-1); }
-  .ev-del { font-size: 24rpx; color: var(--lb-danger); padding: 16rpx 24rpx; }
+  .ev-del { font-size: 24rpx; color: var(--lb-danger-text); padding: 16rpx 24rpx; }
   .bbt-date-row { flex-direction: row; align-items: center; margin-bottom: 8rpx; }
   .bbt-date-box { background-color: var(--lb-fill); border-radius: 24rpx; padding: 14rpx 32rpx; transition: all 160ms ease-out; }
   .bbt-date-text { font-size: 26rpx; color: var(--lb-text-1); }
@@ -573,7 +573,7 @@
   .cal-day { width: 80rpx; height: 80rpx; border-radius: 40rpx; align-items: center; justify-content: center; transition: all 160ms ease-out; }
   .cal-day-text { font-size: 26rpx; color: var(--lb-text-2); }
   .cal-text-light { color: #FFFFFF; font-weight: bold; }
-  .cal-day-today { color: var(--lb-primary); font-weight: bold; }
+  .cal-day-today { color: var(--lb-primary-text); font-weight: bold; }
   .cal-day-empty { background-color: transparent; }
   .cal-day-normal { background-color: transparent; }
   .cal-day-period { background-color: var(--lb-primary-soft); }
@@ -609,7 +609,7 @@
   .stat-num { font-size: 40rpx; font-weight: bold; color: var(--lb-primary-deep); }
   .stat-cap { font-size: 24rpx; color: var(--lb-text-3); margin-top: 8rpx; }
   .abnormal { background-color: var(--lb-warning-soft); border-radius: 24rpx; padding: 24rpx; margin-top: 24rpx; }
-  .abnormal-title { font-size: 26rpx; font-weight: bold; color: var(--lb-warning); }
+  .abnormal-title { font-size: 26rpx; font-weight: bold; color: var(--lb-warning-text); }
   .abnormal-text { font-size: 26rpx; color: var(--lb-text-1); margin-top: 8rpx; line-height: 38rpx; }
   .abnormal-note { font-size: 24rpx; color: var(--lb-text-3); margin-top: 12rpx; line-height: 36rpx; }
 

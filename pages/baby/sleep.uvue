@@ -165,7 +165,7 @@
   .opt-ico { width: 34rpx; height: 34rpx; margin-right: 10rpx; }
   .opt-active { background-color: var(--lb-primary-soft); }
   .opt-text { font-size: 26rpx; color: var(--lb-text-2); }
-  .opt-text-active { color: var(--lb-primary); font-weight: bold; }
+  .opt-text-active { color: var(--lb-primary-text); font-weight: bold; }
   .row2 { flex-direction: row; }
   .half { flex: 1; margin: 0 8rpx; }
   .pick-box { width: 300rpx; height: 88rpx; background-color: var(--lb-fill); border-radius: 24rpx; align-items: center; justify-content: center; transition: all 160ms ease-out; }
@@ -176,7 +176,7 @@
   .step-btn { width: 80rpx; height: 80rpx; border-radius: 24rpx; background-color: var(--lb-primary-soft); align-items: center; justify-content: center; transition: all 160ms ease-out; }
   .step-text { font-size: 40rpx; color: var(--lb-primary-deep); }
   .step-num { width: 120rpx; text-align: center; font-size: 40rpx; font-weight: bold; color: var(--lb-text-1); }
-  .btn-save { width: 702rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 32rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
+  .btn-save { width: 702rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-action); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 32rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
   .card-title { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); }
   .hint { font-size: 24rpx; color: var(--lb-text-3); margin-top: 12rpx; }
 

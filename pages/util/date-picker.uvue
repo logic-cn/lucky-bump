@@ -142,7 +142,7 @@
   .head-cancel { font-size: 28rpx; color: var(--lb-text-2); }
   .head-tip { font-size: 24rpx; color: var(--lb-text-3); }
   .head-title { font-size: 32rpx; font-weight: bold; color: var(--lb-text-1); }
-  .head-ok { font-size: 28rpx; color: var(--lb-primary); font-weight: bold; }
+  .head-ok { font-size: 28rpx; color: var(--lb-primary-text); font-weight: bold; }
   .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 32rpx; box-shadow: 0 8rpx 28rpx rgba(61,35,48,0.05); }
   .cal-head { flex-direction: row; align-items: center; justify-content: space-between; margin-bottom: 20rpx; }
   .cal-nav { width: 72rpx; height: 72rpx; align-items: center; justify-content: center; border-radius: 24rpx; background-color: var(--lb-fill); }

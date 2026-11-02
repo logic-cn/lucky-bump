@@ -62,8 +62,8 @@
   .lock-sub { font-size: 26rpx; color: var(--lb-text-3); margin-top: 12rpx; text-align: center; }
   .lock-input { width: 520rpx; height: 88rpx; background-color: var(--lb-card); border-radius: 24rpx; padding: 0 24rpx; font-size: 28rpx; color: var(--lb-text-1); margin-top: 40rpx; text-align: center; }
   .ph { color: var(--lb-text-3); }
-  .btn-unlock { width: 400rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 32rpx; transition: all 160ms ease-out; }
-  .lock-link { font-size: 26rpx; color: var(--lb-primary); margin-top: 28rpx; }
+  .btn-unlock { width: 400rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-action); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 32rpx; transition: all 160ms ease-out; }
+  .lock-link { font-size: 26rpx; color: var(--lb-primary-text); margin-top: 28rpx; }
 
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }

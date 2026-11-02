@@ -83,7 +83,7 @@
   .opt-active { background-color: var(--lb-primary-soft); }
   .opt-text { font-size: 24rpx; color: var(--lb-text-1); }
   .opt-text-active { color: var(--lb-primary-deep); font-weight: bold; }
-  .btn-save { width: 620rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 40rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
+  .btn-save { width: 620rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-action); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 40rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
   .score { font-size: 64rpx; font-weight: bold; color: var(--lb-text-1); }
   .action { font-size: 30rpx; color: var(--lb-text-1); margin-top: 24rpx; text-align: center; }
   .disclaimer { font-size: 24rpx; color: var(--lb-text-3); margin-top: 24rpx; text-align: center; }

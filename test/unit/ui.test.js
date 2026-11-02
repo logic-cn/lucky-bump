@@ -93,7 +93,7 @@ test('pages.json 与 uni.scss 设计令牌一致', () => {
   assert.equal(pagesJson.globalStyle.navigationBarBackgroundColor.toUpperCase(), token('bg'), '导航栏底色须与 $lb-bg 一致')
   assert.equal(pagesJson.globalStyle.backgroundColor.toUpperCase(), token('bg'), '窗口底色须与 $lb-bg 一致')
   assert.equal(pagesJson.tabBar.color.toUpperCase(), token('text-3'), 'tabBar 未选中色须与 $lb-text-3 一致')
-  assert.equal(pagesJson.tabBar.selectedColor.toUpperCase(), token('primary'), 'tabBar 选中色须与 $lb-primary 一致')
+  assert.equal(pagesJson.tabBar.selectedColor.toUpperCase(), token('primary-deep'), 'tabBar 选中色须与 $lb-primary-deep 一致（文字对比度）')
   assert.equal(token('primary'), '#E4537F', 'v2 主色应为蔷薇玫瑰 #E4537F')
   for (const item of pagesJson.tabBar.list) {
     assert.ok(fs.existsSync(path.join(ROOT, item.iconPath)), `缺图标 ${item.iconPath}`)
@@ -141,6 +141,9 @@ test('theme.scss 双主题变量完整且 t-light 与 uni.scss 令牌一致', ()
     ['--lb-text-1', 'text-1'], ['--lb-text-2', 'text-2'], ['--lb-text-3', 'text-3'],
     ['--lb-line', 'line'], ['--lb-arrow', 'arrow'],
     ['--lb-primary', 'primary'], ['--lb-primary-deep', 'primary-deep'], ['--lb-primary-soft', 'primary-soft'],
+    ['--lb-primary-text', 'primary-text'], ['--lb-action', 'action'], ['--lb-secondary-action', 'secondary-action'],
+    ['--lb-grad-1', 'grad-1'], ['--lb-grad-2', 'grad-2'],
+    ['--lb-success-text', 'success-text'], ['--lb-warning-text', 'warning-text'], ['--lb-danger-text', 'danger-text'],
     ['--lb-secondary', 'secondary'], ['--lb-secondary-soft', 'secondary-soft'],
     ['--lb-success', 'success'], ['--lb-success-soft', 'success-soft'],
     ['--lb-warning', 'warning'], ['--lb-warning-soft', 'warning-soft'],
@@ -539,4 +542,64 @@ test('自绘图标资产齐备（引用文件存在 + 关键图标与空态插�
   assert.ok(fs.existsSync(path.join(ROOT, 'static/empty-scene.png')), '缺少空态插画 empty-scene.png')
   const empty = fs.readFileSync(path.join(ROOT, 'components/lbc-empty/lbc-empty.uvue'), 'utf-8')
   assert.ok(empty.includes('/static/empty-scene.png'), 'lbc-empty 未接入空态插画')
+})
+
+/* ---------------- 可访问性：文字/关键底色对比度门禁（WCAG AA） ---------------- */
+
+test('文字与关键底色对比度 ≥ 4.5:1（浅色与暗色主题）', () => {
+  const theme = fs.readFileSync(path.join(ROOT, 'theme.scss'), 'utf-8')
+  const block = (name) => {
+    const m = new RegExp(`\\.${name}\\s*\\{([\\s\\S]*?)\\}`).exec(theme)
+    assert.ok(m, `theme.scss 缺少 .${name}`)
+    return m[1]
+  }
+  const vars = (name) => {
+    const out = {}
+    for (const m of block(name).matchAll(/(--lb-[\w-]+):\s*(#[0-9A-Fa-f]{6})/g)) out[m[1]] = m[2]
+    return out
+  }
+  const lum = (hex) => {
+    const c = hex.replace('#', '')
+    const ch = [0, 2, 4].map(i => parseInt(c.slice(i, i + 2), 16) / 255)
+      .map(v => v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4))
+    return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2]
+  }
+  const ratio = (a, b) => {
+    const x = lum(a), y = lum(b)
+    return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05)
+  }
+  const offenders = []
+  const check = (themeName, fg, bg, min = 4.5) => {
+    const r = ratio(fg, bg)
+    if (r < min) offenders.push(`${themeName}: ${fg} on ${bg} = ${r.toFixed(2)}:1`)
+  }
+  const light = vars('t-light')
+  const dark = vars('t-dark')
+  for (const bg of ['--lb-card', '--lb-bg', '--lb-fill']) {
+    check('t-light text-2', light['--lb-text-2'], light[bg])
+    check('t-light text-3', light['--lb-text-3'], light[bg])
+  }
+  check('t-light primary-text/card', light['--lb-primary-text'], light['--lb-card'])
+  check('t-light primary-text/soft', light['--lb-primary-text'], light['--lb-primary-soft'])
+  check('t-light success-text/card', light['--lb-success-text'], light['--lb-card'])
+  check('t-light success-text/soft', light['--lb-success-text'], light['--lb-success-soft'])
+  check('t-light warning-text/card', light['--lb-warning-text'], light['--lb-card'])
+  check('t-light warning-text/soft', light['--lb-warning-text'], light['--lb-warning-soft'])
+  check('t-light danger-text/card', light['--lb-danger-text'], light['--lb-card'])
+  check('t-light danger-text/soft', light['--lb-danger-text'], light['--lb-danger-soft'])
+  for (const t of ['light', 'dark']) {
+    const v = t === 'light' ? light : dark
+    check(`t-${t} white/grad-1`, '#FFFFFF', v['--lb-grad-1'])
+    check(`t-${t} white/grad-2`, '#FFFFFF', v['--lb-grad-2'])
+    check(`t-${t} white/action`, '#FFFFFF', v['--lb-action'])
+    check(`t-${t} white/secondary-action`, '#FFFFFF', v['--lb-secondary-action'])
+  }
+  check('t-dark primary-text/soft', dark['--lb-primary-text'], dark['--lb-primary-soft'])
+  check('t-dark success-text/soft', dark['--lb-success-text'], dark['--lb-success-soft'])
+  check('t-dark warning-text/soft', dark['--lb-warning-text'], dark['--lb-warning-soft'])
+  check('t-dark danger-text/soft', dark['--lb-danger-text'], dark['--lb-danger-soft'])
+  check('t-dark text-3/card', dark['--lb-text-3'], dark['--lb-card'])
+  check('t-dark text-3/bg', dark['--lb-text-3'], dark['--lb-bg'])
+  check('t-dark text-2/card', dark['--lb-text-2'], dark['--lb-card'])
+  assert.deepEqual(offenders, [], `以下组合低于 4.5:1:\n${offenders.join('\n')}`)
 })

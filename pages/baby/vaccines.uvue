@@ -106,8 +106,8 @@
   .v-body { flex: 1; }
   .v-name { font-size: 28rpx; color: var(--lb-text-1); }
   .v-sub { font-size: 24rpx; color: var(--lb-text-3); margin-top: 4rpx; }
-  .v-record { font-size: 24rpx; color: var(--lb-success); background-color: var(--lb-success-soft); border-radius: 999rpx; padding: 4rpx 16rpx; margin-top: 4rpx; align-self: flex-start; }
-  .btn-record { width: 140rpx; height: 64rpx; line-height: 64rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 24rpx; border-radius: 36rpx; transition: all 160ms ease-out; }
+  .v-record { font-size: 24rpx; color: var(--lb-success-text); background-color: var(--lb-success-soft); border-radius: 999rpx; padding: 4rpx 16rpx; margin-top: 4rpx; align-self: flex-start; }
+  .btn-record { width: 140rpx; height: 64rpx; line-height: 64rpx; background-color: var(--lb-action); color: #FFFFFF; font-size: 24rpx; border-radius: 36rpx; transition: all 160ms ease-out; }
   .hint { font-size: 24rpx; color: var(--lb-text-3); margin-top: 24rpx; }
 
   .mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--lb-mask); justify-content: center; align-items: center; }
@@ -115,7 +115,7 @@
   .dlg-title { font-size: 32rpx; font-weight: bold; color: var(--lb-text-1); text-align: center; }
   .dlg-content { font-size: 27rpx; color: var(--lb-text-2); margin-top: 20rpx; text-align: center; line-height: 40rpx; }
   .dlg-actions { flex-direction: row; justify-content: center; margin-top: 36rpx; }
-  .dlg-btn { width: 300rpx; height: 80rpx; line-height: 80rpx; text-align: center; font-size: 29rpx; color: #FFFFFF; background-image: linear-gradient(135deg, #F376A0, #D43770); border-radius: 999rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
+  .dlg-btn { width: 300rpx; height: 80rpx; line-height: 80rpx; text-align: center; font-size: 29rpx; color: #FFFFFF; background-image: linear-gradient(135deg, var(--lb-grad-1), var(--lb-grad-2)); border-radius: 999rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
 
   .card-head { flex-direction: row; align-items: center; margin-bottom: 20rpx; }
   .title-bar { width: 8rpx; height: 30rpx; border-radius: 4rpx; background-image: linear-gradient(180deg, var(--lb-grad-1), var(--lb-grad-2)); margin-right: 14rpx; }

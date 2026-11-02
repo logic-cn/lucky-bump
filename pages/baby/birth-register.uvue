@@ -175,9 +175,9 @@
   .baby { background-color: var(--lb-fill); border-radius: 24rpx; padding: 20rpx; margin-bottom: 12rpx; }
   .baby-tag { font-size: 24rpx; color: var(--lb-primary-deep); font-weight: bold; margin-bottom: 8rpx; }
   .add-baby { align-items: center; padding: 16rpx; transition: all 160ms ease-out; }
-  .add-baby-text { font-size: 26rpx; color: var(--lb-primary); }
+  .add-baby-text { font-size: 26rpx; color: var(--lb-primary-text); }
   .ph { color: var(--lb-text-3); }
-  .btn-save { width: 702rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 32rpx; transition: all 160ms ease-out; }
+  .btn-save { width: 702rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-action); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 32rpx; transition: all 160ms ease-out; }
   .hint { font-size: 24rpx; color: var(--lb-text-3); margin-top: 24rpx; }
 
   .mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--lb-mask); justify-content: center; align-items: center; }
@@ -188,7 +188,7 @@
   .bcard-meta { font-size: 26rpx; color: var(--lb-text-2); margin-top: 16rpx; }
   .bcard-wish { font-size: 24rpx; color: var(--lb-text-3); margin-top: 28rpx; text-align: center; }
   .bcard-actions { flex-direction: row; margin-top: 40rpx; }
-  .bcard-btn { font-size: 26rpx; color: #FFFFFF; background-color: var(--lb-primary); border-radius: 40rpx; padding: 16rpx 28rpx; margin-left: 16rpx; }
+  .bcard-btn { font-size: 26rpx; color: #FFFFFF; background-color: var(--lb-action); border-radius: 40rpx; padding: 16rpx 28rpx; margin-left: 16rpx; }
   .bcard-btn-ghost { color: var(--lb-text-2); background-color: var(--lb-fill); margin-left: 0; }
 
   .sex-row { flex-direction: row; }

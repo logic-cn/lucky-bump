@@ -38,9 +38,7 @@
       </view>
     </view>
 
-    <view class="card lb-rise-2" v-if="!loadFailed && logs.length == 0">
-      <text class="empty-text">还没有用药记录。记录只为就诊时回溯，本应用不提供剂量建议。</text>
-    </view>
+    <lbc-empty v-if="!loadFailed && logs.length == 0" title="还没有用药记录" hint="记录只为就诊时回溯，本应用不提供剂量建议" />
   </view>
 </template>
 
@@ -120,11 +118,11 @@
   .input { width: 630rpx; height: 88rpx; background-color: var(--lb-fill); border-radius: 24rpx; padding: 0 24rpx; font-size: 28rpx; color: var(--lb-text-1); }
   .ph { color: var(--lb-text-3); }
   .opt-wrap { flex-direction: row; flex-wrap: wrap; justify-content: flex-start; }
-  .opt { padding: 14rpx 28rpx; border-radius: 20rpx; background-color: var(--lb-fill); margin: 0 12rpx 12rpx 0; }
+  .opt { min-height: 64rpx; padding: 0 28rpx; border-radius: 20rpx; background-color: var(--lb-fill); margin: 0 12rpx 12rpx 0; align-items: center; justify-content: center; }
   .opt-active { background-color: var(--lb-primary-soft); }
   .opt-text { font-size: 26rpx; color: var(--lb-text-2); }
   .opt-text-active { color: var(--lb-primary-deep); font-weight: bold; }
-  .btn-save { width: 630rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: var(--lb-white); font-size: 32rpx; border-radius: 48rpx; margin-top: 28rpx; transition: all 160ms ease-out; }
+  .btn-save { width: 630rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-action); color: var(--lb-white); font-size: 32rpx; border-radius: 48rpx; margin-top: 28rpx; transition: all 160ms ease-out; }
   .hint { font-size: 24rpx; color: var(--lb-text-3); line-height: 38rpx; margin-top: 16rpx; }
   .log-row { flex-direction: row; align-items: center; padding: 20rpx 0; border-bottom-width: 1px; border-bottom-color: var(--lb-line); }
   .log-body { flex: 1; }

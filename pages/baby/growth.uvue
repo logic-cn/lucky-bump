@@ -184,14 +184,14 @@
   .pick-text { font-size: 28rpx; color: var(--lb-text-1); }
   .input { width: 620rpx; height: 88rpx; background-color: var(--lb-fill); border-radius: 24rpx; padding: 0 24rpx; font-size: 28rpx; color: var(--lb-text-1); }
   .ph { color: var(--lb-text-3); }
-  .btn-save { width: 702rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 32rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
+  .btn-save { width: 702rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-action); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 32rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
   .card-title { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 20rpx; }
   .pct-row { flex-direction: row; }
   .pct-col { align-items: center; margin: 0 24rpx; }
-  .pct-num { font-size: 44rpx; font-weight: bold; color: var(--lb-primary); }
+  .pct-num { font-size: 44rpx; font-weight: bold; color: var(--lb-primary-text); }
   .pct-cap { font-size: 24rpx; color: var(--lb-text-3); margin-top: 8rpx; }
   .alert { width: 620rpx; background-color: var(--lb-warning-soft); border-radius: 24rpx; padding: 20rpx; margin-top: 20rpx; }
-  .alert-text { font-size: 24rpx; color: var(--lb-warning); }
+  .alert-text { font-size: 24rpx; color: var(--lb-warning-text); }
   .hint { font-size: 24rpx; color: var(--lb-text-3); margin-top: 20rpx; }
   .s-row { flex-direction: row; padding: 10rpx 0; }
   .chart { flex-direction: row; align-items: flex-end; justify-content: space-between; width: 622rpx; height: 220rpx; margin-top: 12rpx; }

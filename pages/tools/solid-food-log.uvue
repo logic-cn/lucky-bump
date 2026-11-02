@@ -37,6 +37,8 @@
         </view>
       </view>
 
+      <lbc-empty v-if="logs.length == 0" title="还没有辅食记录" hint="从第一种新食物开始，连续观察 3 天" />
+
       <view class="card lb-rise-3">
         <text class="gray">观察记录用于家长自查与就诊沟通，不构成诊断；出现呼吸急促、面唇肿胀等严重表现请立即就医。</text>
       </view>
@@ -206,24 +208,24 @@
   .gray { font-size: 24rpx; color: var(--lb-text-3); line-height: 38rpx; }
   .stat-row { flex-direction: row; }
   .stat-col { flex: 1; align-items: center; }
-  .stat-num { font-size: 48rpx; font-weight: bold; color: var(--lb-primary); }
-  .stat-danger { color: var(--lb-danger); }
+  .stat-num { font-size: 48rpx; font-weight: bold; color: var(--lb-primary-text); }
+  .stat-danger { color: var(--lb-danger-text); }
   .stat-cap { font-size: 24rpx; color: var(--lb-text-3); margin-top: 4rpx; }
-  .allergen-line { font-size: 26rpx; color: var(--lb-danger); margin-top: 16rpx; }
+  .allergen-line { font-size: 26rpx; color: var(--lb-danger-text); margin-top: 16rpx; }
   .log-row { flex-direction: row; align-items: center; padding: 20rpx 0; border-bottom-width: 1px; border-bottom-color: var(--lb-line); }
   .log-body { flex: 1; }
   .log-head { flex-direction: row; align-items: center; }
   .log-name { font-size: 28rpx; color: var(--lb-text-1); font-weight: bold; }
   .log-tag { font-size: 24rpx; color: var(--lb-primary-deep); background-color: var(--lb-primary-soft); border-radius: 10rpx; padding: 2rpx 10rpx; margin-left: 10rpx; }
-  .log-tag-danger { color: var(--lb-danger); background-color: var(--lb-danger-soft); }
+  .log-tag-danger { color: var(--lb-danger-text); background-color: var(--lb-danger-soft); }
   .log-sub { font-size: 24rpx; color: var(--lb-text-3); margin-top: 4rpx; }
-  .log-mark { padding: 10rpx 20rpx; border-radius: 999rpx; background-color: var(--lb-fill); }
+  .log-mark { min-height: 64rpx; padding: 0 24rpx; border-radius: 999rpx; background-color: var(--lb-fill); align-items: center; justify-content: center; }
   .log-mark-text { font-size: 24rpx; color: var(--lb-text-2); }
   .mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(50,36,48,0.5); align-items: center; justify-content: center; }
   .dialog { width: 620rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 44rpx 36rpx 36rpx 36rpx; align-items: center; }
   .dlg-title { font-size: 32rpx; font-weight: bold; color: var(--lb-text-1); text-align: center; }
   .opt-wrap { flex-direction: row; flex-wrap: wrap; justify-content: center; margin-top: 20rpx; }
-  .opt { padding: 16rpx 28rpx; border-radius: 20rpx; background-color: var(--lb-fill); margin: 8rpx; }
+  .opt { min-height: 64rpx; padding: 0 28rpx; border-radius: 20rpx; background-color: var(--lb-fill); margin: 8rpx; align-items: center; justify-content: center; }
   .opt-active { background-color: var(--lb-primary-soft); }
   .opt-text { font-size: 26rpx; color: var(--lb-text-2); }
   .opt-text-active { color: var(--lb-primary-deep); font-weight: bold; }

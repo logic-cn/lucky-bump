@@ -124,7 +124,7 @@
   .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; }
   .group { background-color: var(--lb-card); border-radius: 36rpx; padding: 36rpx; margin-bottom: 24rpx; box-shadow: 0 8rpx 28rpx rgba(61,35,48,0.05); }
   .group-head { flex-direction: row; align-items: center; margin-bottom: 24rpx; }
-  .title-bar { width: 8rpx; height: 30rpx; border-radius: 4rpx; background-image: linear-gradient(180deg, #F376A0, #D43770); margin-right: 14rpx; }
+  .title-bar { width: 8rpx; height: 30rpx; border-radius: 4rpx; background-image: linear-gradient(180deg, var(--lb-grad-1), var(--lb-grad-2)); margin-right: 14rpx; }
   .group-title { font-size: 32rpx; font-weight: bold; color: var(--lb-text-1); }
   .grid { flex-direction: row; flex-wrap: wrap; }
   .grid-item { width: 25%; align-items: center; padding: 16rpx 0; border-radius: 24rpx; transition: all 160ms ease-out; }

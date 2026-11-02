@@ -108,14 +108,14 @@
   .opt-active { background-color: var(--lb-primary-soft); }
   .opt-danger-active { background-color: var(--lb-danger-soft); }
   .opt-text { font-size: 26rpx; color: var(--lb-text-2); }
-  .opt-text-active { color: var(--lb-danger); font-weight: bold; }
-  .btn-save { width: 702rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 32rpx; transition: all 160ms ease-out; }
+  .opt-text-active { color: var(--lb-danger-text); font-weight: bold; }
+  .btn-save { width: 702rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-action); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 32rpx; transition: all 160ms ease-out; }
   .redline { width: 702rpx; background-color: var(--lb-danger-soft); border-radius: 36rpx; padding: 40rpx; margin-top: 24rpx; }
   .redline-title-row { flex-direction: row; align-items: center; }
   .redline-ico { width: 36rpx; height: 36rpx; margin-right: 8rpx; }
-  .redline-title { font-size: 34rpx; font-weight: bold; color: var(--lb-danger); }
+  .redline-title { font-size: 34rpx; font-weight: bold; color: var(--lb-danger-text); }
   .redline-msg { font-size: 28rpx; color: var(--lb-text-1); margin-top: 16rpx; }
-  .redline-action { font-size: 28rpx; color: var(--lb-danger); margin-top: 12rpx; }
+  .redline-action { font-size: 28rpx; color: var(--lb-danger-text); margin-top: 12rpx; }
   .card-title { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); }
 
   .card-head { flex-direction: row; align-items: center; margin-bottom: 20rpx; }

@@ -212,9 +212,9 @@
   .label-inline { font-size: 26rpx; color: var(--lb-text-2); margin-right: 16rpx; }
   .time-box { background-color: var(--lb-fill); border-radius: 24rpx; padding: 14rpx 32rpx; transition: all 160ms ease-out; }
   .time-text { font-size: 28rpx; color: var(--lb-text-1); }
-  .time-reset { font-size: 26rpx; color: var(--lb-primary); margin-left: 20rpx; padding: 8rpx 12rpx; }
+  .time-reset { font-size: 26rpx; color: var(--lb-primary-text); margin-left: 20rpx; padding: 8rpx 12rpx; }
   .hint { font-size: 24rpx; color: var(--lb-text-3); margin-top: 12rpx; }
-  .btn-save { width: 620rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 24rpx; transition: all 160ms ease-out; }
+  .btn-save { width: 620rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-action); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 24rpx; transition: all 160ms ease-out; }
   .card-title { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 16rpx; }
   .f-row { flex-direction: row; padding: 10rpx 0; border-bottom-width: 1px; border-bottom-color: var(--lb-line); }
   .f-time { width: 120rpx; font-size: 24rpx; color: var(--lb-text-3); }

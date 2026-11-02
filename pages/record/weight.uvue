@@ -145,9 +145,9 @@
   .unit { font-size: 30rpx; color: var(--lb-text-3); margin-left: 16rpx; }
   .ph { color: var(--lb-text-3); }
   .hint { font-size: 24rpx; color: var(--lb-text-3); margin-top: 32rpx; }
-  .link { font-size: 24rpx; color: var(--lb-primary); margin-top: 16rpx; }
-  .btn-save { width: 702rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 48rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
-  .ok-text { color: var(--lb-success); font-size: 28rpx; margin-top: 24rpx; }
+  .link { font-size: 24rpx; color: var(--lb-primary-text); margin-top: 16rpx; }
+  .btn-save { width: 702rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-action); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 48rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
+  .ok-text { color: var(--lb-success-text); font-size: 28rpx; margin-top: 24rpx; }
 
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }

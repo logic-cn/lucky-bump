@@ -117,7 +117,7 @@
   .opt-text { font-size: 26rpx; color: var(--lb-text-1); margin-top: 12rpx; }
   .opt-text-active { color: var(--lb-primary-deep); font-weight: bold; }
   .hint { font-size: 24rpx; color: var(--lb-text-3); margin: 8rpx 0 24rpx 0; text-align: center; }
-  .btn-save { width: 620rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 16rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
+  .btn-save { width: 620rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-action); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 16rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
   .celebrate { width: 180rpx; height: 180rpx; }
   .celebrate-title { font-size: 36rpx; font-weight: bold; color: var(--lb-text-1); margin: 16rpx 0; }
   .date-box { width: 620rpx; height: 96rpx; background-color: var(--lb-fill); border-radius: 24rpx; align-items: center; justify-content: center; margin-bottom: 24rpx; }

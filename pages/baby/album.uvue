@@ -132,14 +132,14 @@
   .hint { font-size: 24rpx; color: var(--lb-text-3); line-height: 38rpx; margin-top: 12rpx; }
   .input { width: 100%; height: 88rpx; background-color: var(--lb-fill); border-radius: 24rpx; padding: 0 24rpx; font-size: 28rpx; color: var(--lb-text-1); margin-top: 20rpx; }
   .ph { color: var(--lb-text-3); }
-  .btn-save { width: 100%; height: 88rpx; line-height: 88rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 30rpx; border-radius: 48rpx; margin-top: 20rpx; }
+  .btn-save { width: 100%; height: 88rpx; line-height: 88rpx; background-color: var(--lb-action); color: #FFFFFF; font-size: 30rpx; border-radius: 48rpx; margin-top: 20rpx; }
   .empty { font-size: 30rpx; font-weight: bold; color: var(--lb-text-1); }
   .grid { width: 702rpx; flex-direction: row; flex-wrap: wrap; margin-top: 8rpx; }
   .photo-cell { width: 335rpx; margin: 8rpx 8rpx 16rpx 8rpx; background-color: var(--lb-card); border-radius: 24rpx; padding: 12rpx; }
   .photo-img { width: 311rpx; height: 311rpx; border-radius: 20rpx; background-color: var(--lb-fill); }
   .photo-date { font-size: 24rpx; color: var(--lb-text-3); margin-top: 10rpx; }
   .photo-caption { font-size: 24rpx; color: var(--lb-text-1); margin-top: 6rpx; }
-  .photo-del { font-size: 24rpx; color: var(--lb-danger); margin-top: 8rpx; align-self: flex-end; padding: 10rpx; }
+  .photo-del { font-size: 24rpx; color: var(--lb-danger-text); margin-top: 8rpx; align-self: flex-end; padding: 10rpx; }
 
   .mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--lb-mask); justify-content: center; align-items: center; }
   .dialog { width: 560rpx; background-color: var(--lb-card); border-radius: 24rpx; padding: 40rpx 32rpx 24rpx 32rpx; }
@@ -147,7 +147,7 @@
   .dlg-content { font-size: 26rpx; color: var(--lb-text-2); margin-top: 20rpx; text-align: center; line-height: 40rpx; }
   .dlg-actions { flex-direction: row; justify-content: space-between; margin-top: 32rpx; }
   .dlg-btn { width: 230rpx; height: 80rpx; line-height: 80rpx; text-align: center; font-size: 29rpx; color: var(--lb-text-2); background-color: var(--lb-fill); border-radius: 40rpx; }
-  .dlg-btn-ok { color: #FFFFFF; background-color: var(--lb-primary); }
+  .dlg-btn-ok { color: #FFFFFF; background-color: var(--lb-action); }
 
   .card-head { flex-direction: row; align-items: center; margin-bottom: 20rpx; }
   .title-bar { width: 8rpx; height: 30rpx; border-radius: 4rpx; background-image: linear-gradient(180deg, var(--lb-grad-1), var(--lb-grad-2)); margin-right: 14rpx; }

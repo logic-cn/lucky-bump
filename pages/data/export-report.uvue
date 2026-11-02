@@ -158,7 +158,7 @@
   .meta { font-size: 24rpx; color: var(--lb-text-3); margin-top: 10rpx; }
   .body { font-size: 26rpx; color: var(--lb-text-1); line-height: 46rpx; margin-top: 24rpx; }
   .note { font-size: 24rpx; color: var(--lb-text-3); line-height: 38rpx; margin-top: 24rpx; }
-  .btn-save { width: 702rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 32rpx; }
+  .btn-save { width: 702rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-action); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 32rpx; }
   .btn-ghost { width: 702rpx; height: 88rpx; line-height: 88rpx; background-color: var(--lb-fill); color: var(--lb-text-2); font-size: 28rpx; border-radius: 48rpx; margin-top: 20rpx; }
   .hint { font-size: 24rpx; color: var(--lb-text-3); line-height: 38rpx; margin-top: 20rpx; text-align: center; }
 

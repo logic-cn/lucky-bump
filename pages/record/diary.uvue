@@ -187,7 +187,7 @@
   .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 40rpx; margin-top: 40rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
   .label { font-size: 28rpx; color: var(--lb-text-1); margin: 16rpx 0 16rpx 0; }
   .label-row { flex-direction: row; align-items: center; justify-content: space-between; }
-  .voice-btn { font-size: 24rpx; color: var(--lb-primary); padding: 10rpx 16rpx; border-radius: 24rpx; background-color: var(--lb-primary-soft); }
+  .voice-btn { font-size: 24rpx; color: var(--lb-primary-text); padding: 10rpx 16rpx; border-radius: 24rpx; background-color: var(--lb-primary-soft); }
   .ta { width: 620rpx; height: 240rpx; background-color: var(--lb-fill); border-radius: 24rpx; padding: 24rpx; font-size: 28rpx; color: var(--lb-text-1); }
   .ph { color: var(--lb-text-3); }
   .mood-row { flex-direction: row; justify-content: space-between; }
@@ -200,7 +200,7 @@
   .photo-del { position: absolute; top: 4rpx; right: 10rpx; font-size: 28rpx; color: #FFFFFF; background-color: rgba(0,0,0,0.45); border-radius: 20rpx; padding: 0 8rpx; }
   .photo-add { background-color: var(--lb-fill); align-items: center; justify-content: center; }
   .photo-add-text { font-size: 48rpx; color: var(--lb-text-3); }
-  .btn-save { width: 702rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 32rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
+  .btn-save { width: 702rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-action); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 32rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
   .list { width: 702rpx; margin-top: 40rpx; }
   .list-title { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 16rpx; }
   .diary { background-color: var(--lb-card); border-radius: 36rpx; padding: 32rpx; margin-bottom: 16rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }

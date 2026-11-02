@@ -401,7 +401,7 @@
   .r-body { flex: 1; }
   .r-title { font-size: 28rpx; color: var(--lb-text-1); }
   .r-sub { font-size: 24rpx; color: var(--lb-text-3); margin-top: 4rpx; }
-  .r-del { font-size: 24rpx; color: var(--lb-danger); padding: 10rpx; margin-left: 8rpx; }
+  .r-del { font-size: 24rpx; color: var(--lb-danger-text); padding: 10rpx; margin-left: 8rpx; }
   .input { width: 636rpx; height: 88rpx; background-color: var(--lb-fill); border-radius: 24rpx; padding: 0 24rpx; font-size: 28rpx; color: var(--lb-text-1); margin-bottom: 16rpx; }
   .ph { color: var(--lb-text-3); }
   .opts { flex-direction: row; flex-wrap: wrap; margin-bottom: 16rpx; }
@@ -412,7 +412,7 @@
   .opt-text-active { color: var(--lb-primary-deep); font-weight: bold; }
   .pick-box { width: 636rpx; height: 88rpx; background-color: var(--lb-fill); border-radius: 24rpx; align-items: center; justify-content: center; margin-bottom: 16rpx; transition: all 160ms ease-out; }
   .pick-text { font-size: 28rpx; color: var(--lb-text-1); }
-  .btn-save { width: 636rpx; height: 88rpx; line-height: 88rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 28rpx; border-radius: 24rpx; margin-top: 8rpx; transition: all 160ms ease-out; }
+  .btn-save { width: 636rpx; height: 88rpx; line-height: 88rpx; background-color: var(--lb-action); color: #FFFFFF; font-size: 28rpx; border-radius: 24rpx; margin-top: 8rpx; transition: all 160ms ease-out; }
   .hint { font-size: 24rpx; color: var(--lb-text-3); margin-top: 16rpx; }
   .p-row { flex-direction: row; align-items: center; justify-content: space-between; padding: 12rpx 0; }
   .p-label { font-size: 26rpx; color: var(--lb-text-1); }
@@ -427,7 +427,7 @@
   .dlg-input { width: 100%; height: 88rpx; background-color: var(--lb-fill); border-radius: 16rpx; padding: 0 24rpx; font-size: 28rpx; color: var(--lb-text-1); margin-top: 20rpx; }
   .dlg-actions { flex-direction: row; justify-content: space-between; margin-top: 32rpx; }
   .dlg-btn { width: 230rpx; height: 80rpx; line-height: 80rpx; text-align: center; font-size: 29rpx; color: var(--lb-text-2); background-color: var(--lb-fill); border-radius: 40rpx; }
-  .dlg-btn-ok { color: #FFFFFF; background-color: var(--lb-primary); }
+  .dlg-btn-ok { color: #FFFFFF; background-color: var(--lb-action); }
 
 .card-head { flex-direction: row; align-items: center; margin-bottom: 16rpx; }
   .title-bar { width: 8rpx; height: 30rpx; border-radius: 4rpx; background-image: linear-gradient(180deg, var(--lb-grad-1), var(--lb-grad-2)); margin-right: 14rpx; }

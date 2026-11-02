@@ -32,7 +32,7 @@
       <view class="dev-head">
         <image class="dev-mark" src="/static/mark.png" mode="aspectFit" />
         <view class="dev-body">
-          <text class="dev-title">孕 {{ journeyState.weeks }} 周 · 本周要点</text>
+          <text class="dev-title">本周要点</text>
           <text class="dev-item" v-for="(f, i) in devFocus" :key="i">· {{ f }}</text>
         </view>
         <text class="dev-arrow">›</text>
@@ -458,7 +458,7 @@
 <style>
   @import '../../theme.scss';
   .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; }
-  .hero-card { position: relative; overflow: hidden; background-image: linear-gradient(165deg, #F376A0, #D43770); border-radius: 46rpx; padding: 44rpx 40rpx 36rpx 40rpx; margin-bottom: 24rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
+  .hero-card { position: relative; overflow: hidden; background-image: linear-gradient(165deg, var(--lb-grad-1), var(--lb-grad-2)); border-radius: 46rpx; padding: 44rpx 40rpx 36rpx 40rpx; margin-bottom: 24rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
   .hero-deco { position: absolute; border-radius: 999rpx; background-color: rgba(255,255,255,0.10); }
   .hero-deco-big { width: 300rpx; height: 300rpx; right: -70rpx; bottom: -110rpx; background-color: rgba(255,255,255,0.09); }
   .hero-deco-small { width: 150rpx; height: 150rpx; left: -40rpx; top: -50rpx; background-color: rgba(255,255,255,0.12); }
@@ -471,11 +471,11 @@
   .hero-body { position: relative; }
   .hero-row { flex-direction: row; align-items: flex-end; }
   .hero-week { font-size: 64rpx; font-weight: bold; color: #FFFFFF; flex: 1; margin-right: 12rpx; }
-  .hero-stage { font-size: 24rpx; color: #FFFFFF; background-color: rgba(255,255,255,0.22); border-radius: 999rpx; padding: 8rpx 20rpx; }
-  .hero-sub { font-size: 26rpx; color: rgba(255,255,255,0.92); margin-top: 14rpx; }
+  .hero-stage { font-size: 24rpx; color: #FFFFFF; background-color: rgba(50,20,35,0.30); border-radius: 999rpx; padding: 8rpx 20rpx; }
+  .hero-sub { font-size: 26rpx; color: var(--lb-white); margin-top: 14rpx; }
   .hero-foot { flex-direction: row; align-items: center; margin-top: 20rpx; }
-  .hero-link { font-size: 24rpx; color: #FFFFFF; background-color: rgba(255,255,255,0.18); border-radius: 999rpx; padding: 10rpx 24rpx; }
-  .hero-arrow { font-size: 28rpx; color: rgba(255,255,255,0.85); margin-left: 12rpx; }
+  .hero-link { font-size: 24rpx; color: #FFFFFF; background-color: rgba(50,20,35,0.30); border-radius: 999rpx; padding: 10rpx 24rpx; }
+  .hero-arrow { font-size: 28rpx; color: var(--lb-white); margin-left: 12rpx; }
   .hero-skel { background-image: none; background-color: var(--lb-fill); box-shadow: none; }
   .skel-line { width: 340rpx; height: 44rpx; border-radius: 12rpx; background-color: var(--lb-line); }
   .skel-short { width: 220rpx; margin-top: 22rpx; }
@@ -488,7 +488,7 @@
   .dev-item { font-size: 24rpx; color: var(--lb-text-2); line-height: 38rpx; margin-top: 6rpx; }
   .dev-arrow { font-size: 36rpx; color: var(--lb-arrow); margin-left: 12rpx; }
   .card-head { flex-direction: row; align-items: center; margin-bottom: 24rpx; }
-  .title-bar { width: 8rpx; height: 30rpx; border-radius: 4rpx; background-image: linear-gradient(180deg, #F376A0, #D43770); margin-right: 14rpx; }
+  .title-bar { width: 8rpx; height: 30rpx; border-radius: 4rpx; background-image: linear-gradient(180deg, var(--lb-grad-1), var(--lb-grad-2)); margin-right: 14rpx; }
   .card-title { font-size: 32rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 24rpx; }
   .card-title-flush { margin-bottom: 0; }
   .todo-row { flex-direction: row; align-items: center; padding: 18rpx 16rpx; border-radius: 24rpx; transition: all 160ms ease-out; }
@@ -518,7 +518,7 @@
   .mom-label { font-size: 24rpx; color: var(--lb-text-3); margin-top: 6rpx; }
   .mom-foot { font-size: 24rpx; color: var(--lb-text-3); margin-top: 16rpx; text-align: center; }
   .guide-row { flex-direction: row; margin-top: 24rpx; }
-  .guide-btn { font-size: 28rpx; color: #FFFFFF; background-color: var(--lb-primary); border-radius: 40rpx; padding: 14rpx 32rpx; margin-right: 16rpx; text-align: center; }
+  .guide-btn { font-size: 28rpx; color: #FFFFFF; background-color: var(--lb-action); border-radius: 40rpx; padding: 14rpx 32rpx; margin-right: 16rpx; text-align: center; }
   .guide-btn-ghost { color: var(--lb-text-2); background-color: var(--lb-fill); }
 
   .mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--lb-mask); justify-content: center; align-items: center; }
@@ -526,8 +526,8 @@
   .dlg-title { font-size: 32rpx; font-weight: bold; color: var(--lb-text-1); text-align: center; }
   .dlg-content { font-size: 27rpx; color: var(--lb-text-2); margin-top: 20rpx; text-align: left; line-height: 44rpx; }
   .dlg-actions { flex-direction: row; justify-content: center; margin-top: 36rpx; }
-  .dlg-btn { width: 300rpx; height: 80rpx; line-height: 80rpx; text-align: center; font-size: 29rpx; color: #FFFFFF; background-color: var(--lb-primary); border-radius: 40rpx; }
-  .dlg-btn-ok { color: #FFFFFF; background-color: var(--lb-primary); }
+  .dlg-btn { width: 300rpx; height: 80rpx; line-height: 80rpx; text-align: center; font-size: 29rpx; color: #FFFFFF; background-color: var(--lb-action); border-radius: 40rpx; }
+  .dlg-btn-ok { color: #FFFFFF; background-color: var(--lb-action); }
 
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }

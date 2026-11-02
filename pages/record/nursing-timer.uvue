@@ -170,7 +170,7 @@
   .timer-text { font-size: 96rpx; font-weight: bold; color: var(--lb-text-1); }
   .hint { font-size: 24rpx; color: var(--lb-text-3); margin-top: 16rpx; }
   .side-row { flex-direction: row; margin: 40rpx 0; }
-  .side-btn { width: 280rpx; height: 280rpx; border-radius: 140rpx; background-image: linear-gradient(135deg, #F376A0, #D43770); align-items: center; justify-content: center; margin: 0 20rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); transition: all 160ms ease-out; }
+  .side-btn { width: 280rpx; height: 280rpx; border-radius: 140rpx; background-image: linear-gradient(135deg, var(--lb-grad-1), var(--lb-grad-2)); align-items: center; justify-content: center; margin: 0 20rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); transition: all 160ms ease-out; }
   .side-text { font-size: 36rpx; font-weight: bold; color: #FFFFFF; }
   .big-btn { width: 320rpx; height: 320rpx; border-radius: 160rpx; background-color: var(--lb-danger); align-items: center; justify-content: center; margin: 40rpx 0; box-shadow: 0 12rpx 32rpx rgba(229,72,77,0.28); transition: all 160ms ease-out; }
   .big-btn-text { font-size: 40rpx; font-weight: bold; color: #FFFFFF; }
@@ -181,11 +181,11 @@
   .row-dur { font-size: 26rpx; color: var(--lb-text-1); }
   .hint-row { flex-direction: row; align-items: center; }
   .hint-ico { width: 30rpx; height: 30rpx; margin-right: 8rpx; }
-  .hint-strong { flex: 1; font-size: 26rpx; color: var(--lb-warning); }
+  .hint-strong { flex: 1; font-size: 26rpx; color: var(--lb-warning-text); }
   .stale { width: 702rpx; background-color: var(--lb-warning-soft); border-radius: 24rpx; padding: 28rpx 32rpx; margin-bottom: 24rpx; }
   .stale-text { font-size: 26rpx; color: var(--lb-text-1); }
   .stale-actions { flex-direction: row; margin-top: 20rpx; }
-  .stale-btn { font-size: 26rpx; color: #FFFFFF; background-color: var(--lb-primary); border-radius: 32rpx; padding: 12rpx 28rpx; margin-right: 20rpx; }
+  .stale-btn { font-size: 26rpx; color: #FFFFFF; background-color: var(--lb-action); border-radius: 32rpx; padding: 12rpx 28rpx; margin-right: 20rpx; }
   .stale-btn-ghost { color: var(--lb-text-2); background-color: var(--lb-fill); }
 
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
