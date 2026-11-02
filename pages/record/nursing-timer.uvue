@@ -181,7 +181,7 @@
   .row-dur { font-size: 26rpx; color: var(--lb-text-1); }
   .hint-row { flex-direction: row; align-items: center; }
   .hint-ico { width: 30rpx; height: 30rpx; margin-right: 8rpx; }
-  .hint-strong { font-size: 26rpx; color: var(--lb-warning); }
+  .hint-strong { flex: 1; font-size: 26rpx; color: var(--lb-warning); }
   .stale { width: 702rpx; background-color: var(--lb-warning-soft); border-radius: 24rpx; padding: 28rpx 32rpx; margin-bottom: 24rpx; }
   .stale-text { font-size: 26rpx; color: var(--lb-text-1); }
   .stale-actions { flex-direction: row; margin-top: 20rpx; }

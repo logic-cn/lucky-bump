@@ -181,7 +181,7 @@ Web 端已可用。后续运行只涉及：1) `npm test` 保持 70/70；2) 上�
 - [x] 真机回归载体：自定义调试基座 APK 已产出 `unpackage/debug/android_debug_vapor.apk`（22MB）
 - [ ] schema 增量（lb-cycle-events 加 mucus 枚举）：CLI 对已存在 schema 一律"跳过上传"（HBuilderX CLI 限制）；已验证**非运行时阻断**——云对象以管理上下文写入、绕过 schema 校验，mucus 枚举由 lucky-record 服务端代码强校验（含单测）。补齐方式：HBuilderX 里右键该 schema → 上传（约 30 秒）
 - [ ] 真机回归（无 USB 设备连接，无法自动执行）：安装上述 APK 后验证 ①本地通知锁屏弹达 ②试纸拍照上传 ③暗色模式切换 ④喂养/图表/故事流/爸爸端渲染 ⑤键盘与保存反馈
-- [ ] 已知低危项：uvue CSS 对 `animation-fill-mode: both` 仅支持 `forwards`（编译警告，仅影响带延迟的进场动画起始帧，无功能影响）
+- [x] 已知低危项（2026-11-02 v4 已适配）：uvue CSS `animation-fill-mode` 仅支持 `forwards`，全仓已改为 forwards + 起始帧基态，不再产生编译告警
 - [x] 提交入库：分波次 7 个 commit（docs 对标 / 波一 / 波二 / 波三 / 试纸拍照 / 组件修复 / 守护日志），`npm test` 109/109
 
 ### 真机回归补充（2026-10-31 第二轮自动化探测）
