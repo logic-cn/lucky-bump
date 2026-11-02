@@ -79,4 +79,5 @@
  * （登录/保存等按钮曾整段贴左、甚至被圆角裁切）。此处集中约束，新按钮类必须在此登记，
  * 由 test/unit/ui.test.js 的静态断言守护。 */
 .btn-primary, .btn-save, .btn-half, .btn-small, .btn-record,
-.btn-quick, .btn-logout, .btn-unlock, .btn-ghost { text-align: center; }
+.btn-quick, .btn-logout, .btn-unlock, .btn-ghost,
+.btn-copy, .btn-print, .btn-journey { text-align: center; }

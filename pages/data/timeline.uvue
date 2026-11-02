@@ -42,7 +42,13 @@
     ['period_start', '经期开始'], ['period_end', '经期结束'],
     ['ovulation_test', '排卵试纸'], ['bbt', '基础体温'], ['intercourse', '同房'], ['pregnancy_test', '验孕'],
     ['mucus', '白带记录'],
-    ['visit', '产检'], ['prenatal_visit', '产检'], ['head_up', '学会了抬头'], ['roll_over', '学会了翻身']
+    ['visit', '产检'], ['prenatal_visit', '产检'],
+    ['head_up', '学会了抬头'], ['roll_over', '学会了翻身'], ['sit_alone', '学会了独坐'],
+    ['crawl', '学会了爬行'], ['stand_assisted', '学会了扶站'], ['walk_alone', '学会了独走'],
+    ['grasp', '学会了抓握'], ['transfer', '双手传递物品'], ['pincer', '拇指食指对捏'],
+    ['babble', '开始咿呀发声'], ['mama_dada', '会叫爸爸妈妈'], ['words_combo', '会说双词短句'],
+    ['stranger_aware', '开始认生'], ['wave_bye', '会挥手再见'],
+    ['medication', '用药记录']
   ])
 
   type Chapter = { title: string, sub: string, tag: string }
@@ -84,6 +90,12 @@
   }
   function contentText(e: UTSJSONObject): string {
     const code = e.getString('code') ?? ''
+    if (code == 'medication') {
+      const v = e.getJSON('value') as UTSJSONObject | null
+      const n = v?.getString('name') ?? ''
+      const d = v?.getString('dose') ?? ''
+      return `用药：${n}${d.length > 0 ? ' · ' + d : ''}`
+    }
     return CODE_TEXT.get(code) ?? code
   }
   function goFirst() { uni.switchTab({ url: '/pages/record/record' }) }
@@ -157,6 +169,7 @@
   .dot-cycle { background-color: var(--lb-warning); }
   .dot-visit { background-color: var(--lb-secondary); }
   .dot-milestone { background-color: var(--lb-success); }
+  .dot-medication { background-color: var(--lb-warning); }
   .line { width: 2px; height: 64rpx; background-color: var(--lb-line); }
   .content { flex: 1; font-size: 26rpx; color: var(--lb-text-1); padding-bottom: 32rpx; }
   .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 40rpx; margin-top: 40rpx; align-items: center; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }

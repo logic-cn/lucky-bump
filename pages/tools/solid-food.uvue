@@ -6,6 +6,16 @@
       </view>
     </view>
 
+    <view class="card cta-card lb-rise" hover-class="lb-press" hover-stay-time="120" @click="goLog">
+      <view class="cta-row">
+        <view class="cta-body">
+          <text class="cta-title">记录今天的辅食与反应</text>
+          <text class="cta-sub">新食物 3 天观察，过敏反应有据可查</text>
+        </view>
+        <text class="cta-arrow">›</text>
+      </view>
+    </view>
+
     <view class="card lb-rise-1">
       <text class="card-title">{{ month }} 月龄辅食要点</text>
       <text class="section">食物质地</text>
@@ -32,6 +42,8 @@
 <script setup lang="ts">
   import { computed, ref } from 'vue'
   import { themeClass } from '../../store/themeStore.uts'
+
+  function goLog() { uni.navigateTo({ url: '/pages/tools/solid-food-log' }) }
 
   type Plan = { texture: string, foods: string, tips: string }
 
@@ -60,6 +72,12 @@
   .chip-text-active { color: #FFFFFF; font-weight: bold; }
   .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 36rpx; margin-top: 24rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
   .card-title { font-size: 30rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 12rpx; }
+  .cta-card { background-image: linear-gradient(135deg, var(--lb-grad-1), var(--lb-grad-2)); }
+  .cta-row { flex-direction: row; align-items: center; }
+  .cta-body { flex: 1; }
+  .cta-title { font-size: 30rpx; font-weight: bold; color: var(--lb-white); }
+  .cta-sub { font-size: 24rpx; color: rgba(255,255,255,0.9); margin-top: 6rpx; }
+  .cta-arrow { font-size: 40rpx; color: var(--lb-white); }
   .section { font-size: 24rpx; font-weight: bold; color: var(--lb-primary-deep); margin-top: 20rpx; }
   .body { font-size: 26rpx; color: var(--lb-text-2); line-height: 44rpx; margin-top: 8rpx; }
   .red { font-size: 24rpx; color: var(--lb-danger); line-height: 44rpx; }

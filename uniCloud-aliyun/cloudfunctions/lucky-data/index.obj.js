@@ -31,9 +31,15 @@ async function logAccess(uid, journeyId, action, date) {
   await db().collection('lb-audit-logs').add({ journey_id: journeyId, user_id: uid, action, date, ts: Date.now() })
 }
 
+const CODE_LABELS = {
+  weight: '体重', blood_pressure: '血压', blood_glucose: '血糖', symptom: '症状', mood: '心情',
+  fetal_movement: '胎动', lochia: '恶露', kegel: '盆底肌训练', water: '饮水', medication: '用药',
+  hcg: 'hCG', progesterone: '孕酮'
+}
+function codeLabel(code) { return CODE_LABELS[code] || code }
+
 /** 曲线主数值提取 */
-function primaryOf(code, value) {
-  if (!value) return null
+function primaryOf(code, value) {  if (!value) return null
   switch (code) {
     case 'weight': return { y: value.kg, unit: 'kg' }
     case 'blood_pressure': return { y: value.sbp, y2: value.dbp, unit: 'mmHg' }
@@ -203,6 +209,8 @@ module.exports = {
     for (const v of visits.data) events.push({ ts: v.visit_ts, type: 'visit', code: 'prenatal_visit', value: { hospital: v.hospital, week: v.week, conclusion: v.conclusion }, sensitivity: v.sensitivity, _owner: v.user_id })
     const milestones = await db.call(this).collection('lb-milestones').where({ journey_id: j._id }).orderBy('achieved_date', 'desc').limit(limit).get()
     for (const m of milestones.data) events.push({ ts: m.achieved_date, type: 'milestone', code: m.code, value: { dim: m.dim }, sensitivity: 'normal', _owner: m.user_id })
+    const meds = await db.call(this).collection('lb-medication-logs').where({ journey_id: j._id }).orderBy('ts', 'desc').limit(limit).get()
+    for (const m of meds.data) events.push({ ts: m.ts, type: 'medication', code: 'medication', value: { name: m.name, dose: m.dose }, sensitivity: 'normal', _owner: m.user_id })
     // strict 红线：仅本人可见（不用 role 判断，安全审计 C1/C4）
     const visible = events
       .filter(e => e.sensitivity !== 'strict' || e._owner === uid)
@@ -211,7 +219,140 @@ module.exports = {
     return auth.ok({ events: visible.slice(0, limit) })
   },
 
-  /** 全量导出（数据属于用户）：JSON 结构化包 */
+  /** 报告（docs/05 V1.3）：周期报告 / 年度生命报告；仅旅程主人可看 */
+  async report(params = {}) {
+    const uid = await requireUser.call(this)
+    if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
+    const { role, journey } = await auth.resolveJourneyAccess(db.call(this), uid, params.journeyId)
+    if (!journey) return auth.fail('NOT_FOUND', '旅程不存在')
+    if (role !== 'owner') return auth.fail('PERMISSION_DENIED', '报告仅旅程主人可查看')
+    const j = journey
+    const dbase = db.call(this)
+    const now = Date.now()
+    const type = params.type === 'annual' ? 'annual' : (params.type === 'stage' ? 'stage' : 'cycle')
+    const stats = []
+    const lines = []
+
+    if (type === 'cycle') {
+      const cyclesRes = await dbase.collection('lb-cycles').where({ journey_id: j._id }).orderBy('start_date', 'asc').limit(100).get()
+      const starts = cyclesRes.data.map(c => c.start_date).sort((a, b) => a - b)
+      const lens = []
+      for (let i = 1; i < starts.length; i++) lens.push(Math.round((starts[i] - starts[i - 1]) / DAY))
+      const recent = lens.slice(-6)
+      const avg = recent.length > 0 ? Math.round(recent.reduce((a, b) => a + b, 0) / recent.length) : 0
+      const shortest = lens.length > 0 ? Math.min(...lens) : 0
+      const longest = lens.length > 0 ? Math.max(...lens) : 0
+      let variance = 0
+      for (const l of lens) variance += (l - avg) * (l - avg)
+      const std = lens.length >= 2 ? Math.sqrt(variance / lens.length) : 0
+      const regular = lens.length >= 2 && std <= 4
+      const lastStart = starts.length > 0 ? new Date(starts[starts.length - 1]).toISOString().slice(0, 10) : ''
+
+      // 经期伴随症状统计（仅 period_start 的 symptoms 数组）
+      const evRes = await dbase.collection('lb-cycle-events').where({ journey_id: j._id, type: 'period_start' }).limit(200).get()
+      const symCount = {}
+      for (const e of evRes.data) {
+        const arr = (e.value && e.value.symptoms) || []
+        for (const s of arr) symCount[s] = (symCount[s] || 0) + 1
+      }
+      const symPairs = Object.keys(symCount).map(k => [k, symCount[k]]).sort((a, b) => b[1] - a[1]).slice(0, 3)
+
+      const since = now - 90 * DAY
+      const logsRes = await dbase.collection('lb-daily-logs').where({ journey_id: j._id }).orderBy('ts', 'desc').limit(500).get()
+      const logs90 = logsRes.data.filter(x => x.ts >= since).length
+
+      stats.push({ label: '记录周期', value: `${starts.length} 个` })
+      stats.push({ label: '近 6 周期平均', value: avg > 0 ? `${avg} 天` : '—' })
+      stats.push({ label: '最短 / 最长', value: lens.length > 0 ? `${shortest} / ${longest} 天` : '—' })
+      stats.push({ label: '近 90 天记录', value: `${logs90} 条` })
+      lines.push(starts.length >= 2 ? `你的周期${regular ? '整体规律' : '有一定波动'}，近 6 个周期平均 ${avg} 天。` : '再记录 1 个完整周期，就能看到周期规律了。')
+      if (symPairs.length > 0) lines.push(`经期最常见的陪伴是：${symPairs.map(p => `${p[0]}（${p[1]} 次）`).join('、')}。`)
+      lines.push('预测会随着记录增多而收敛；如果周期持续短于 21 天或长于 35 天，建议带着这份记录就医。')
+      return auth.ok({
+        type, title: '周期报告', subtitle: lastStart.length > 0 ? `最近一次经期开始 ${lastStart}` : '还没有经期记录',
+        stats, lines, generatedAt: now
+      })
+    }
+
+    if (type === 'stage') {
+      const stage = stageOf(j, now)
+      let from = now - 30 * DAY
+      let stageName = '近 30 天'
+      if (j.delivery_date) {
+        const pd = Math.floor((now - j.delivery_date) / DAY)
+        if (pd < 42) { from = j.delivery_date; stageName = '产褥期' }
+        else if (pd < 365) { from = j.delivery_date + 42 * DAY; stageName = '产后恢复期' }
+        else { from = j.delivery_date + 365 * DAY; stageName = '育儿期' }
+      } else if (j.edd && stage !== 'PRECONCEPTION') {
+        const anchor = j.lmp_date || (j.edd - 280 * DAY)
+        const gest = Math.floor((now - anchor) / DAY)
+        if (gest < 98) { from = anchor; stageName = '孕早期' }
+        else if (gest < 196) { from = anchor + 98 * DAY; stageName = '孕中期' }
+        else { from = anchor + 196 * DAY; stageName = '孕晚期' }
+      } else if (j.lmp_date) {
+        from = Math.max(j.lmp_date, now - 90 * DAY)
+        stageName = '备孕期'
+      }
+      const logsRes = await dbase.collection('lb-daily-logs').where({ journey_id: j._id }).orderBy('ts', 'desc').limit(2000).get()
+      const logs = logsRes.data.filter(x => x.ts >= from && x.ts <= now)
+      const daySet = new Set(logs.map(x => x.date))
+      const weights = logs.filter(x => x.code === 'weight' && x.value && x.value.kg).map(x => ({ ts: x.ts, kg: x.value.kg })).sort((a, b) => a.ts - b.ts)
+      const weightDelta = weights.length >= 2 ? Math.round((weights[weights.length - 1].kg - weights[0].kg) * 10) / 10 : null
+      const visitRes = await dbase.collection('lb-prenatal-visits').where({ journey_id: j._id }).limit(200).get()
+      const visits = visitRes.data.filter(v => v.visit_ts >= from && v.visit_ts <= now).length
+      const msRes = await dbase.collection('lb-milestones').where({ journey_id: j._id }).limit(200).get()
+      const ms = msRes.data.filter(m => m.achieved_date >= from && m.achieved_date <= now).length
+      const days = Math.max(1, Math.floor((now - from) / DAY))
+
+      stats.push({ label: '记录天数', value: `${daySet.size} / ${days} 天` })
+      stats.push({ label: '记录条数', value: `${logs.length} 条` })
+      stats.push({ label: '产检', value: `${visits} 次` })
+      stats.push({ label: '里程碑', value: `${ms} 个` })
+      if (weightDelta !== null) stats.push({ label: '体重变化', value: `${weightDelta > 0 ? '+' : ''}${weightDelta} kg` })
+
+      lines.push(`${stageName}里，你在 ${days} 天中完成了 ${daySet.size} 天的记录。`)
+      if (weightDelta !== null) lines.push(`体重变化 ${weightDelta > 0 ? '+' : ''}${weightDelta} kg，趋势比单次数字更重要。`)
+      if (visits > 0) lines.push(`完成了 ${visits} 次产检/儿保随访，检查结果都留在记录里。`)
+      if (ms > 0) lines.push(`宝宝点亮了 ${ms} 个成长里程碑。`)
+      lines.push('阶段会过去，记录会留下；下一阶段的本周要点会自动更新。')
+      return auth.ok({ type, title: '阶段报告', subtitle: `${stageName} · ${dateOf(from)} 至今`, stats, lines, generatedAt: now })
+    }
+
+    // 年度报告：近 365 天的记录密度与生命事件
+    const since = now - 365 * DAY
+    const logsRes = await dbase.collection('lb-daily-logs').where({ journey_id: j._id }).orderBy('ts', 'desc').limit(5000).get()
+    const logs = logsRes.data.filter(x => x.ts >= since)
+    const daySet = new Set(logs.map(x => x.date))
+    const codeCount = {}
+    for (const x of logs) codeCount[x.code] = (codeCount[x.code] || 0) + 1
+    const topCodes = Object.keys(codeCount).map(k => [k, codeCount[k]]).sort((a, b) => b[1] - a[1]).slice(0, 3)
+
+    const msRes = await dbase.collection('lb-milestones').where({ journey_id: j._id }).limit(200).get()
+    const photoRes = await dbase.collection('lb-album').where({ journey_id: j._id }).limit(1000).get()
+    const foodRes = await dbase.collection('lb-food-logs').where({ journey_id: j._id }).limit(1000).get()
+    const medRes = await dbase.collection('lb-medication-logs').where({ journey_id: j._id }).limit(1000).get()
+    const feedRes = await dbase.collection('lb-feedings').where({ journey_id: j._id }).limit(5000).get()
+    const feeds = feedRes.data.filter(x => x.ts >= since).length
+    const triedFoods = [...new Set(foodRes.data.map(x => x.name))].length
+    const anchor = j.lmp_date || j.delivery_date || j.created_at || now
+    const journeyDays = Math.max(1, Math.floor((now - anchor) / DAY))
+
+    stats.push({ label: '记录天数', value: `${daySet.size} 天` })
+    stats.push({ label: '总记录', value: `${logs.length} 条` })
+    stats.push({ label: '喂养记录', value: `${feeds} 次` })
+    stats.push({ label: '成长里程碑', value: `${msRes.data.length} 个` })
+    stats.push({ label: '照片', value: `${photoRes.data.length} 张` })
+    stats.push({ label: '尝试食物', value: `${triedFoods} 种` })
+
+    lines.push(`这一年，你在 ${journeyDays} 天里留下了 ${logs.length} 条记录、${photoRes.data.length} 张照片。`)
+    if (topCodes.length > 0) lines.push(`记录最多的是：${topCodes.map(p => `${codeLabel(p[0])}（${p[1]} 次）`).join('、')}。`)
+    if (msRes.data.length > 0) lines.push(`宝宝达成了 ${msRes.data.length} 个成长里程碑，每一个"第一次"都被记住了。`)
+    if (triedFoods > 0) lines.push(`一起尝试了 ${triedFoods} 种食物，记录让过敏排查有据可查。`)
+    if (medRes.data.length > 0) lines.push(`记录了 ${medRes.data.length} 次用药，就诊回溯更从容。`)
+    lines.push('数据属于你：可随时导出、可彻底删除，也可以打印成一份给医生看。')
+    return auth.ok({ type, title: '年度报告', subtitle: `${daySet.size} 天有记录 · 从 ${dateOf(anchor)} 到今天`, stats, lines, generatedAt: now })
+  },
+
   async exportAll(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
@@ -219,7 +360,7 @@ module.exports = {
     if (!journey) return auth.fail('NOT_FOUND', '旅程不存在')
     if (role !== 'owner') return auth.fail('NOT_FOUND', '仅旅程主人可导出全量数据')
     const j = journey
-    const collections = ['lb-journeys', 'lb-babies', 'lb-cycles', 'lb-cycle-events', 'lb-daily-logs', 'lb-tracker-sessions', 'lb-prenatal-visits', 'lb-schedule-items', 'lb-screenings', 'lb-feedings', 'lb-diaper-changes', 'lb-sleep-sessions', 'lb-growth-samples', 'lb-vaccinations', 'lb-milestones', 'lb-food-logs', 'lb-medication-logs', 'lb-reminder-rules']
+    const collections = ['lb-journeys', 'lb-babies', 'lb-cycles', 'lb-cycle-events', 'lb-daily-logs', 'lb-tracker-sessions', 'lb-prenatal-visits', 'lb-schedule-items', 'lb-screenings', 'lb-feedings', 'lb-diaper-changes', 'lb-sleep-sessions', 'lb-growth-samples', 'lb-vaccinations', 'lb-milestones', 'lb-food-logs', 'lb-medication-logs', 'lb-child-health', 'lb-reminder-rules']
     const out = {}
     for (const c of collections) {
       const r = await db.call(this).collection(c).where({ journey_id: j._id }).limit(5000).get()

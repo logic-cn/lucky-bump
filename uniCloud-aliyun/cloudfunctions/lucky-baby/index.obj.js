@@ -299,6 +299,7 @@ module.exports = {
       const done = res.data.find(x => x.code === m.code)
       const overdue = !done && age.months > m.months[1]
       return Object.assign({}, m, {
+        monthFrom: m.months[0], monthTo: m.months[1],
         achieved: !!done, achievedDate: done ? dateOf(done.achieved_date) : '', note: done ? done.note : '',
         status: done ? 'achieved' : (overdue ? 'watch' : 'upcoming'),
         watchText: overdue ? '每个宝宝节奏不同，如仍无此表现，建议儿保时和医生聊聊' : ''
@@ -369,6 +370,20 @@ module.exports = {
       note: String(params.note || '').slice(0, 200), created_at: Date.now()
     })
     return auth.ok({ recordId: res.id, disclaimer: '本应用不做剂量建议，请以说明书与医嘱为准' })
+  },
+
+  /** 用药记录列表（母亲与宝宝共用一条时间轴，按旅程查询） */
+  async listMedications(params = {}) {
+    const uid = await requireUser.call(this)
+    if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
+    const j = await accessibleJourney.call(this, uid, params.journeyId)
+    if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
+    const res = await db.call(this).collection('lb-medication-logs').where({ journey_id: j._id }).orderBy('ts', 'desc').limit(100).get()
+    const logs = res.data.map(x => ({
+      _id: x._id, name: x.name, dose: x.dose, note: x.note, ts: x.ts, date: x.date, babyId: x.baby_id || ''
+    }))
+    // strict 红线：仅本人可见（与时间线一致）
+    return auth.ok({ logs: auth.visibilityFilter(logs, uid) })
   },
 
   /* ---------------- 成长相册 ---------------- */

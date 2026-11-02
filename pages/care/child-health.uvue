@@ -1,0 +1,260 @@
+<template>
+  <view class="page" :class="themeClass()">
+    <lbc-error v-if="loadFailed" :message="errorMsg" @retry="load" />
+    <lbc-empty v-if="noBaby && !loadFailed" title="还没有宝宝档案" hint="先在宝宝页添加档案，才能记录儿保体检" ctaText="去添加" @cta="goBaby" />
+
+    <view class="body" v-if="!noBaby && !loadFailed">
+      <view class="card lb-rise">
+        <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">记录儿保体检</text></view>
+
+        <view class="opt-wrap" v-if="babies.length > 1">
+          <view class="opt" v-for="(b, i) in babies" :key="i" :class="babyId == b.getString('_id') ? 'opt-active' : ''" hover-class="lb-press" hover-stay-time="120" @click="pickBaby(b)">
+            <text class="opt-text" :class="babyId == b.getString('_id') ? 'opt-text-active' : ''">{{ b.getString('nickname') }}</text>
+          </view>
+        </view>
+
+        <text class="label">体检日期</text>
+        <!-- #ifdef APP-ANDROID || APP-IOS -->
+        <lbc-date-field :value="visitDate" :end="todayEnd" @change="onDateChange" />
+        <!-- #endif -->
+        <!-- #ifdef WEB -->
+        <view hover-class="lb-press" hover-stay-time="120" @click="onPickVisitWeb">
+          <view class="date-box"><text class="date-text">{{ visitDate }}</text></view>
+        </view>
+        <!-- #endif -->
+
+        <view class="row3">
+          <view class="col"><text class="label">体重 kg</text><input class="num-input" type="digit" v-model="weightKg" placeholder="8.2" placeholder-class="ph" /></view>
+          <view class="col"><text class="label">身高 cm</text><input class="num-input" type="digit" v-model="heightCm" placeholder="70.5" placeholder-class="ph" /></view>
+          <view class="col"><text class="label">头围 cm</text><input class="num-input" type="digit" v-model="headCm" placeholder="44.0" placeholder-class="ph" /></view>
+        </view>
+
+        <text class="label">体检医院（选填）</text>
+        <input class="input" v-model="hospital" placeholder="如：市妇幼保健院" placeholder-class="ph" />
+        <text class="label">医生结论（选填）</text>
+        <input class="input" v-model="conclusion" placeholder="如：发育正常，注意补铁" placeholder-class="ph" />
+        <text class="label">医生建议（选填）</text>
+        <input class="input" v-model="advice" placeholder="如：6 月龄加辅食，观察过敏" placeholder-class="ph" confirm-type="done" @confirm="save" />
+
+        <text class="label">下次体检日期（选填）</text>
+        <!-- #ifdef APP-ANDROID || APP-IOS -->
+        <lbc-date-field :value="nextDate" @change="onNextChange" />
+        <!-- #endif -->
+        <!-- #ifdef WEB -->
+        <view hover-class="lb-press" hover-stay-time="120" @click="onPickNextWeb">
+          <view class="date-box"><text class="date-text">{{ nextDate.length > 0 ? nextDate : '选择日期' }}</text></view>
+        </view>
+        <!-- #endif -->
+
+        <button class="btn-save" hover-class="lb-press" hover-stay-time="120" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存儿保记录' }}</button>
+        <text class="hint">身高体重会同步展示在成长页趋势；AI 儿保单拍照识别需接入外部 AI 服务后开放。</text>
+      </view>
+
+      <view class="card lb-rise-1" v-if="records.length > 0">
+        <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">历史儿保</text></view>
+        <view class="rec-row" v-for="(r, i) in records" :key="i">
+          <view class="rec-head">
+            <text class="rec-date">{{ r.getString('date') }}</text>
+            <text class="rec-age">{{ r.getNumber('month_age')?.toInt() }} 月龄</text>
+          </view>
+          <text class="rec-metric">体重 {{ fmt(r.getNumber('weight_kg')) }}kg · 身高 {{ fmt(r.getNumber('height_cm')) }}cm · 头围 {{ fmt(r.getNumber('head_cm')) }}cm</text>
+          <text class="rec-note" v-if="(r.getString('conclusion') ?? '').length > 0">结论：{{ r.getString('conclusion') }}</text>
+          <text class="rec-note" v-if="(r.getString('advice') ?? '').length > 0">建议：{{ r.getString('advice') }}</text>
+          <text class="rec-next" v-if="(r.getString('next_date') ?? '').length > 0">下次体检：{{ r.getString('next_date') }}</text>
+        </view>
+      </view>
+
+      <view class="card lb-rise-2" v-if="records.length == 0">
+        <text class="empty-text">还没有儿保记录。体检后把身高体重和医生建议记下来，复诊时一目了然。</text>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script setup lang="ts">
+  import { ref } from 'vue'
+  import { onPageReady } from '../../utils/pageLifecycle.uts'
+  import { luckyCare, luckyJourney, luckyBaby } from '../../utils/request.uts'
+  import { journeyState } from '../../store/journeyStore.uts'
+  import { themeClass } from '../../store/themeStore.uts'
+  import { todayDateStr, dateToTs } from '../../utils/recordDate.uts'
+  // #ifdef WEB
+  import { pickDate } from '../../utils/pickDate.uts'
+  // #endif
+
+  const todayEnd = todayDateStr()
+  const babies = ref<UTSJSONObject[]>([])
+  const babyId = ref<string>('')
+  const visitDate = ref<string>(todayDateStr())
+  const nextDate = ref<string>('')
+  const weightKg = ref<string>('')
+  const heightCm = ref<string>('')
+  const headCm = ref<string>('')
+  const hospital = ref<string>('')
+  const conclusion = ref<string>('')
+  const advice = ref<string>('')
+  const records = ref<UTSJSONObject[]>([])
+  const saving = ref<boolean>(false)
+  const noBaby = ref<boolean>(false)
+  const loadFailed = ref<boolean>(false)
+  const errorMsg = ref<string>('')
+
+  function fmt(v: number | null): string {
+    if (v == null || v <= 0) return '—'
+    return `${Math.round(v * 10) / 10}`
+  }
+
+  function pickBaby(b: UTSJSONObject) {
+    babyId.value = b.getString('_id') ?? ''
+    uni.setStorageSync('current_baby_id', babyId.value)
+    loadRecords()
+  }
+
+  function onDateChange(v: string) { visitDate.value = v }
+  function onNextChange(v: string) { nextDate.value = v }
+
+  // #ifdef WEB
+  async function onPickVisitWeb() {
+    const v = await pickDate(visitDate.value, todayEnd)
+    if (v.length > 0) visitDate.value = v
+  }
+  async function onPickNextWeb() {
+    const v = await pickDate(nextDate.value.length > 0 ? nextDate.value : todayDateStr(), '')
+    if (v.length > 0) nextDate.value = v
+  }
+  // #endif
+
+  async function loadRecords() {
+    if (babyId.value.length == 0) { records.value = []; return }
+    try {
+      const r = await luckyCare('listChildHealth', { journeyId: journeyState.journeyId, babyId: babyId.value } as UTSJSONObject)
+      records.value = r.getArray<UTSJSONObject>('records') ?? []
+    } catch (e) {
+      loadFailed.value = true
+      errorMsg.value = (e as Error).message
+    }
+  }
+
+  async function load() {
+    try {
+      const res = await luckyJourney('listBabies', { journeyId: journeyState.journeyId } as UTSJSONObject)
+      babies.value = res.getArray<UTSJSONObject>('babies') ?? []
+      if (babies.value.length == 0) { noBaby.value = true; loadFailed.value = false; return }
+      const stored = uni.getStorageSync('current_baby_id') as string
+      babyId.value = stored ?? ''
+      let found = false
+      for (let i = 0; i < babies.value.length; i++) {
+        if ((babies.value[i].getString('_id') ?? '') == babyId.value) found = true
+      }
+      if (!found) {
+        babyId.value = babies.value[0].getString('_id') ?? ''
+        uni.setStorageSync('current_baby_id', babyId.value)
+      }
+      await loadRecords()
+      noBaby.value = false
+      loadFailed.value = false
+    } catch (e) {
+      loadFailed.value = true
+      errorMsg.value = (e as Error).message
+    }
+  }
+
+  async function save() {
+    if (saving.value || babyId.value.length == 0) return
+    if (visitDate.value.length == 0) {
+      uni.showToast({ title: '请选择体检日期', icon: 'none' })
+      return
+    }
+    const vt = dateToTs(visitDate.value)
+    if (!(vt > 0) || vt > Date.now() + 24 * 3600 * 1000) {
+      uni.showToast({ title: '体检日期不能在未来', icon: 'none' })
+      return
+    }
+    const w = parseFloat(weightKg.value) || 0
+    const h = parseFloat(heightCm.value) || 0
+    const hd = parseFloat(headCm.value) || 0
+    if (w <= 0 && h <= 0 && hd <= 0) {
+      uni.showToast({ title: '至少填写一项测量值', icon: 'none' })
+      return
+    }
+    saving.value = true
+    try {
+      await luckyCare('addChildHealth', {
+        journeyId: journeyState.journeyId, babyId: babyId.value, date: visitDate.value,
+        weightKg: w, heightCm: h, headCm: hd, hospital: hospital.value.trim(),
+        conclusion: conclusion.value.trim(), advice: advice.value.trim(), nextDate: nextDate.value
+      } as UTSJSONObject)
+      // 同步一条成长样本，让成长趋势页复用儿保数据
+      if (w > 0 || h > 0 || hd > 0) {
+        try {
+          await luckyBaby('addGrowth', {
+            journeyId: journeyState.journeyId, babyId: babyId.value, measureDate: visitDate.value,
+            weightKg: w, heightCm: h, headCm: hd, source: 'checkup'
+          } as UTSJSONObject)
+        } catch (e) { /* 成长样本同步失败不影响儿保记录本身 */ }
+      }
+      uni.showToast({ title: '已保存', icon: 'none' })
+      weightKg.value = ''
+      heightCm.value = ''
+      headCm.value = ''
+      hospital.value = ''
+      conclusion.value = ''
+      advice.value = ''
+      nextDate.value = ''
+      await loadRecords()
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    } finally {
+      saving.value = false
+    }
+  }
+
+  function goBaby() { uni.navigateBack({ delta: 1 }) }
+
+  onPageReady(() => { load() })
+</script>
+
+<style>
+  @import '../../theme.scss';
+  .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
+  .body { width: 702rpx; align-items: center; }
+  .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 36rpx; margin-top: 24rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
+  .card-head { flex-direction: row; align-items: center; margin-bottom: 20rpx; }
+  .title-bar { width: 8rpx; height: 30rpx; border-radius: 4rpx; background-image: linear-gradient(180deg, var(--lb-grad-1), var(--lb-grad-2)); margin-right: 14rpx; }
+  .card-title { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); }
+  .card-title-flush { margin-bottom: 0; }
+  .label { font-size: 26rpx; color: var(--lb-text-1); margin: 20rpx 0 10rpx 0; align-self: flex-start; }
+  .date-box { width: 630rpx; height: 88rpx; border-radius: 24rpx; background-color: var(--lb-fill); align-items: center; justify-content: center; }
+  .date-text { font-size: 30rpx; color: var(--lb-text-1); }
+  .row3 { flex-direction: row; }
+  .col { flex: 1; margin-right: 12rpx; }
+  .num-input { height: 88rpx; background-color: var(--lb-fill); border-radius: 24rpx; padding: 0 20rpx; font-size: 30rpx; color: var(--lb-text-1); }
+  .ph { color: var(--lb-text-3); }
+  .input { width: 630rpx; height: 88rpx; background-color: var(--lb-fill); border-radius: 24rpx; padding: 0 24rpx; font-size: 28rpx; color: var(--lb-text-1); }
+  .opt-wrap { flex-direction: row; flex-wrap: wrap; }
+  .opt { padding: 14rpx 28rpx; border-radius: 20rpx; background-color: var(--lb-fill); margin: 0 12rpx 12rpx 0; }
+  .opt-active { background-color: var(--lb-primary-soft); }
+  .opt-text { font-size: 26rpx; color: var(--lb-text-2); }
+  .opt-text-active { color: var(--lb-primary-deep); font-weight: bold; }
+  .btn-save { width: 630rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: var(--lb-white); font-size: 32rpx; border-radius: 48rpx; margin-top: 28rpx; transition: all 160ms ease-out; }
+  .hint { font-size: 24rpx; color: var(--lb-text-3); line-height: 38rpx; margin-top: 16rpx; }
+  .rec-row { padding: 20rpx 0; border-bottom-width: 1px; border-bottom-color: var(--lb-line); }
+  .rec-head { flex-direction: row; justify-content: space-between; align-items: center; }
+  .rec-date { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); }
+  .rec-age { font-size: 24rpx; color: var(--lb-primary-deep); background-color: var(--lb-primary-soft); border-radius: 10rpx; padding: 2rpx 10rpx; }
+  .rec-metric { font-size: 26rpx; color: var(--lb-text-2); margin-top: 8rpx; }
+  .rec-note { font-size: 24rpx; color: var(--lb-text-3); margin-top: 4rpx; line-height: 36rpx; }
+  .rec-next { font-size: 24rpx; color: var(--lb-primary); margin-top: 6rpx; }
+  .empty-text { font-size: 26rpx; color: var(--lb-text-3); line-height: 40rpx; }
+  @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+  @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
+  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) forwards; opacity: 0; transform: scale(0.92); }
+  .lb-fade { animation: lb-fade 200ms ease-out forwards; opacity: 0; }
+  .lb-press { opacity: 0.72; transform: scale(0.98); }
+</style>

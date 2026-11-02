@@ -91,6 +91,18 @@
       }
     },
     {
+      "path": "pages/record/medication",
+      "style": {
+        "navigationBarTitleText": "用药记录"
+      }
+    },
+    {
+      "path": "pages/record/water",
+      "style": {
+        "navigationBarTitleText": "饮水记录"
+      }
+    },
+    {
       "path": "pages/record/cycle",
       "style": {
         "navigationBarTitleText": "经期记录"
@@ -151,6 +163,12 @@
       }
     },
     {
+      "path": "pages/care/child-health",
+      "style": {
+        "navigationBarTitleText": "儿保体检"
+      }
+    },
+    {
       "path": "pages/baby/birth-register",
       "style": {
         "navigationBarTitleText": "分娩登记"
@@ -199,6 +217,12 @@
       }
     },
     {
+      "path": "pages/baby/milestones",
+      "style": {
+        "navigationBarTitleText": "成长里程碑"
+      }
+    },
+    {
       "path": "pages/data/charts",
       "style": {
         "navigationBarTitleText": "指标曲线"
@@ -214,6 +238,12 @@
       "path": "pages/data/timeline",
       "style": {
         "navigationBarTitleText": "时间线"
+      }
+    },
+    {
+      "path": "pages/data/report",
+      "style": {
+        "navigationBarTitleText": "周期与年度报告"
       }
     },
     {
@@ -262,6 +292,12 @@
       "path": "pages/tools/solid-food",
       "style": {
         "navigationBarTitleText": "辅食计划"
+      }
+    },
+    {
+      "path": "pages/tools/solid-food-log",
+      "style": {
+        "navigationBarTitleText": "辅食记录"
       }
     },
     {

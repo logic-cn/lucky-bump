@@ -60,7 +60,9 @@
           { icon: 'test', label: '排卵试纸', url: '/pages/record/ovulation-test' },
           { icon: 'thermo', label: '基础体温', url: '/pages/record/cycle' },
           { icon: 'preg', label: '验孕', url: '/pages/record/pregnancy-test' },
-          { icon: 'privacy', label: '同房', url: '/pages/record/cycle' }
+          { icon: 'privacy', label: '同房', url: '/pages/record/cycle' },
+          { icon: 'glucose', label: '饮水记录', url: '/pages/record/water' },
+          { icon: 'pill', label: '用药记录', url: '/pages/record/medication' }
         ]
         const pregnancy: RItem[] = [
           { icon: 'weight', label: '体重', url: '/pages/record/weight' },
@@ -69,12 +71,16 @@
           { icon: 'fetal', label: '胎动', url: '/pages/record/fetal-movement' },
           { icon: 'timer', label: '宫缩计时', url: '/pages/record/contraction-timer' },
           { icon: 'symptom', label: '症状情绪', url: '/pages/record/symptom' },
+          { icon: 'pill', label: '用药记录', url: '/pages/record/medication' },
+          { icon: 'glucose', label: '饮水记录', url: '/pages/record/water' },
           { icon: 'diary', label: '日记', url: '/pages/record/diary' },
           { icon: 'bag', label: '待产包', url: '/pages/tools/hospital-bag' }
         ]
         const postpartum: RItem[] = [
           { icon: 'lochia', label: '恶露', url: '/pages/record/lochia' },
           { icon: 'heart', label: '情绪自评', url: '/pages/record/epds' },
+          { icon: 'pill', label: '用药记录', url: '/pages/record/medication' },
+          { icon: 'glucose', label: '饮水记录', url: '/pages/record/water' },
           { icon: 'weight', label: '体重', url: '/pages/record/weight' }
         ]
         const baby: RItem[] = [
@@ -84,6 +90,8 @@
           { icon: 'growth', label: '成长', url: '/pages/baby/growth' },
           { icon: 'album', label: '相册', url: '/pages/baby/album' },
           { icon: 'bowl', label: '辅食计划', url: '/pages/tools/solid-food' },
+          { icon: 'bowl', label: '辅食记录', url: '/pages/tools/solid-food-log' },
+          { icon: 'pill', label: '用药记录', url: '/pages/record/medication' },
           { icon: 'vaccine', label: '疫苗', url: '/pages/baby/vaccines' }
         ]
         if (s == 'PRECONCEPTION') groups.push({ title: '备孕', items: orderByRecent(ttc) })

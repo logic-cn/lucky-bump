@@ -1,0 +1,137 @@
+<template>
+  <view class="page" :class="themeClass()">
+    <view class="tabs lb-rise">
+      <view class="tab" :class="type == 'cycle' ? 'tab-active' : ''" hover-class="lb-press" hover-stay-time="120" @click="switchType('cycle')">
+        <text class="tab-text" :class="type == 'cycle' ? 'tab-text-active' : ''">周期报告</text>
+      </view>
+      <view class="tab" :class="type == 'stage' ? 'tab-active' : ''" hover-class="lb-press" hover-stay-time="120" @click="switchType('stage')">
+        <text class="tab-text" :class="type == 'stage' ? 'tab-text-active' : ''">阶段报告</text>
+      </view>
+      <view class="tab" :class="type == 'annual' ? 'tab-active' : ''" hover-class="lb-press" hover-stay-time="120" @click="switchType('annual')">
+        <text class="tab-text" :class="type == 'annual' ? 'tab-text-active' : ''">年度报告</text>
+      </view>
+    </view>
+
+    <lbc-error v-if="loadFailed" :message="errorMsg" @retry="load" />
+
+    <view class="card hero lb-rise" v-if="!loadFailed && loaded">
+      <text class="hero-title">{{ title }}</text>
+      <text class="hero-sub">{{ subtitle }}</text>
+    </view>
+
+    <view class="card lb-rise-1" v-if="!loadFailed && loaded && stats.length > 0">
+      <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">数据一览</text></view>
+      <view class="stat-wrap">
+        <view class="stat" v-for="(s, i) in stats" :key="i">
+          <text class="stat-num">{{ s.getString('value') }}</text>
+          <text class="stat-cap">{{ s.getString('label') }}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="card lb-rise-2" v-if="!loadFailed && loaded && lines.length > 0">
+      <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">这页数据想说的话</text></view>
+      <text class="line" v-for="(l, i) in lines" :key="i">{{ l }}</text>
+    </view>
+
+    <view class="btn-row lb-rise-3" v-if="!loadFailed && loaded">
+      <button class="btn-copy" hover-class="lb-press" hover-stay-time="120" @click="copyReport">复制报告文案</button>
+      <button class="btn-print" hover-class="lb-press" hover-stay-time="120" @click="goExport">打印 / 导出 PDF</button>
+    </view>
+
+    <view class="card lb-rise-3">
+      <text class="gray">报告基于你主动记录的数据生成，仅用于自我回顾与就诊沟通，不构成诊断。数据属于你，可随时导出或删除。</text>
+    </view>
+  </view>
+</template>
+
+<script setup lang="ts">
+  import { ref } from 'vue'
+  import { onPageReady } from '../../utils/pageLifecycle.uts'
+  import { luckyData } from '../../utils/request.uts'
+  import { journeyState } from '../../store/journeyStore.uts'
+  import { themeClass } from '../../store/themeStore.uts'
+
+  const type = ref<string>('cycle')
+  const title = ref<string>('')
+  const subtitle = ref<string>('')
+  const stats = ref<UTSJSONObject[]>([])
+  const lines = ref<string[]>([])
+  const loaded = ref<boolean>(false)
+  const loadFailed = ref<boolean>(false)
+  const errorMsg = ref<string>('')
+
+  async function load() {
+    try {
+      const r = await luckyData('report', { journeyId: journeyState.journeyId, type: type.value } as UTSJSONObject)
+      title.value = r.getString('title') ?? ''
+      subtitle.value = r.getString('subtitle') ?? ''
+      stats.value = r.getArray<UTSJSONObject>('stats') ?? []
+      lines.value = r.getArray<string>('lines') ?? []
+      loaded.value = true
+      loadFailed.value = false
+    } catch (e) {
+      loadFailed.value = true
+      errorMsg.value = (e as Error).message
+    }
+  }
+
+  function switchType(t: string) {
+    if (type.value == t) return
+    type.value = t
+    loaded.value = false
+    load()
+  }
+
+  function copyReport() {
+    const parts = [title.value + ' · ' + subtitle.value]
+    for (let i = 0; i < lines.value.length; i++) parts.push(lines.value[i])
+    parts.push('—— 来自幸孕记')
+    uni.setClipboardData({
+      data: parts.join('\n'),
+      success: () => { uni.showToast({ title: '报告文案已复制', icon: 'none' }) }
+    })
+  }
+
+  function goExport() { uni.navigateTo({ url: '/pages/data/export-report' }) }
+
+  onPageReady(() => { load() })
+</script>
+
+<style>
+  @import '../../theme.scss';
+  .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
+  .tabs { width: 702rpx; flex-direction: row; background-color: var(--lb-card); border-radius: 36rpx; padding: 8rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
+  .tab { flex: 1; height: 72rpx; border-radius: 28rpx; align-items: center; justify-content: center; transition: all 160ms ease-out; }
+  .tab-active { background-color: var(--lb-primary-soft); }
+  .tab-text { font-size: 28rpx; color: var(--lb-text-3); }
+  .tab-text-active { color: var(--lb-primary-deep); font-weight: bold; }
+  .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 36rpx; margin-top: 24rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
+  .hero { background-image: linear-gradient(135deg, var(--lb-grad-1), var(--lb-grad-2)); }
+  .hero-title { font-size: 40rpx; font-weight: bold; color: var(--lb-white); }
+  .hero-sub { font-size: 24rpx; color: rgba(255,255,255,0.9); margin-top: 8rpx; }
+  .card-head { flex-direction: row; align-items: center; margin-bottom: 20rpx; }
+  .title-bar { width: 8rpx; height: 30rpx; border-radius: 4rpx; background-image: linear-gradient(180deg, var(--lb-grad-1), var(--lb-grad-2)); margin-right: 14rpx; }
+  .card-title { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); }
+  .card-title-flush { margin-bottom: 0; }
+  .stat-wrap { flex-direction: row; flex-wrap: wrap; }
+  .stat { width: 50%; padding: 12rpx 0; }
+  .stat-num { font-size: 36rpx; font-weight: bold; color: var(--lb-primary); }
+  .stat-cap { font-size: 24rpx; color: var(--lb-text-3); margin-top: 4rpx; }
+  .line { font-size: 28rpx; color: var(--lb-text-1); line-height: 46rpx; margin-top: 12rpx; }
+  .btn-row { width: 702rpx; flex-direction: row; margin-top: 24rpx; }
+  .btn-copy { flex: 1; height: 88rpx; line-height: 88rpx; background-color: var(--lb-primary); color: var(--lb-white); font-size: 26rpx; border-radius: 48rpx; margin-right: 12rpx; transition: all 160ms ease-out; }
+  .btn-print { flex: 1; height: 88rpx; line-height: 88rpx; background-color: var(--lb-primary-soft); color: var(--lb-primary-deep); font-size: 26rpx; border-radius: 48rpx; margin-left: 12rpx; transition: all 160ms ease-out; }
+  .gray { font-size: 24rpx; color: var(--lb-text-3); line-height: 38rpx; }
+  @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+  @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
+  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) forwards; opacity: 0; transform: scale(0.92); }
+  .lb-fade { animation: lb-fade 200ms ease-out forwards; opacity: 0; }
+  .lb-press { opacity: 0.72; transform: scale(0.98); }
+</style>

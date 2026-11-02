@@ -252,3 +252,17 @@ Web 端已可用。后续运行只涉及：1) `npm test` 保持 70/70；2) 上�
 - [x] 动画 fill-mode 适配：全仓 278 处 `both→forwards`，`lb-rise-1/2/3`、`lb-pop`、`lb-fade` 补起始帧基态
 - [x] 门禁：`ui.test.js` 新增 3 条（fill-mode forwards+基态 / 功能性 emoji 禁用 / 图标资产引用存在），`npm test` 114/114 全绿
 - [ ] 仍需真机验证：进场动画首帧在低端机上的观感（fill-mode 适配后未真机复测）
+
+## 后续规划功能补齐（2026-11-02，V1.1–V1.3 可代码落地项）
+
+- [x] 成长里程碑：`pages/baby/milestones`（四维目录/达成日期/备注/儿保沟通提示）+ 达成纪念卡与分享文案；后端 `lucky-baby.listMilestones` 补 monthFrom/monthTo
+- [x] 辅食记录与 3 天观察：`pages/tools/solid-food-log`（新食物首记、待观察/待复试标记、反应回写）+ 辅食科普页入口；复用 `addFood/logFoodReaction/foodDashboard`
+- [x] 用药记录：`pages/record/medication`（本人/宝宝两种对象、药名剂量备注、历史列表）+ 后端 `lucky-baby.listMedications`；时间线聚合用药事件（含药名剂量）
+- [x] 饮水记录：`pages/record/water`（杯量预设、自定义、今日总量与目标进度、离线队列兜底）+ 提醒模板新增「喝水」；复用 `water` 指标白名单，不新增存储
+- [x] 儿保体检：`lb-child-health` schema + `lucky-care.addChildHealth/listChildHealth` + `pages/care/child-health`（身高体重头围、医生结论与建议、下次体检；同步成长样本进入趋势页）；全量导出纳入该表
+- [x] 报告体系：`lucky-data.report`（周期报告/阶段报告/年度报告，仅旅程主人）+ `pages/data/report`（三 Tab、数据一览、文案复制、打印入口）；数据页与周报卡形成完整回望链路
+- [x] 宝宝发育科普卡：首页孕期限定「本周要点」卡，点按直达知识库
+- [x] 二胎/新旅程闭环：设置页产后阶段显示「开始新的旅程」，确认后 `startNewJourney` + 刷新旅程状态；旧旅程数据完整保留
+- [x] 门禁：新增 `test/unit/features-v15.test.js`（页面注册/后端方法/入口接线/饮水白名单/新旅程阶段），`npm test` 119/119 全绿
+- [ ] 外部依赖（非代码可完成）：服务端远程推送需 uni-push 控制台配置与证书；AI 产检报告解读/试纸判读/儿保单识别需外部 AI 服务与合规评审；蓝牙硬件需平台 SDK；会员体系按产品红线不做付费墙
+- [ ] 部署提醒：新增 `lb-child-health` schema 与 `lucky-care`/`lucky-baby`/`lucky-data` 方法需在 HBuilderX 重新上传云端后才生效

@@ -21,7 +21,7 @@
           <image class="med-ico" src="/static/icons/pill.png" mode="aspectFit" /><text class="opt-text">{{ t }}</text>
         </view>
       </view>
-      <text class="hint" v-if="medTemplates.length > 0">点常用用药模板一键创建每日提醒</text>
+      <text class="hint" v-if="medTemplates.length > 0">点常用模板一键创建每日提醒（含喝水）</text>
       <view class="opts">
         <view class="opt" hover-class="lb-press" hover-stay-time="120" v-for="(t, i) in types" :key="i" :class="type == t.value ? 'opt-active' : ''" @click="type = t.value">
           <text class="opt-text" :class="type == t.value ? 'opt-text-active' : ''">{{ t.label }}</text>
@@ -96,6 +96,14 @@
       <text class="hint">用于孕期增重推荐区间与 BMI 判断（docs/03 M2.2），仅本人可见</text>
     </view>
 
+    <view class="card lb-rise-2" v-if="canStartNewJourney">
+      <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">旅程</text></view>
+      <text class="hint">已经进入新阶段？可以开启一段新的旅程（再备孕）。旧旅程数据完整保留，时间线随时回看。</text>
+      <button class="btn-journey" hover-class="lb-press" hover-stay-time="120" @click="confirmNewJourney = true">开始新的旅程</button>
+    </view>
+
+    <lbc-dialog :visible="confirmNewJourney" title="开始新的旅程？" content="当前旅程会完整保留；新旅程从备孕阶段开始，可以重新记录周期与试纸。" confirmText="开始" @confirm="doStartNewJourney" @cancel="confirmNewJourney = false" />
+
     <view class="card lb-rise-3">
       <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">账号安全</text></view>
       <view class="p-row" hover-class="lb-press" hover-stay-time="120" @click="openRecovery">
@@ -150,10 +158,10 @@
 </template>
 
 <script setup lang="ts">
-  import { ref } from 'vue'
+  import { computed, ref } from 'vue'
   import { onPageReady } from '../../utils/pageLifecycle.uts'
-  import { luckyReminder, luckyId } from '../../utils/request.uts'
-  import { journeyState } from '../../store/journeyStore.uts'
+  import { luckyReminder, luckyId, luckyJourney } from '../../utils/request.uts'
+  import { journeyState, loadCurrentJourney } from '../../store/journeyStore.uts'
   import { themeState, setThemeMode, themeClass } from '../../store/themeStore.uts'
   import { quietStart, quietEnd, setQuietRange } from '../../utils/quiet.uts'
   import { notifyEnabled, notifyPermission, setNotifyEnabled } from '../../utils/webNotify.uts'
@@ -173,7 +181,23 @@
   const month = ref<string>('')
   const intervalDays = ref<string>('')
   // 产褥期/孕期常用用药模板：一键生成每日重复提醒（用药提醒不改诊断边界，仅提醒）
-  const medTemplates = ref<string[]>(['叶酸', '铁剂', '钙片', '维生素 D', 'DHA'])
+  const medTemplates = ref<string[]>(['叶酸', '铁剂', '钙片', '维生素 D', 'DHA', '喝水'])
+  const confirmNewJourney = ref<boolean>(false)
+  const canStartNewJourney = computed((): boolean => {
+    const s = journeyState.stage
+    return s == 'POSTPARTUM' || s == 'RECOVERY' || s == 'PARENTING'
+  })
+  async function doStartNewJourney() {
+    confirmNewJourney.value = false
+    try {
+      await luckyJourney('startNewJourney', { fromJourneyId: journeyState.journeyId, title: '新的旅程' } as UTSJSONObject)
+      await loadCurrentJourney()
+      uni.showToast({ title: '新旅程已开启', icon: 'none' })
+      setTimeout(() => { uni.switchTab({ url: '/pages/index/index' }) }, 500)
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    }
+  }
   function applyMedTemplate(name: string) {
     title.value = `${name}（每日）`
     type.value = 'recurring'
@@ -372,6 +396,7 @@
   .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
   .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 32rpx; margin-top: 24rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
   .card-title { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 16rpx; }
+  .btn-journey { width: 560rpx; height: 88rpx; line-height: 88rpx; margin-top: 20rpx; background-color: var(--lb-primary-soft); color: var(--lb-primary-deep); font-size: 28rpx; border-radius: 48rpx; transition: all 160ms ease-out; }
   .r-row { flex-direction: row; align-items: center; padding: 14rpx 0; border-bottom-width: 1px; border-bottom-color: var(--lb-line); }
   .r-body { flex: 1; }
   .r-title { font-size: 28rpx; color: var(--lb-text-1); }

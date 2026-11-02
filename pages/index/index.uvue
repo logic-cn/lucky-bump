@@ -27,6 +27,18 @@
       <view class="skel-line skel-short" />
     </view>
 
+    <!-- 本周发育与知识：把"宝宝现在多大"接到知识库（docs/09 宝宝发育科普卡） -->
+    <view class="card dev-card lb-rise-1" v-if="showBabySize && devFocus.length > 0" hover-class="lb-press" hover-stay-time="120" @click="goLearn">
+      <view class="dev-head">
+        <image class="dev-mark" src="/static/mark.png" mode="aspectFit" />
+        <view class="dev-body">
+          <text class="dev-title">孕 {{ journeyState.weeks }} 周 · 本周要点</text>
+          <text class="dev-item" v-for="(f, i) in devFocus" :key="i">· {{ f }}</text>
+        </view>
+        <text class="dev-arrow">›</text>
+      </view>
+    </view>
+
     <!-- 数据加载失败：显式可重试，不再静默显示空态 -->
     <lbc-error v-if="loadFailed" :message="errorMsg" @retry="load" />
 
@@ -150,6 +162,7 @@
   import { luckyRecord } from '../../utils/request.uts'
   import { luckyReminder } from '../../utils/request.uts'
   import { themeClass } from '../../store/themeStore.uts'
+  import { weeklyFocus } from '../../utils/knowledge.uts'
   import { isQuietNow } from '../../utils/quiet.uts'
   import { track } from '../../utils/track.uts'
   import { recentUrls, rememberRecent, recentRank } from '../../utils/recentGrid.uts'
@@ -185,6 +198,9 @@
   const stageLabel = computed((): string => stageText(journeyState.stage))
   const weekLabel = computed((): string => weekText())
   const showBabySize = computed((): boolean => journeyState.stage == 'T1' || journeyState.stage == 'T2' || journeyState.stage == 'T3')
+  const devFocus = computed((): string[] => weeklyFocus(journeyState.stage, journeyState.weeks, journeyState.postpartumDays).slice(0, 2))
+
+  function goLearn() { uni.switchTab({ url: '/pages/learn/learn' }) }
   const isPostpartum = computed((): boolean => journeyState.deliveryDate.length > 0)
   const isTtc = computed((): boolean => journeyState.stage == 'PRECONCEPTION')
   // 家人视角（爸爸端）：以 recorder/viewer 加入共享旅程时展示行动指引
@@ -464,6 +480,13 @@
   .skel-line { width: 340rpx; height: 44rpx; border-radius: 12rpx; background-color: var(--lb-line); }
   .skel-short { width: 220rpx; margin-top: 22rpx; }
   .card { background-color: var(--lb-card); border-radius: 36rpx; padding: 36rpx; margin-bottom: 24rpx; box-shadow: 0 8rpx 28rpx rgba(61,35,48,0.05); }
+  .dev-card { padding: 28rpx 32rpx; }
+  .dev-head { flex-direction: row; align-items: center; }
+  .dev-mark { width: 64rpx; height: 64rpx; border-radius: 18rpx; }
+  .dev-body { flex: 1; margin-left: 20rpx; }
+  .dev-title { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); }
+  .dev-item { font-size: 24rpx; color: var(--lb-text-2); line-height: 38rpx; margin-top: 6rpx; }
+  .dev-arrow { font-size: 36rpx; color: var(--lb-arrow); margin-left: 12rpx; }
   .card-head { flex-direction: row; align-items: center; margin-bottom: 24rpx; }
   .title-bar { width: 8rpx; height: 30rpx; border-radius: 4rpx; background-image: linear-gradient(180deg, #F376A0, #D43770); margin-right: 14rpx; }
   .card-title { font-size: 32rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 24rpx; }

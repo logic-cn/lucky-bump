@@ -24,6 +24,11 @@
         <view class="nav-body"><text class="nav-text">指标曲线</text><text class="nav-sub">体重 / 血压 / 血糖 / 胎动趋势</text></view>
         <text class="nav-arrow">›</text>
       </view>
+      <view class="nav-row" hover-class="lb-press" hover-stay-time="120" @click="go('/pages/data/report')">
+        <image class="nav-icon" src="/static/icons/chart.png" mode="aspectFit" />
+        <view class="nav-body"><text class="nav-text">周期与年度报告</text><text class="nav-sub">把记录变成看得懂的回望（免费）</text></view>
+        <text class="nav-arrow">›</text>
+      </view>
       <view class="nav-row" hover-class="lb-press" hover-stay-time="120" @click="go('/pages/data/timeline')">
         <image class="nav-icon" src="/static/icons/history.png" mode="aspectFit" />
         <view class="nav-body"><text class="nav-text">生命时间线</text><text class="nav-sub">从备孕到育儿的所有记录</text></view>

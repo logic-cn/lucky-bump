@@ -25,9 +25,11 @@ SCHEMAS = {
       "prePregnancyWeightKg": prop("double", "孕前体重kg"),
       "birthYear": prop("int", "出生年份"),
       "role": prop("array", "角色"),
-      "status": prop("string", "状态", enum=["active", "disabled"]),
+      "status": prop("string", "状态", enum=["active", "disabled", "pending_deletion"]),
       "register_date": prop("long", "注册时间"),
-      "last_login_date": prop("long", "最后登录")
+      "last_login_date": prop("long", "最后登录"),
+      "deletion_requested_at": prop("long", "申请注销时间"),
+      "purge_at": prop("long", "计划物理删除时间")
     }
   },
   "lb-token": {
@@ -107,7 +109,7 @@ SCHEMAS = {
     "required": ["user_id", "journey_id", "type", "ts"],
     "properties": {
       "user_id": prop("string", "用户"), "journey_id": prop("string", "旅程"),
-      "type": prop("string", "事件类型", enum=["period_start", "period_end", "ovulation_test", "bbt", "intercourse", "pregnancy_test"]),
+      "type": prop("string", "事件类型", enum=["period_start", "period_end", "ovulation_test", "bbt", "intercourse", "pregnancy_test", "mucus"]),
       "value": prop("object", "事件数据"), "date": prop("string", "日期"),
       "ts": prop("long", "时间戳"), "sensitivity": prop("string", "敏感级", enum=["normal", "strict"])
     }
@@ -241,6 +243,17 @@ SCHEMAS = {
       "user_id": prop("string", "用户"), "journey_id": prop("string", "旅程"), "baby_id": prop("string", "宝宝(可空=妈妈)"),
       "name": prop("string", "药名"), "dose": prop("string", "剂量(按说明书/医嘱)"),
       "ts": prop("long", "时间"), "date": prop("string", "日期"), "note": prop("string", "备注")
+    }
+  },
+  "lb-child-health": {
+    "required": ["user_id", "journey_id", "baby_id", "date"],
+    "properties": {
+      "user_id": prop("string", "用户"), "journey_id": prop("string", "旅程"), "baby_id": prop("string", "宝宝"),
+      "date": prop("string", "体检日期"), "ts": prop("long", "时间戳"),
+      "hospital": prop("string", "体检医院"), "month_age": prop("int", "月龄"),
+      "weight_kg": prop("double", "体重kg"), "height_cm": prop("double", "身高cm"), "head_cm": prop("double", "头围cm"),
+      "conclusion": prop("string", "医生结论"), "advice": prop("string", "医生建议"),
+      "next_date": prop("string", "下次体检日期"), "created_at": prop("long", "创建时间")
     }
   },
   "lb-reminder-rules": {

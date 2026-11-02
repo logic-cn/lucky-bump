@@ -47,6 +47,46 @@ function buildPlan(j, now = Date.now()) {
 }
 
 module.exports = {
+  /** 儿保体检：记录身高体重头围、医生结论与下次体检时间（AI 儿保单识别待外部服务） */
+  async addChildHealth(params = {}) {
+    const uid = await requireUser.call(this)
+    if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
+    const j = await accessibleJourney.call(this, uid, params.journeyId, 'write')
+    if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
+    const bRes = await db.call(this).collection('lb-babies').where({ _id: String(params.babyId || ''), journey_id: j._id, user_id: uid }).limit(1).get()
+    const baby = bRes.data[0]
+    if (!baby) return auth.fail('NOT_FOUND', '宝宝不存在')
+    const d = /^(\d{4})-(\d{2})-(\d{2})$/.exec(params.date || '')
+    if (!d) return auth.fail('PARAM_ERROR', '体检日期无效')
+    const ts = Date.UTC(+d[1], +d[2] - 1, +d[3], 12, 0, 0)
+    if (ts > Date.now() + DAY) return auth.fail('PARAM_ERROR', '体检日期不能在未来')
+    const monthAge = Math.max(0, Math.floor((ts - baby.birth_date) / (30.4375 * DAY)))
+    const res = await db.call(this).collection('lb-child-health').add({
+      user_id: uid, journey_id: j._id, baby_id: baby._id,
+      date: params.date, ts, month_age: monthAge,
+      hospital: String(params.hospital || '').slice(0, 40),
+      weight_kg: Math.max(0, Math.min(50, +params.weightKg || 0)),
+      height_cm: Math.max(0, Math.min(150, +params.heightCm || 0)),
+      head_cm: Math.max(0, Math.min(70, +params.headCm || 0)),
+      conclusion: String(params.conclusion || '').slice(0, 500),
+      advice: String(params.advice || '').slice(0, 500),
+      next_date: String(params.nextDate || '').slice(0, 10),
+      created_at: Date.now()
+    })
+    return auth.ok({ recordId: res.id, monthAge })
+  },
+
+  async listChildHealth(params = {}) {
+    const uid = await requireUser.call(this)
+    if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
+    const j = await accessibleJourney.call(this, uid, params.journeyId)
+    if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
+    const bRes = await db.call(this).collection('lb-babies').where({ _id: String(params.babyId || ''), journey_id: j._id, user_id: uid }).limit(1).get()
+    if (!bRes.data[0]) return auth.fail('NOT_FOUND', '宝宝不存在')
+    const res = await db.call(this).collection('lb-child-health').where({ baby_id: bRes.data[0]._id }).orderBy('ts', 'desc').limit(50).get()
+    return auth.ok({ records: res.data })
+  },
+
   /** 生成/重置产检排程（医生口径的"下次产检时间"始终可覆盖单条） */
   async generatePlan(params = {}) {
     const uid = await requireUser.call(this)

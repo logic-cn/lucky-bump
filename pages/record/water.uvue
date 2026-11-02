@@ -1,0 +1,176 @@
+<template>
+  <view class="page" :class="themeClass()">
+    <view class="card hero-card lb-rise">
+      <view class="hero-head">
+        <text class="hero-title">今日饮水</text>
+        <text class="hero-goal">参考 {{ goal }} ml</text>
+      </view>
+      <view class="hero-num-row">
+        <text class="hero-num">{{ todayTotal }}</text>
+        <text class="hero-unit"> ml</text>
+      </view>
+      <view class="bar"><view class="bar-fill" :style="{ width: pct + '%' }" /></view>
+      <text class="hint">按需饮水，天热、哺乳期可适当增加；具体以医生建议为准。</text>
+    </view>
+
+    <view class="card lb-rise-1">
+      <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">记一杯</text></view>
+      <view class="preset-row">
+        <view class="preset" v-for="(p, i) in presets" :key="i" :class="mlText == '' + p ? 'preset-active' : ''" hover-class="lb-press" hover-stay-time="120" @click="pick(p)">
+          <text class="preset-text" :class="mlText == '' + p ? 'preset-text-active' : ''">{{ p }}ml</text>
+        </view>
+      </view>
+      <view class="input-row">
+        <input class="ml-input" type="number" v-model="mlText" placeholder="自定义ml" placeholder-class="ph" confirm-type="done" @confirm="save" />
+        <button class="btn-save" hover-class="lb-press" hover-stay-time="120" :disabled="saving" @click="save">{{ saving ? '记录中…' : '记录这一杯' }}</button>
+      </view>
+      <text class="ok-text lb-fade" v-if="saved">已记录 ✓ · 可继续记下一杯</text>
+    </view>
+
+    <lbc-error v-if="loadFailed" :message="errorMsg" @retry="load" />
+
+    <view class="card lb-rise-2" v-if="!loadFailed && records.length > 0">
+      <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">最近记录</text></view>
+      <view class="log-row" v-for="(r, i) in records" :key="i">
+        <text class="log-date">{{ r.getString('date') }}</text>
+        <text class="log-ml">{{ mlOf(r) }} ml</text>
+      </view>
+    </view>
+
+    <view class="card lb-rise-3" v-if="!loadFailed && records.length == 0">
+      <text class="empty-text">还没有饮水记录。少量多次，比一次猛喝更舒服。</text>
+    </view>
+  </view>
+</template>
+
+<script setup lang="ts">
+  import { computed, ref } from 'vue'
+  import { onPageReady } from '../../utils/pageLifecycle.uts'
+  import { luckyRecord } from '../../utils/request.uts'
+  import { journeyState } from '../../store/journeyStore.uts'
+  import { themeClass } from '../../store/themeStore.uts'
+  import { todayDateStr, dateToTs } from '../../utils/recordDate.uts'
+  import { newClientId, isNetworkError, enqueueRecord } from '../../utils/offlineQueue.uts'
+  import { track } from '../../utils/track.uts'
+
+  const goal = 1500
+  const presets = ref<number[]>([150, 200, 300, 500])
+  const mlText = ref<string>('200')
+  const saving = ref<boolean>(false)
+  const saved = ref<boolean>(false)
+  const records = ref<UTSJSONObject[]>([])
+  const loadFailed = ref<boolean>(false)
+  const errorMsg = ref<string>('')
+
+  const todayTotal = computed((): number => {
+    let sum = 0
+    const today = todayDateStr()
+    for (let i = 0; i < records.value.length; i++) {
+      const r = records.value[i]
+      if ((r.getString('date') ?? '') == today) {
+        sum += r.getJSON('value')?.getNumber('ml')?.toInt() ?? 0
+      }
+    }
+    return sum
+  })
+  const pct = computed((): number => Math.min(100, Math.round(todayTotal.value * 100 / goal)))
+
+  async function load() {
+    try {
+      const r = await luckyRecord('listMetrics', { journeyId: journeyState.journeyId, code: 'water', limit: 100 } as UTSJSONObject)
+      records.value = r.getArray<UTSJSONObject>('records') ?? []
+      loadFailed.value = false
+    } catch (e) {
+      loadFailed.value = true
+      errorMsg.value = (e as Error).message
+    }
+  }
+
+  function pick(p: number) { mlText.value = `${p}` }
+
+  function mlOf(r: UTSJSONObject): number {
+    const v = r.getJSON('value') as UTSJSONObject | null
+    return v?.getNumber('ml')?.toInt() ?? 0
+  }
+
+  async function save() {
+    const ml = Math.round(parseFloat(mlText.value) || 0)
+    if (!(ml >= 1 && ml <= 2000)) {
+      uni.showToast({ title: '请输入 1–2000ml 的饮水量', icon: 'none' })
+      return
+    }
+    saving.value = true
+    const cid = newClientId()
+    const params = {
+      journeyId: journeyState.journeyId, code: 'water',
+      value: { ml }, date: todayDateStr(), ts: Date.now(), clientId: cid
+    } as UTSJSONObject
+    let queued = false
+    try {
+      await luckyRecord('addMetric', params)
+      track('record_create', { type: 'water' } as UTSJSONObject)
+    } catch (e) {
+      const msg = (e as Error).message
+      if (!isNetworkError(msg)) {
+        uni.showToast({ title: msg, icon: 'none' })
+        saving.value = false
+        return
+      }
+      queued = true
+      enqueueRecord('addMetric', params, cid)
+    }
+    uni.setStorageSync('lb_has_record', true)
+    saved.value = true
+    uni.showToast({ title: queued ? '已离线保存，联网后自动同步' : '已记录 ✓', icon: 'success' })
+    mlText.value = ''
+    saving.value = false
+    if (!queued) await load()
+  }
+
+  onPageReady(() => { load() })
+</script>
+
+<style>
+  @import '../../theme.scss';
+  .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
+  .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 36rpx; margin-top: 24rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
+  .hero-card { background-image: linear-gradient(135deg, var(--lb-grad-1), var(--lb-grad-2)); }
+  .hero-head { flex-direction: row; justify-content: space-between; align-items: center; }
+  .hero-title { font-size: 28rpx; color: rgba(255,255,255,0.92); font-weight: bold; }
+  .hero-goal { font-size: 24rpx; color: rgba(255,255,255,0.86); }
+  .hero-num { font-size: 72rpx; font-weight: bold; color: var(--lb-white); margin-top: 12rpx; }
+  .hero-num-row { flex-direction: row; align-items: baseline; }
+  .hero-unit { font-size: 28rpx; font-weight: normal; color: var(--lb-white); }
+  .bar { height: 12rpx; background-color: rgba(255,255,255,0.28); border-radius: 8rpx; margin-top: 16rpx; overflow: hidden; }
+  .bar-fill { height: 12rpx; border-radius: 8rpx; background-color: var(--lb-white); }
+  .hint { font-size: 24rpx; color: rgba(255,255,255,0.86); line-height: 38rpx; margin-top: 16rpx; }
+  .card-head { flex-direction: row; align-items: center; margin-bottom: 20rpx; }
+  .title-bar { width: 8rpx; height: 30rpx; border-radius: 4rpx; background-image: linear-gradient(180deg, var(--lb-grad-1), var(--lb-grad-2)); margin-right: 14rpx; }
+  .card-title { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); }
+  .card-title-flush { margin-bottom: 0; }
+  .preset-row { flex-direction: row; flex-wrap: wrap; }
+  .preset { padding: 16rpx 30rpx; border-radius: 20rpx; background-color: var(--lb-fill); margin: 0 12rpx 12rpx 0; }
+  .preset-active { background-color: var(--lb-primary-soft); }
+  .preset-text { font-size: 26rpx; color: var(--lb-text-2); }
+  .preset-text-active { color: var(--lb-primary-deep); font-weight: bold; }
+  .input-row { flex-direction: row; align-items: center; margin-top: 8rpx; }
+  .ml-input { flex: 1; height: 88rpx; background-color: var(--lb-fill); border-radius: 24rpx; padding: 0 24rpx; font-size: 30rpx; color: var(--lb-text-1); }
+  .ph { color: var(--lb-text-3); }
+  .btn-save { width: 280rpx; height: 88rpx; line-height: 88rpx; background-color: var(--lb-primary); color: var(--lb-white); font-size: 28rpx; border-radius: 48rpx; margin-left: 16rpx; transition: all 160ms ease-out; }
+  .ok-text { font-size: 26rpx; color: var(--lb-success); margin-top: 16rpx; }
+  .log-row { flex-direction: row; justify-content: space-between; padding: 18rpx 0; border-bottom-width: 1px; border-bottom-color: var(--lb-line); }
+  .log-date { font-size: 26rpx; color: var(--lb-text-2); }
+  .log-ml { font-size: 28rpx; color: var(--lb-primary); font-weight: bold; }
+  .empty-text { font-size: 26rpx; color: var(--lb-text-3); line-height: 40rpx; }
+  @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+  @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
+  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) forwards; opacity: 0; transform: scale(0.92); }
+  .lb-fade { animation: lb-fade 200ms ease-out forwards; opacity: 0; }
+  .lb-press { opacity: 0.72; transform: scale(0.98); }
+</style>

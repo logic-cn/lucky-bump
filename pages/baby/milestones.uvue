@@ -1,0 +1,260 @@
+<template>
+  <view class="page" :class="themeClass()">
+    <lbc-error v-if="loadFailed" :message="errorMsg" @retry="load" />
+
+    <lbc-empty v-if="noBaby && !loadFailed" title="还没有宝宝档案" hint="先在宝宝页添加档案，才能记录成长里程碑" ctaText="去添加" @cta="goBaby" />
+
+    <view class="card lb-rise" v-if="!noBaby && !loadFailed && items.length > 0">
+      <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">成长里程碑</text></view>
+      <view class="prog-row">
+        <text class="prog-num">{{ achievedCount }}</text>
+        <text class="prog-cap">/ {{ items.length }} 项已达成 · {{ monthAge }} 月龄</text>
+      </view>
+      <view class="bar"><view class="bar-fill" :style="{ width: progPct + '%' }" /></view>
+      <text class="hint">每个宝宝节奏不同，超出参考月龄未出现也不必焦虑，儿保时和医生聊聊即可。</text>
+    </view>
+
+    <view class="card lb-rise-1" v-for="(g, gi) in groups" :key="gi">
+      <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">{{ g.name }}</text></view>
+      <view class="m-row" v-for="(m, i) in g.items" :key="i">
+        <view class="m-dot" :class="m.getString('status') == 'achieved' ? 'm-dot-done' : (m.getString('status') == 'watch' ? 'm-dot-watch' : 'm-dot-upcoming')" />
+        <view class="m-body">
+          <text class="m-name">{{ m.getString('label') }}</text>
+          <text class="m-sub">参考 {{ m.getNumber('monthFrom')?.toInt() }}–{{ m.getNumber('monthTo')?.toInt() }} 月</text>
+          <text class="m-done" v-if="m.getBoolean('achieved') == true">{{ noteLine(m) }}</text>
+          <text class="m-watch" v-if="(m.getString('watchText') ?? '').length > 0">{{ m.getString('watchText') }}</text>
+        </view>
+        <view class="m-btn" v-if="m.getBoolean('achieved') != true" hover-class="lb-press" hover-stay-time="120" @click="openRecord(m)"><text class="m-btn-text">记录</text></view>
+        <text class="m-check" v-else>✓</text>
+      </view>
+    </view>
+
+    <!-- 记录里程碑弹窗 -->
+    <view class="mask lb-fade" v-if="dlgVisible">
+      <view class="dialog lb-pop">
+        <text class="dlg-title">记录「{{ curLabel }}」</text>
+        <text class="label">达成日期</text>
+        <!-- #ifdef APP-ANDROID || APP-IOS -->
+        <lbc-date-field :value="achievedDate" :end="todayEnd" @change="onDateChange" />
+        <!-- #endif -->
+        <!-- #ifdef WEB -->
+        <view hover-class="lb-press" hover-stay-time="120" @click="onPickWeb">
+          <view class="date-box"><text class="date-text">{{ achievedDate }}</text></view>
+        </view>
+        <!-- #endif -->
+        <text class="label">那一刻的样子（选填）</text>
+        <input class="input" v-model="note" placeholder="如：第一次自己翻过去，笑个不停" placeholder-class="ph" />
+        <view class="dlg-actions">
+          <text class="dlg-btn dlg-btn-cancel" hover-class="lb-press" hover-stay-time="120" @click="dlgVisible = false">取消</text>
+          <text class="dlg-btn dlg-btn-ok" hover-class="lb-press" hover-stay-time="120" @click="save">{{ saving ? '保存中…' : '保存' }}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 达成纪念卡 -->
+    <view class="mask lb-fade" v-if="cardVisible">
+      <view class="dialog lb-pop">
+        <image class="card-art" src="/static/empty-scene.png" mode="aspectFit" />
+        <text class="dlg-title">宝宝达成「{{ cardLabel }}」</text>
+        <text class="card-date">{{ cardDate }} · {{ monthAge }} 月龄</text>
+        <text class="dlg-content">每一个「第一次」，都是生命在向前长。</text>
+        <view class="dlg-actions">
+          <text class="dlg-btn dlg-btn-cancel" hover-class="lb-press" hover-stay-time="120" @click="cardVisible = false">知道啦</text>
+          <text class="dlg-btn dlg-btn-ok" hover-class="lb-press" hover-stay-time="120" @click="copyCard">复制分享文案</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script setup lang="ts">
+  import { computed, ref } from 'vue'
+  import { onPageReady } from '../../utils/pageLifecycle.uts'
+  import { luckyBaby, luckyJourney } from '../../utils/request.uts'
+  import { journeyState } from '../../store/journeyStore.uts'
+  import { themeClass } from '../../store/themeStore.uts'
+  import { todayDateStr } from '../../utils/recordDate.uts'
+  // #ifdef WEB
+  import { pickDate } from '../../utils/pickDate.uts'
+  // #endif
+
+  type Group = { name: string, items: UTSJSONObject[] }
+
+  const todayEnd = todayDateStr()
+  const babyId = ref<string>('')
+  const items = ref<UTSJSONObject[]>([])
+  const achievedCount = ref<number>(0)
+  const monthAge = ref<number>(0)
+  const loadFailed = ref<boolean>(false)
+  const noBaby = ref<boolean>(false)
+  const errorMsg = ref<string>('')
+
+  const dlgVisible = ref<boolean>(false)
+  const cardVisible = ref<boolean>(false)
+  const saving = ref<boolean>(false)
+  const cur = ref<UTSJSONObject | null>(null)
+  const curLabel = ref<string>('')
+  const achievedDate = ref<string>(todayDateStr())
+  const note = ref<string>('')
+  const cardLabel = ref<string>('')
+  const cardDate = ref<string>('')
+
+  const progPct = computed((): number => items.value.length == 0 ? 0 : Math.round(achievedCount.value * 100 / items.value.length))
+
+  const groups = computed((): Group[] => {
+    const defs: Group[] = [
+      { name: '大运动', items: [] }, { name: '精细动作', items: [] },
+      { name: '语言', items: [] }, { name: '社交', items: [] }
+    ]
+    const dims = ['gross', 'fine', 'language', 'social']
+    for (let i = 0; i < items.value.length; i++) {
+      const d = items.value[i].getString('dim') ?? ''
+      const idx = dims.indexOf(d)
+      if (idx >= 0) defs[idx].items.push(items.value[i])
+    }
+    const out: Group[] = []
+    for (let i = 0; i < defs.length; i++) {
+      if (defs[i].items.length > 0) out.push(defs[i])
+    }
+    return out
+  })
+
+  function noteLine(m: UTSJSONObject): string {
+    const n = m.getString('note') ?? ''
+    return n.length > 0 ? `${m.getString('achievedDate')} 达成 · ${n}` : `${m.getString('achievedDate')} 达成`
+  }
+
+  async function load() {
+    try {
+      const stored = uni.getStorageSync('current_baby_id') as string
+      babyId.value = stored ?? ''
+      if (babyId.value.length == 0) {
+        const res = await luckyJourney('listBabies', { journeyId: journeyState.journeyId } as UTSJSONObject)
+        const babies = res.getArray<UTSJSONObject>('babies') ?? []
+        if (babies.length > 0) {
+          babyId.value = babies[0].getString('_id') ?? ''
+          uni.setStorageSync('current_baby_id', babyId.value)
+        }
+      }
+      if (babyId.value.length == 0) {
+        noBaby.value = true
+        loadFailed.value = false
+        return
+      }
+      const r = await luckyBaby('listMilestones', { journeyId: journeyState.journeyId, babyId: babyId.value } as UTSJSONObject)
+      items.value = r.getArray<UTSJSONObject>('catalog') ?? []
+      achievedCount.value = r.getNumber('achieved')?.toInt() ?? 0
+      monthAge.value = r.getNumber('monthAge')?.toInt() ?? 0
+      noBaby.value = false
+      loadFailed.value = false
+    } catch (e) {
+      loadFailed.value = true
+      errorMsg.value = (e as Error).message
+    }
+  }
+
+  function openRecord(m: UTSJSONObject) {
+    cur.value = m
+    curLabel.value = m.getString('label') ?? ''
+    achievedDate.value = todayDateStr()
+    note.value = ''
+    dlgVisible.value = true
+  }
+
+  function onDateChange(v: string) { achievedDate.value = v }
+
+  // #ifdef WEB
+  async function onPickWeb() {
+    const v = await pickDate(achievedDate.value, todayEnd)
+    if (v.length > 0) achievedDate.value = v
+  }
+  // #endif
+
+  async function save() {
+    if (saving.value || cur.value == null) return
+    const m = cur.value as UTSJSONObject
+    saving.value = true
+    try {
+      await luckyBaby('addMilestone', {
+        journeyId: journeyState.journeyId, babyId: babyId.value,
+        dim: m.getString('dim') ?? '', code: m.getString('code') ?? '',
+        achievedDate: achievedDate.value, note: note.value
+      } as UTSJSONObject)
+      dlgVisible.value = false
+      cardLabel.value = m.getString('label') ?? ''
+      cardDate.value = achievedDate.value
+      cardVisible.value = true
+      await load()
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    } finally {
+      saving.value = false
+    }
+  }
+
+  function copyCard() {
+    uni.setClipboardData({
+      data: `宝宝在 ${cardDate.value} 达成了「${cardLabel.value}」\n每一个第一次，都是生命在向前长。\n—— 来自幸孕记`,
+      success: () => { uni.showToast({ title: '文案已复制', icon: 'none' }) }
+    })
+  }
+
+  function goBaby() { uni.navigateBack({ delta: 1 }) }
+
+  onPageReady(() => { load() })
+</script>
+
+<style>
+  @import '../../theme.scss';
+  .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
+  .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 36rpx; margin-top: 24rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
+  .card-head { flex-direction: row; align-items: center; margin-bottom: 20rpx; }
+  .title-bar { width: 8rpx; height: 30rpx; border-radius: 4rpx; background-image: linear-gradient(180deg, var(--lb-grad-1), var(--lb-grad-2)); margin-right: 14rpx; }
+  .card-title { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); }
+  .card-title-flush { margin-bottom: 0; }
+  .prog-row { flex-direction: row; align-items: baseline; margin-top: 8rpx; }
+  .prog-num { font-size: 56rpx; font-weight: bold; color: var(--lb-primary); }
+  .prog-cap { font-size: 24rpx; color: var(--lb-text-2); margin-left: 12rpx; }
+  .bar { height: 12rpx; background-color: var(--lb-fill); border-radius: 8rpx; margin-top: 16rpx; overflow: hidden; }
+  .bar-fill { height: 12rpx; border-radius: 8rpx; background-image: linear-gradient(90deg, var(--lb-grad-1), var(--lb-grad-2)); }
+  .hint { font-size: 24rpx; color: var(--lb-text-3); line-height: 38rpx; margin-top: 16rpx; }
+  .m-row { flex-direction: row; align-items: center; padding: 22rpx 0; border-bottom-width: 1px; border-bottom-color: var(--lb-line); transition: all 160ms ease-out; }
+  .m-dot { width: 16rpx; height: 16rpx; border-radius: 999rpx; margin-right: 18rpx; }
+  .m-dot-done { background-color: var(--lb-success); }
+  .m-dot-watch { background-color: var(--lb-warning); }
+  .m-dot-upcoming { background-color: var(--lb-arrow); }
+  .m-body { flex: 1; }
+  .m-name { font-size: 30rpx; color: var(--lb-text-1); font-weight: bold; }
+  .m-sub { font-size: 24rpx; color: var(--lb-text-3); margin-top: 4rpx; }
+  .m-done { font-size: 24rpx; color: var(--lb-success); margin-top: 4rpx; }
+  .m-watch { font-size: 24rpx; color: var(--lb-warning); margin-top: 4rpx; line-height: 36rpx; }
+  .m-btn { padding: 14rpx 32rpx; border-radius: 999rpx; background-color: var(--lb-primary-soft); }
+  .m-btn-text { font-size: 26rpx; color: var(--lb-primary-deep); font-weight: bold; }
+  .m-check { font-size: 32rpx; color: var(--lb-success); font-weight: bold; }
+  .mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(50,36,48,0.5); align-items: center; justify-content: center; }
+  .dialog { width: 620rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 44rpx 36rpx 36rpx 36rpx; align-items: center; }
+  .dlg-title { font-size: 32rpx; font-weight: bold; color: var(--lb-text-1); text-align: center; }
+  .dlg-content { font-size: 26rpx; color: var(--lb-text-2); margin-top: 16rpx; text-align: center; line-height: 40rpx; }
+  .card-art { width: 200rpx; height: 200rpx; margin-bottom: 12rpx; }
+  .card-date { font-size: 24rpx; color: var(--lb-text-3); margin-top: 8rpx; }
+  .label { font-size: 26rpx; color: var(--lb-text-1); margin: 24rpx 0 12rpx 0; align-self: flex-start; }
+  .date-box { width: 550rpx; height: 88rpx; border-radius: 24rpx; background-color: var(--lb-fill); align-items: center; justify-content: center; }
+  .date-text { font-size: 30rpx; color: var(--lb-text-1); }
+  .input { width: 550rpx; height: 88rpx; background-color: var(--lb-fill); border-radius: 24rpx; padding: 0 24rpx; font-size: 28rpx; color: var(--lb-text-1); }
+  .ph { color: var(--lb-text-3); }
+  .dlg-actions { flex-direction: row; margin-top: 32rpx; }
+  .dlg-btn { padding: 18rpx 44rpx; border-radius: 999rpx; font-size: 28rpx; margin: 0 10rpx; }
+  .dlg-btn-cancel { background-color: var(--lb-fill); color: var(--lb-text-2); }
+  .dlg-btn-ok { background-image: linear-gradient(135deg, var(--lb-grad-1), var(--lb-grad-2)); color: var(--lb-white); font-weight: bold; }
+  @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+  @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
+  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) forwards; opacity: 0; transform: scale(0.92); }
+  .lb-fade { animation: lb-fade 200ms ease-out forwards; opacity: 0; }
+  .lb-press { opacity: 0.72; transform: scale(0.98); }
+</style>
