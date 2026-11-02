@@ -110,6 +110,7 @@ module.exports = {
       duration_sec: Math.max(0, Math.min(7200, +params.durationSec || 0)),
       date: params.date || dateOf(ts), ts, created_at: Date.now()
     })
+    await auth.logEvent(db.call(this), { userId: uid, journeyId: j._id, event: 'record_create', props: { type: 'feeding' } })
     return auth.ok({ recordId: res.id })
   },
 
@@ -134,6 +135,7 @@ module.exports = {
       texture: params.texture || '', color: params.color || '',
       date: params.date || dateOf(ts), ts, created_at: Date.now()
     })
+    await auth.logEvent(db.call(this), { userId: uid, journeyId: j._id, event: 'record_create', props: { type: 'diaper' } })
     return auth.ok({ recordId: res.id, redline })
   },
 
@@ -153,6 +155,7 @@ module.exports = {
       night_wakings: Math.max(0, Math.min(20, +params.nightWakings || 0)),
       date: dateOf(end), created_at: Date.now()
     })
+    await auth.logEvent(db.call(this), { userId: uid, journeyId: j._id, event: 'record_create', props: { type: 'sleep' } })
     return auth.ok({ recordId: res.id })
   },
 
@@ -204,6 +207,7 @@ module.exports = {
       source: ['manual', 'checkup', 'ai_scan'].includes(params.source) ? params.source : 'manual',
       created_at: Date.now()
     })
+    await auth.logEvent(db.call(this), { userId: uid, journeyId: j._id, event: 'record_create', props: { type: 'growth' } })
     const pct = {
       weightPct: weightKg ? percentileOf('weight', sex, age.months, weightKg) : null,
       heightPct: heightCm ? percentileOf('height', sex, age.months, heightCm) : null,
@@ -264,6 +268,7 @@ module.exports = {
       date: vDate, lot_no: String(params.lotNo || '').slice(0, 30), site: String(params.site || '').slice(0, 30),
       reaction_note: String(params.reactionNote || '').slice(0, 200), created_at: Date.now()
     })
+    await auth.logEvent(db.call(this), { userId: uid, journeyId: j._id, event: 'record_create', props: { type: 'vaccine' } })
     return auth.ok({ recordId: res.id, redline: /38\.5/.test(String(params.reactionNote)) ? { level: 'warn', message: '接种后高热记录', action: '持续 >38.5℃ 或精神差请就医' } : null })
   },
 
@@ -283,6 +288,7 @@ module.exports = {
       note: String(params.note || '').slice(0, 200), media_ids: Array.isArray(params.mediaIds) ? params.mediaIds.slice(0, 9) : [],
       created_at: Date.now()
     })
+    await auth.logEvent(db.call(this), { userId: uid, journeyId: j._id, event: 'record_create', props: { type: 'milestone' } })
     return auth.ok({ recordId: res.id })
   },
 
@@ -325,6 +331,7 @@ module.exports = {
       user_id: uid, journey_id: j._id, baby_id: b._id, name, ts, date: dateOf(ts),
       first: isFirst, reaction: '', confirmed_allergy: false, created_at: Date.now()
     })
+    await auth.logEvent(db.call(this), { userId: uid, journeyId: j._id, event: 'record_create', props: { type: 'food' } })
     return auth.ok({ recordId: res.id, first: isFirst, observation: isFirst ? { foodLogId: res.id, days: ['day1', 'day2', 'day3'], guide: '新增食物连续观察 3 天，标记反应' } : null, forbidden: ['1 岁内不加盐/糖/蜂蜜/整颗坚果/鲜牛奶', '3 岁内整颗坚果与果冻有窒息风险'] })
   },
 
@@ -369,6 +376,7 @@ module.exports = {
       dose: String(params.dose || '').slice(0, 40), ts, date: dateOf(ts),
       note: String(params.note || '').slice(0, 200), created_at: Date.now()
     })
+    await auth.logEvent(db.call(this), { userId: uid, journeyId: j._id, event: 'record_create', props: { type: 'medication' } })
     return auth.ok({ recordId: res.id, disclaimer: '本应用不做剂量建议，请以说明书与医嘱为准' })
   },
 
@@ -403,6 +411,7 @@ module.exports = {
       file_id: fileId, caption: String(params.caption || '').trim().slice(0, 40),
       date: params.date || dateOf(ts), ts, created_at: Date.now()
     })
+    await auth.logEvent(db.call(this), { userId: uid, journeyId: j._id, event: 'record_create', props: { type: 'photo' } })
     return auth.ok({ photoId: res.id })
   },
 

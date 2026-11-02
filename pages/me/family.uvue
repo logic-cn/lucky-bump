@@ -70,7 +70,6 @@
   import { journeyState } from '../../store/journeyStore.uts'
   import { appState } from '../../store/appStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
-  import { track } from '../../utils/track.uts'
 
   type GOpt = { value: string, label: string, allow: boolean }
 
@@ -121,14 +120,12 @@
   async function invite(role: string) {
     try {
       const res = await luckyFamily('invite', { journeyId: journeyState.journeyId, role } as UTSJSONObject)
-      track('family_invite', { role: role } as UTSJSONObject)
       inviteCode.value = res.getString('code') ?? ''
     } catch (e) { uni.showToast({ title: (e as Error).message, icon: 'none' }) }
   }
   async function join() {
     try {
       const res = await luckyFamily('join', { code: joinCode.value, nickname: '我' } as UTSJSONObject)
-      track('family_invite', { role: res.getString('role') ?? 'member' } as UTSJSONObject)
       // 成员没有自己的旅程：立即写入共享旅程与角色，避免回首页被误导向建档引导
       const jid = res.getString('journeyId') ?? ''
       if (jid.length > 0) {

@@ -120,7 +120,8 @@ function publicView(j, now = Date.now()) {
     postpartumDays: wi.postpartumDays, eddSource: j.edd_source || '', highRisk: !!j.high_risk,
     mourning: j.stage_code === 'MOURNING', archived: j.stage_code === 'ARCHIVED',
     deliveryDate: j.delivery_date ? fmtDate(j.delivery_date) : '',
-    babySize: babySizeRef(wi.weeks), lmpDate: j.lmp_date ? fmtDate(j.lmp_date) : ''
+    babySize: babySizeRef(wi.weeks), lmpDate: j.lmp_date ? fmtDate(j.lmp_date) : '',
+    createdAt: j.created_at ? fmtDate(j.created_at) : ''
   }
 }
 
@@ -187,6 +188,7 @@ module.exports = {
       return auth.fail('PARAM_ERROR', 'mode 无效')
     }
     const res = await uniCloud.database().collection(col).add(doc)
+    await uniCloud.database().collection('uni-id-users').doc(uid).update({ currentJourneyId: res.id })
     return auth.ok({ journeyId: res.id, view: publicView(Object.assign({ _id: res.id }, doc), now) })
   },
 
@@ -196,9 +198,36 @@ module.exports = {
     const res = await uniCloud.database().collection(col).where({ user_id: uid }).orderBy('created_at', 'desc').get()
     const now = Date.now()
     const views = res.data.map(j => publicView(j, now))
-    // 默认旅程：非归档非哀伤优先
-    const current = views.find(v => !v.archived && !v.mourning) || views[0] || null
+    const userRes = await uniCloud.database().collection('uni-id-users').doc(uid).get()
+    const storedId = (userRes.data[0] && userRes.data[0].currentJourneyId) || ''
+    // 当前旅程：用户显式选择且未归档优先；否则非归档非哀伤的最新旅程
+    let current = views.find(v => v._id === storedId && !v.archived) || null
+    if (!current) current = views.find(v => !v.archived && !v.mourning) || views[0] || null
     return auth.ok({ journeys: views, currentId: current ? current._id : '' })
+  },
+
+  /** 切换当前旅程（已归档旅程不可作为当前） */
+  async setCurrentJourney(params = {}) {
+    const uid = await requireUser.call(this)
+    if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
+    const j = await ownedJourney.call(this, uid, params.journeyId)
+    if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
+    if (j.stage_code === 'ARCHIVED') return auth.fail('STATE_ERROR', '已归档旅程不能设为当前')
+    await uniCloud.database().collection('uni-id-users').doc(uid).update({ currentJourneyId: j._id })
+    await auth.logEvent(uniCloud.database(), { userId: uid, journeyId: j._id, event: 'journey_switch', props: {} })
+    return auth.ok({ currentId: j._id, view: publicView(j, Date.now()) })
+  },
+
+  /** 重命名旅程（只影响展示，不改阶段） */
+  async updateJourneyTitle(params = {}) {
+    const uid = await requireUser.call(this)
+    if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
+    const j = await ownedJourney.call(this, uid, params.journeyId)
+    if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
+    const title = String(params.title || '').trim()
+    if (title.length < 1 || title.length > 20) return auth.fail('PARAM_ERROR', '名称需 1-20 字')
+    await uniCloud.database().collection(col).doc(j._id).update({ title, updated_at: Date.now() })
+    return auth.ok({ title })
   },
 
   async getJourney(params = {}) {
@@ -284,6 +313,7 @@ module.exports = {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
     const res = await uniCloud.database().collection(col).add({ user_id: uid, title: params.title || '新的旅程', fetus_count: 1, stage_code: 'PRECONCEPTION', created_at: Date.now(), updated_at: Date.now(), from_journey_id: params.fromJourneyId || '' })
+    await uniCloud.database().collection('uni-id-users').doc(uid).update({ currentJourneyId: res.id })
     return auth.ok({ journeyId: res.id })
   },
 
@@ -347,6 +377,10 @@ module.exports = {
     const j = await ownedJourney.call(this, uid, params.journeyId)
     if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
     await uniCloud.database().collection(col).doc(j._id).update({ stage_code: 'ARCHIVED', updated_at: Date.now() })
+    const userRes = await uniCloud.database().collection('uni-id-users').doc(uid).get()
+    if ((userRes.data[0] && userRes.data[0].currentJourneyId) === j._id) {
+      await uniCloud.database().collection('uni-id-users').doc(uid).update({ currentJourneyId: '' })
+    }
     return auth.ok()
   }
 }

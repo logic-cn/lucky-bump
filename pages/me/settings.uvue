@@ -96,6 +96,14 @@
       <text class="hint">用于孕期增重推荐区间与 BMI 判断（docs/03 M2.2），仅本人可见</text>
     </view>
 
+    <view class="card lb-rise-2" v-if="opsAdmin">
+      <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">内部</text></view>
+      <view class="p-row" hover-class="lb-press" hover-stay-time="120" @click="go('/pages/me/ops')">
+        <text class="p-label">运营看板</text>
+        <text class="p-value">打开 ›</text>
+      </view>
+    </view>
+
     <view class="card lb-rise-2" v-if="canStartNewJourney">
       <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">旅程</text></view>
       <text class="hint">已经进入新阶段？可以开启一段新的旅程（再备孕）。旧旅程数据完整保留，时间线随时回看。</text>
@@ -220,6 +228,9 @@
   const heightCm = ref<string>('')
   const preWeightKg = ref<string>('')
   const profileSaving = ref<boolean>(false)
+  const opsAdmin = ref<boolean>(false)
+
+  function go(url: string) { uni.navigateTo({ url }) }
 
   async function loadProfile() {
     try {
@@ -230,6 +241,7 @@
         const w = info.getNumber('prePregnancyWeightKg') ?? 0
         heightCm.value = h > 0 ? `${h}` : ''
         preWeightKg.value = w > 0 ? `${w}` : ''
+        opsAdmin.value = info.getBoolean('opsAdmin') ?? false
       }
     } catch (e) { /* 未登录或网络异常时保持空值 */ }
   }

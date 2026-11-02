@@ -60,7 +60,6 @@
   import { luckyBaby } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
-  import { track } from '../../utils/track.uts'
   import { todayDateStr } from '../../utils/recordDate.uts'
   // #ifdef WEB
   import { pickTime } from '../../utils/pickDate.uts'
@@ -151,7 +150,6 @@
     saving.value = true
     try {
       await luckyBaby('addFeeding', { journeyId: journeyState.journeyId, babyId: babyId.value, mode: mode.value, ml: mlVal, ts } as UTSJSONObject)
-      track('record_create', { type: 'feeding' } as UTSJSONObject)
       uni.setStorageSync('lb_has_record', true)
       uni.setStorageSync(ML_KEY, `${mlVal}`)
       uni.showToast({ title: '已记录 ✓', icon: 'success' })

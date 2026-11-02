@@ -2,7 +2,7 @@
   <view class="page" :class="themeClass()">
     <view class="card lb-rise">
       <text class="title">幸孕记隐私政策</text>
-      <text class="meta">版本：草案 v1.0 · 2026-10-30 · 上线前需法务复核</text>
+      <text class="meta">版本：{{ privacyVersion }} · 生效日期 {{ effectiveDate }} · 上线前需法务复核</text>
 
       <text class="h">1. 我们收集什么</text>
       <text class="p">账号信息：用户名、昵称、密码哈希；健康记录：孕周与日期、体重、血压、血糖、症状、胎动、宫缩、产检、喂养、尿布、睡眠、成长、疫苗与日记；设备与日志：用于登录安全与故障排查的必要信息。同房、验孕、情绪自评属敏感信息，默认仅本人可见。</text>
@@ -26,13 +26,16 @@
       <text class="p">若使用者为未成年人，请在监护人陪同下使用，并由监护人协助理解本政策与医疗边界。</text>
 
       <text class="h">8. 联系我们</text>
-      <text class="p">隐私相关问题可通过应用内「关于与免责声明」页提供的联系方式反馈；我们会在合理期限内处理。</text>
+      <text class="p">隐私相关问题可通过应用内「我的 → 关于与免责声明 → 意见反馈」提交；我们会在合理期限内处理。</text>
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
   import { themeClass } from '../../store/themeStore.uts'
+  import { PRIVACY_VERSION, EFFECTIVE_DATE } from '../../utils/legal.uts'
+  const privacyVersion = PRIVACY_VERSION
+  const effectiveDate = EFFECTIVE_DATE
 </script>
 
 <style>

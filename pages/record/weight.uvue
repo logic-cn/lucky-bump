@@ -33,7 +33,6 @@
   import { luckyRecord, luckyId } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
-  import { track } from '../../utils/track.uts'
   import { todayDateStr, dateToTs, isToday } from '../../utils/recordDate.uts'
   // #ifdef WEB
   import { pickDate } from '../../utils/pickDate.uts'
@@ -100,7 +99,6 @@
     let queued = false
     try {
       await luckyRecord('addMetric', params)
-      track('record_create', { type: 'weight' } as UTSJSONObject)
     } catch (e) {
       const msg = (e as Error).message
       if (!isNetworkError(msg)) {

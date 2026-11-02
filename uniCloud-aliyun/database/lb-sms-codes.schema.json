@@ -1,0 +1,52 @@
+{
+  "required": [
+    "phone",
+    "code_hash",
+    "purpose",
+    "expires_at"
+  ],
+  "properties": {
+    "phone": {
+      "bsonType": "string",
+      "title": "手机号"
+    },
+    "code_hash": {
+      "bsonType": "string",
+      "title": "验证码哈希"
+    },
+    "purpose": {
+      "bsonType": "string",
+      "title": "用途",
+      "enum": [
+        "login",
+        "bind"
+      ]
+    },
+    "expires_at": {
+      "bsonType": "long",
+      "title": "过期时间"
+    },
+    "attempts": {
+      "bsonType": "int",
+      "title": "尝试次数"
+    },
+    "used": {
+      "bsonType": "bool",
+      "title": "已使用"
+    },
+    "ip": {
+      "bsonType": "string",
+      "title": "请求IP"
+    },
+    "created_at": {
+      "bsonType": "long",
+      "title": "创建时间"
+    }
+  },
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  }
+}

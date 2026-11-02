@@ -32,6 +32,15 @@
       </view>
       <text class="hint">该开关为推送能力接入后生效（当前无系统级推送，见 docs/08）</text>
     </view>
+    <view class="card lb-rise-1">
+      <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">敏感信息授权</text></view>
+      <text class="hint">{{ consentText }}</text>
+      <view class="p-row" v-if="!consentOk" hover-class="lb-press" hover-stay-time="120" @click="agreeConsent">
+        <text class="p-label">同意当前版本《隐私政策》</text>
+        <text class="p-value">去同意 ›</text>
+      </view>
+      <text class="hint" v-else>同房、验孕、情绪自评永远仅本人可见；可随时在账号中导出或删除。</text>
+    </view>
     <view class="card lb-rise-2">
       <text class="card-title">你的数据权利</text>
       <text class="hint">· 数据导出：结构化 JSON + 可读摘要（媒体打包待 V1.1）\n· 云备份：本期未开通；如后续提供将另行征得同意\n· 注销账号：30 天冷静期后由定时任务彻底删除（含云端）</text>
@@ -48,7 +57,7 @@
       <view class="dialog lb-pop">
         <text class="dlg-title">{{ dlgTitle }}</text>
         <text class="dlg-content">{{ dlgContent }}</text>
-        <input class="dlg-input" type="text" :password="true" v-model="dlgPassword" placeholder="请输入登录密码确认" placeholder-class="ph" />
+        <input class="dlg-input" type="text" :password="hasPassword" v-model="dlgPassword" :placeholder="hasPassword ? '请输入登录密码确认' : '请输入「注销」确认'" placeholder-class="ph" />
         <view class="dlg-actions">
           <text class="dlg-btn" @click="dlgVisible = false">取消</text>
           <text class="dlg-btn dlg-btn-ok" @click="onConfirmDelete">{{ deleting ? '提交中…' : '确认注销' }}</text>
@@ -66,6 +75,7 @@
   import { isBiometricAvailable } from '../../utils/biometric.uts'
   import { themeClass } from '../../store/themeStore.uts'
   import { journeyState } from '../../store/journeyStore.uts'
+  import { PRIVACY_VERSION } from '../../utils/legal.uts'
 
   const bioAvailable = isBiometricAvailable()
   const auditLogs = ref<UTSJSONObject[]>([])
@@ -76,7 +86,39 @@
       auditLogs.value = res.getArray<UTSJSONObject>('logs') ?? []
     } catch (e) { /* 非主人或未登录时静默 */ }
   }
-  onPageReady(() => { loadAudit() })
+  const consentOk = ref<boolean>(false)
+  const hasPassword = ref<boolean>(true)
+  const consentText = ref<string>('尚未记录敏感信息授权')
+
+  async function loadConsent() {
+    try {
+      const p = await luckyId('getProfile', {} as UTSJSONObject)
+      const info = p.getJSON('userInfo')
+      if (info == null) return
+      const at = info.getNumber('sensitiveConsentAt')?.toInt() ?? 0
+      const ver = info.getString('sensitiveConsentVersion') ?? ''
+      hasPassword.value = info.getBoolean('hasPassword') ?? true
+      consentOk.value = at > 0 && ver == PRIVACY_VERSION
+      if (at > 0) {
+        const d = new Date(at).toISOString().slice(0, 10)
+        consentText.value = `已于 ${d} 同意敏感信息处理条款（${ver.length > 0 ? ver : '旧版本'}）。`
+      } else {
+        consentText.value = '健康数据属于敏感个人信息，需要在知情前提下单独同意后处理。'
+      }
+    } catch (e) { /* 未登录或网络失败时保持默认提示 */ }
+  }
+
+  async function agreeConsent() {
+    try {
+      await luckyId('recordConsent', { sensitiveVersion: PRIVACY_VERSION, privacyVersion: PRIVACY_VERSION } as UTSJSONObject)
+      uni.showToast({ title: '已记录同意', icon: 'none' })
+      await loadConsent()
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    }
+  }
+
+  onPageReady(() => { loadAudit(); loadConsent() })
 
   // 安全读取：key 首次不存在时 getStorageSync 返回 null，不能强转 as boolean
   const rawLock = uni.getStorageSync('lb_app_lock')
@@ -106,8 +148,12 @@
   }
   async function onConfirmDelete() {
     if (deleting.value) return
-    if (dlgPassword.value.length < 8) {
+    if (hasPassword.value && dlgPassword.value.length < 8) {
       uni.showToast({ title: '请输入正确的登录密码', icon: 'none' })
+      return
+    }
+    if (!hasPassword.value && dlgPassword.value.trim() !== '注销') {
+      uni.showToast({ title: '请输入「注销」确认', icon: 'none' })
       return
     }
     deleting.value = true
@@ -127,6 +173,8 @@
 <style>
   @import '../../theme.scss';
   .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
+  .card-head { flex-direction: row; align-items: center; margin-bottom: 16rpx; }
+  .title-bar { width: 8rpx; height: 30rpx; border-radius: 4rpx; background-image: linear-gradient(180deg, var(--lb-grad-1), var(--lb-grad-2)); margin-right: 14rpx; }
   .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 32rpx; margin-top: 24rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
   .card-title { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 16rpx; }
   .p-row { flex-direction: row; align-items: center; justify-content: space-between; padding: 12rpx 0; }

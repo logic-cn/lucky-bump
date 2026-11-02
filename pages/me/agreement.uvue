@@ -2,7 +2,7 @@
   <view class="page" :class="themeClass()">
     <view class="card lb-rise">
       <text class="title">幸孕记用户协议</text>
-      <text class="meta">版本：草案 v1.0 · 2026-10-30 · 上线前需法务复核</text>
+      <text class="meta">版本：{{ termsVersion }} · 生效日期 {{ effectiveDate }} · 上线前需法务复核</text>
 
       <text class="h">1. 服务说明</text>
       <text class="p">幸孕记是一款孕产健康记录工具，提供备孕、孕期、产检、分娩与育儿阶段的记录、提醒与数据回看服务。本产品不是医疗器械，不提供诊断、治疗或用药建议。</text>
@@ -27,6 +27,9 @@
 
 <script setup lang="ts">
   import { themeClass } from '../../store/themeStore.uts'
+  import { TERMS_VERSION, EFFECTIVE_DATE } from '../../utils/legal.uts'
+  const termsVersion = TERMS_VERSION
+  const effectiveDate = EFFECTIVE_DATE
 </script>
 
 <style>

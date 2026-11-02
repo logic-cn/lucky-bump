@@ -51,6 +51,7 @@
   import { luckyData } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
+  import { track } from '../../utils/track.uts'
 
   const type = ref<string>('cycle')
   const title = ref<string>('')
@@ -89,7 +90,10 @@
     parts.push('—— 来自幸孕记')
     uni.setClipboardData({
       data: parts.join('\n'),
-      success: () => { uni.showToast({ title: '报告文案已复制', icon: 'none' }) }
+      success: () => {
+        track('report_share', { type: type.value } as UTSJSONObject)
+        uni.showToast({ title: '报告文案已复制', icon: 'none' })
+      }
     })
   }
 

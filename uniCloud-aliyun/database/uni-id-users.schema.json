@@ -59,6 +59,30 @@
     "purge_at": {
       "bsonType": "long",
       "title": "计划物理删除时间"
+    },
+    "mobile": {
+      "bsonType": "string",
+      "title": "手机号"
+    },
+    "password_set": {
+      "bsonType": "bool",
+      "title": "已自行设置密码"
+    },
+    "currentJourneyId": {
+      "bsonType": "string",
+      "title": "当前旅程"
+    },
+    "sensitive_consent_at": {
+      "bsonType": "long",
+      "title": "敏感信息单独同意时间"
+    },
+    "sensitive_consent_version": {
+      "bsonType": "string",
+      "title": "敏感信息同意条款版本"
+    },
+    "privacy_consent_version": {
+      "bsonType": "string",
+      "title": "隐私政策同意版本"
     }
   },
   "permission": {

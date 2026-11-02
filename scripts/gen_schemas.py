@@ -29,7 +29,13 @@ SCHEMAS = {
       "register_date": prop("long", "注册时间"),
       "last_login_date": prop("long", "最后登录"),
       "deletion_requested_at": prop("long", "申请注销时间"),
-      "purge_at": prop("long", "计划物理删除时间")
+      "purge_at": prop("long", "计划物理删除时间"),
+      "mobile": prop("string", "手机号"),
+      "password_set": prop("bool", "已自行设置密码"),
+      "currentJourneyId": prop("string", "当前旅程"),
+      "sensitive_consent_at": prop("long", "敏感信息单独同意时间"),
+      "sensitive_consent_version": prop("string", "敏感信息同意条款版本"),
+      "privacy_consent_version": prop("string", "隐私政策同意版本")
     }
   },
   "lb-token": {
@@ -254,6 +260,24 @@ SCHEMAS = {
       "weight_kg": prop("double", "体重kg"), "height_cm": prop("double", "身高cm"), "head_cm": prop("double", "头围cm"),
       "conclusion": prop("string", "医生结论"), "advice": prop("string", "医生建议"),
       "next_date": prop("string", "下次体检日期"), "created_at": prop("long", "创建时间")
+    }
+  },
+  "lb-sms-codes": {
+    "required": ["phone", "code_hash", "purpose", "expires_at"],
+    "properties": {
+      "phone": prop("string", "手机号"), "code_hash": prop("string", "验证码哈希"),
+      "purpose": prop("string", "用途", enum=["login", "bind"]),
+      "expires_at": prop("long", "过期时间"), "attempts": prop("int", "尝试次数"),
+      "used": prop("bool", "已使用"), "ip": prop("string", "请求IP"), "created_at": prop("long", "创建时间")
+    }
+  },
+  "lb-feedback": {
+    "required": ["user_id", "content"],
+    "properties": {
+      "user_id": prop("string", "用户"), "journey_id": prop("string", "旅程"),
+      "content": prop("string", "反馈内容"), "contact": prop("string", "联系方式"),
+      "app_version": prop("string", "版本"), "platform": prop("string", "平台"),
+      "status": prop("string", "状态", enum=["open", "done"]), "created_at": prop("long", "创建时间")
     }
   },
   "lb-reminder-rules": {

@@ -1,0 +1,50 @@
+{
+  "required": [
+    "user_id",
+    "content"
+  ],
+  "properties": {
+    "user_id": {
+      "bsonType": "string",
+      "title": "用户"
+    },
+    "journey_id": {
+      "bsonType": "string",
+      "title": "旅程"
+    },
+    "content": {
+      "bsonType": "string",
+      "title": "反馈内容"
+    },
+    "contact": {
+      "bsonType": "string",
+      "title": "联系方式"
+    },
+    "app_version": {
+      "bsonType": "string",
+      "title": "版本"
+    },
+    "platform": {
+      "bsonType": "string",
+      "title": "平台"
+    },
+    "status": {
+      "bsonType": "string",
+      "title": "状态",
+      "enum": [
+        "open",
+        "done"
+      ]
+    },
+    "created_at": {
+      "bsonType": "long",
+      "title": "创建时间"
+    }
+  },
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  }
+}

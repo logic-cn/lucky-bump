@@ -174,4 +174,32 @@ function visibilityFilter(records, uid) {
   return (records || []).filter(r => r.sensitivity !== 'strict' || r.user_id === uid)
 }
 
-module.exports = { createToken, verifyToken, hashPassword, verifyPassword, ok, fail, rateLimit, loadSecret, resolveJourneyAccess, requireUser, visibilityFilter, assertSecretConfigured }
+/** 读取 uni-config-center 命名空间配置；本地测试或未部署时返回空对象 */
+function readConfig(pluginId) {
+  try {
+    const cc = require('uni-config-center')
+    return cc({ pluginId }).config() || {}
+  } catch (e) {
+    return {}
+  }
+}
+
+/**
+ * 服务端埋点：业务写入成功后调用，保证「记录发生即计数」，不依赖页面。
+ * 失败静默（埋点不得影响业务）。
+ */
+async function logEvent(db, payload) {
+  try {
+    const ts = payload.ts || Date.now()
+    await db.collection('lb-events').add({
+      user_id: payload.userId || '',
+      journey_id: payload.journeyId || '',
+      event: String(payload.event || '').slice(0, 32),
+      props: payload.props || {},
+      date: new Date(ts).toISOString().slice(0, 10),
+      ts
+    })
+  } catch (e) { /* 埋点失败不影响业务 */ }
+}
+
+module.exports = { createToken, verifyToken, hashPassword, verifyPassword, ok, fail, rateLimit, loadSecret, resolveJourneyAccess, requireUser, visibilityFilter, assertSecretConfigured, readConfig, logEvent }

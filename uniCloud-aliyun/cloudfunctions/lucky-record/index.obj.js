@@ -255,6 +255,7 @@ module.exports = {
       created_at: Date.now()
     }
     const res = await db.call(this).collection(LOGS).add(doc)
+    await auth.logEvent(db.call(this), { userId: uid, journeyId: j._id, event: 'record_create', props: { type: code } })
     // 红线判定
     let redline = null
     if (METRICS[code].redline) redline = METRICS[code].redline(v.value)
@@ -316,6 +317,7 @@ module.exports = {
     if (type === 'pregnancy_test' && !['negative', 'faint', 'positive'].includes(value.result)) return auth.fail('PARAM_ERROR', '验孕结果无效')
     if (type === 'mucus' && !['dry', 'sticky', 'creamy', 'eggwhite', 'watery', 'unusual'].includes(value.result)) return auth.fail('PARAM_ERROR', '白带状态无效')
     const res = await db.call(this).collection(EVENTS).add(doc)
+    await auth.logEvent(db.call(this), { userId: uid, journeyId: j._id, event: 'record_create', props: { type: type } })
     // 经期开始：登记周期
     if (type === 'period_start') {
       await db.call(this).collection(CYCLES).add({ user_id: uid, journey_id: j._id, start_date: parseDate(doc.date), end_date: 0, created_at: Date.now() })
@@ -379,6 +381,7 @@ module.exports = {
       side: ['left', 'right'].includes(params.side) ? params.side : '',
       started_at: started, ended_at: 0, amount_ml: 0, created_at: Date.now()
     })
+    await auth.logEvent(db.call(this), { userId: uid, journeyId: j._id, event: 'record_create', props: { type: 'tracker' } })
     return auth.ok({ sessionId: res.id, startedAt: started })
   },
 
@@ -436,6 +439,7 @@ module.exports = {
       user_id: uid, journey_id: j._id, type: 'epds', answers: params.answers,
       score: s.score, self_harm: s.selfHarm, ts: Date.now(), sensitivity: 'strict'
     })
+    await auth.logEvent(db.call(this), { userId: uid, journeyId: j._id, event: 'record_create', props: { type: 'epds' } })
     let action = s.score >= 13 ? '可能存在产后情绪困扰，建议与家人沟通并寻求专业帮助'
       : (s.score >= 10 ? '情绪状态值得关注，多休息、多倾诉，2 周后可复测' : '当前状态平稳，继续保持记录与休息')
     if (s.selfHarm) action = '你此刻的感受很重要：请立即联系信任的家人，或拨打心理援助热线寻求帮助'
@@ -462,6 +466,7 @@ module.exports = {
       media_ids: Array.isArray(params.mediaIds) ? params.mediaIds.slice(0, 9) : [],
       date: params.date || dateOf(ts), ts, client_id: clientId, sensitivity: 'normal', created_at: Date.now()
     })
+    await auth.logEvent(db.call(this), { userId: uid, journeyId: j._id, event: 'record_create', props: { type: 'diary' } })
     return auth.ok({ recordId: res.id })
   },
 

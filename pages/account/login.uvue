@@ -6,15 +6,38 @@
       <text class="logo-sub">从备孕到育儿，一条不断档的生命记录</text>
     </view>
     <view class="card lb-rise-1">
-      <input class="input" v-model="username" placeholder="用户名（4-24 位字母数字）" placeholder-class="ph" />
-      <input class="input" v-model="password" :password="true" placeholder="密码（8-32 位）" placeholder-class="ph" />
-      <button class="btn-primary" hover-class="lb-press" hover-stay-time="120" :disabled="loading" @click="doLogin">{{ loading ? '登录中…' : '登录' }}</button>
-      <view class="row-links">
-        <view class="link-wrap" hover-class="lb-press" hover-stay-time="120">
-          <text class="link" @click="goRegister">没有账号？去注册</text>
+      <view class="tabs">
+        <view class="tab" :class="mode == 'phone' ? 'tab-active' : ''" hover-class="lb-press" hover-stay-time="120" @click="mode = 'phone'">
+          <text class="tab-text" :class="mode == 'phone' ? 'tab-text-active' : ''">手机号登录</text>
         </view>
-        <view class="link-wrap" hover-class="lb-press" hover-stay-time="120">
-          <text class="link" @click="goRecover">忘记密码？</text>
+        <view class="tab" :class="mode == 'password' ? 'tab-active' : ''" hover-class="lb-press" hover-stay-time="120" @click="mode = 'password'">
+          <text class="tab-text" :class="mode == 'password' ? 'tab-text-active' : ''">账号密码</text>
+        </view>
+      </view>
+
+      <view v-if="mode == 'phone'">
+        <input class="input" type="number" v-model="mobile" placeholder="手机号" placeholder-class="ph" />
+        <view class="code-row">
+          <input class="code-input" type="number" v-model="smsCode" placeholder="6 位验证码" placeholder-class="ph" confirm-type="done" @confirm="doLoginSms" />
+          <view class="send-btn" :class="codeLeft > 0 ? 'send-disabled' : ''" hover-class="lb-press" hover-stay-time="120" @click="sendCode">
+            <text class="send-text">{{ codeLeft > 0 ? codeLeft + 's' : (sending ? '发送中…' : '获取验证码') }}</text>
+          </view>
+        </view>
+        <button class="btn-primary" hover-class="lb-press" hover-stay-time="120" :disabled="loading" @click="doLoginSms">{{ loading ? '登录中…' : '登录 / 注册' }}</button>
+        <text class="phone-hint">未注册的手机号将自动创建账号；验证码 5 分钟内有效。</text>
+      </view>
+
+      <view v-if="mode == 'password'">
+        <input class="input" v-model="username" placeholder="用户名（4-24 位字母数字）" placeholder-class="ph" />
+        <input class="input" v-model="password" :password="true" placeholder="密码（8-32 位）" placeholder-class="ph" />
+        <button class="btn-primary" hover-class="lb-press" hover-stay-time="120" :disabled="loading" @click="doLogin">{{ loading ? '登录中…' : '登录' }}</button>
+        <view class="row-links">
+          <view class="link-wrap" hover-class="lb-press" hover-stay-time="120">
+            <text class="link" @click="goRegister">没有账号？去注册</text>
+          </view>
+          <view class="link-wrap" hover-class="lb-press" hover-stay-time="120">
+            <text class="link" @click="goRecover">忘记密码？</text>
+          </view>
         </view>
       </view>
     </view>
@@ -42,19 +65,74 @@
 
 <script setup lang="ts">
   import { ref } from 'vue'
+  import { onUnload } from '@dcloudio/uni-app'
   import { luckyId, applyLoginResult } from '../../utils/request.uts'
   import { themeClass } from '../../store/themeStore.uts'
 
+  const mode = ref<string>('phone')
   const username = ref<string>('')
   const password = ref<string>('')
+  const mobile = ref<string>('')
+  const smsCode = ref<string>('')
   const loading = ref<boolean>(false)
+  const sending = ref<boolean>(false)
+  const codeLeft = ref<number>(0)
   const pendingVisible = ref<boolean>(false)
   const canceling = ref<boolean>(false)
+  let codeTimer = -1
+
+  function startCountdown(seconds: number) {
+    codeLeft.value = seconds
+    if (codeTimer >= 0) clearInterval(codeTimer)
+    codeTimer = setInterval(() => {
+      codeLeft.value = codeLeft.value - 1
+      if (codeLeft.value <= 0 && codeTimer >= 0) { clearInterval(codeTimer); codeTimer = -1 }
+    }, 1000)
+  }
+  onUnload(() => { if (codeTimer >= 0) clearInterval(codeTimer) })
 
   function goRegister() { uni.navigateTo({ url: '/pages/account/register' }) }
   function goRecover() { uni.navigateTo({ url: '/pages/account/recover' }) }
   function goAgreement() { uni.navigateTo({ url: '/pages/me/agreement' }) }
   function goPrivacy() { uni.navigateTo({ url: '/pages/me/privacy-policy' }) }
+  async function sendCode() {
+    if (sending.value || codeLeft.value > 0) return
+    if (!/^1[3-9]\d{9}$/.test(mobile.value.trim())) {
+      uni.showToast({ title: '请输入有效的手机号', icon: 'none' }); return
+    }
+    sending.value = true
+    try {
+      const res = await luckyId('sendSmsCode', { mobile: mobile.value.trim() } as UTSJSONObject)
+      startCountdown(res.getNumber('cooldown')?.toInt() ?? 60)
+      uni.showToast({ title: '验证码已发送', icon: 'none' })
+    } catch (e) {
+      const msg = (e as Error).message
+      uni.showToast({ title: msg, icon: 'none' })
+      // 短信服务未配置时，直接引导到账号密码登录，避免用户卡在死路
+      if (msg.indexOf('短信服务') >= 0 || msg.indexOf('短信') >= 0) mode.value = 'password'
+    } finally {
+      sending.value = false
+    }
+  }
+
+  async function doLoginSms() {
+    if (loading.value) return
+    const m = mobile.value.trim()
+    if (!/^1[3-9]\d{9}$/.test(m)) { uni.showToast({ title: '请输入有效的手机号', icon: 'none' }); return }
+    if (!/^\d{6}$/.test(smsCode.value)) { uni.showToast({ title: '请输入 6 位验证码', icon: 'none' }); return }
+    loading.value = true
+    try {
+      const res = await luckyId('loginBySms', { mobile: m, code: smsCode.value } as UTSJSONObject)
+      applyLoginResult(res)
+      await afterLogin()
+    } catch (e) {
+      const msg = (e as Error).message
+      uni.showToast({ title: msg.indexOf('注销冷静期') >= 0 ? '账号处于注销冷静期，请用账号密码登录撤回' : msg, icon: 'none' })
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function afterLogin() {
     // 直接进首页：首页 onShow 会经 loadCurrentJourney 加载旅程并处理"无旅程→引导"重定向；
     // 此处若先拉取旅程（写全局响应式）再立即 reLaunch，会触发 web 端渲染竞态（见 docs/08 已知限制）
@@ -108,7 +186,18 @@
   .logo-title { font-size: 56rpx; font-weight: bold; color: var(--lb-text-1); }
   .logo-sub { font-size: 24rpx; color: var(--lb-text-2); margin-top: 16rpx; }
   .card { width: 640rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 48rpx 40rpx; }
+  .tabs { flex-direction: row; background-color: var(--lb-fill); border-radius: 28rpx; padding: 6rpx; margin-bottom: 32rpx; }
+  .tab { flex: 1; height: 68rpx; border-radius: 24rpx; align-items: center; justify-content: center; transition: all 160ms ease-out; }
+  .tab-active { background-color: var(--lb-card); box-shadow: 0 4rpx 12rpx rgba(50,36,48,0.06); }
+  .tab-text { font-size: 26rpx; color: var(--lb-text-3); }
+  .tab-text-active { color: var(--lb-text-1); font-weight: bold; }
   .input { height: 96rpx; border-bottom-width: 1px; border-bottom-color: var(--lb-line); font-size: 28rpx; margin-bottom: 32rpx; padding: 0 8rpx; }
+  .code-row { flex-direction: row; align-items: center; margin-bottom: 32rpx; border-bottom-width: 1px; border-bottom-color: var(--lb-line); }
+  .code-input { flex: 1; height: 96rpx; font-size: 28rpx; padding: 0 8rpx; }
+  .send-btn { min-width: 200rpx; height: 64rpx; border-radius: 32rpx; background-color: var(--lb-primary-soft); align-items: center; justify-content: center; margin-bottom: 16rpx; }
+  .send-disabled { opacity: 0.55; }
+  .send-text { font-size: 24rpx; color: var(--lb-primary-text); font-weight: bold; }
+  .phone-hint { font-size: 24rpx; color: var(--lb-text-3); line-height: 38rpx; margin-top: 20rpx; }
   .ph { color: var(--lb-text-3); }
   .btn-primary { background-color: var(--lb-action); color: #FFFFFF; font-size: 32rpx; height: 96rpx; line-height: 96rpx; border-radius: 48rpx; margin-top: 16rpx; transition: all 160ms ease-out; }
   .row-links { align-items: center; margin-top: 32rpx; }

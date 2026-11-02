@@ -1,0 +1,8 @@
+{
+  "appId": "__UNI__1BC2635",
+  "templateId": "<在 DCloud 短信控制台申请的模板 ID>",
+  "smsKey": "<阿里云短信 AccessKeyId（HBuilderX 3.91+ 可留空）>",
+  "smsSecret": "<阿里云短信 AccessKeySecret>",
+  "codeTtlSeconds": 300,
+  "resendSeconds": 60
+}

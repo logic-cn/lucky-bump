@@ -253,6 +253,24 @@
       }
     },
     {
+      "path": "pages/me/journeys",
+      "style": {
+        "navigationBarTitleText": "我的旅程"
+      }
+    },
+    {
+      "path": "pages/me/feedback",
+      "style": {
+        "navigationBarTitleText": "意见反馈"
+      }
+    },
+    {
+      "path": "pages/me/ops",
+      "style": {
+        "navigationBarTitleText": "运营看板"
+      }
+    },
+    {
       "path": "pages/me/privacy",
       "style": {
         "navigationBarTitleText": "隐私与安全"

@@ -158,7 +158,6 @@
   import { luckyReminder } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
-  import { track } from '../../utils/track.uts'
   import { todayDateStr, dateToTs } from '../../utils/recordDate.uts'
   // #ifdef WEB
   import { pickDate } from '../../utils/pickDate.uts'
@@ -386,7 +385,6 @@
         type: kind == 'start' ? 'period_start' : 'period_end',
         date: selectedDate.value, ts: dateToTs(selectedDate.value), value
       } as UTSJSONObject)
-      track('record_create', { type: 'cycle' } as UTSJSONObject)
       uni.setStorageSync('lb_has_record', true)
       uni.showToast({ title: '已记录 ✓', icon: 'success' })
       selectedDate.value = ''

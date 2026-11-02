@@ -73,6 +73,7 @@ module.exports = {
       next_date: String(params.nextDate || '').slice(0, 10),
       created_at: Date.now()
     })
+    await auth.logEvent(db.call(this), { userId: uid, journeyId: j._id, event: 'record_create', props: { type: 'child_health' } })
     return auth.ok({ recordId: res.id, monthAge })
   },
 
@@ -169,6 +170,7 @@ module.exports = {
       report_file_ids: Array.isArray(params.reportFileIds) ? params.reportFileIds.slice(0, 12) : [],
       sensitivity: 'reports', created_at: Date.now()
     })
+    await auth.logEvent(db.call(this), { userId: uid, journeyId: j._id, event: 'record_create', props: { type: 'visit' } })
     // 下次产检时间（医生口径优先）：写入排程
     let nextId = ''
     if (params.nextVisitDate) {

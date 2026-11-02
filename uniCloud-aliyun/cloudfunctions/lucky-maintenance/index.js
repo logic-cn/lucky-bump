@@ -14,7 +14,7 @@ const JOURNEY_COLLECTIONS = [
   'lb-prenatal-visits', 'lb-schedule-items', 'lb-screenings', 'lb-feedings',
   'lb-diaper-changes', 'lb-sleep-sessions', 'lb-growth-samples', 'lb-vaccinations',
   'lb-milestones', 'lb-food-logs', 'lb-medication-logs', 'lb-reminder-rules',
-  'lb-diaries', 'lb-families', 'lb-family-invites'
+  'lb-diaries', 'lb-families', 'lb-family-invites', 'lb-child-health', 'lb-events'
 ]
 
 async function removeWhere(db, collection, where) {
@@ -52,7 +52,11 @@ async function purgeOne(db, uid, now) {
   removed += await removeWhere(db, 'lb-journeys', { user_id: uid })
   removed += await removeWhere(db, 'lb-families', { owner_id: uid })
 
-  // 4) token 与账号
+  // 4) 反馈、短信验证码、token 与账号
+  removed += await removeWhere(db, 'lb-feedback', { user_id: uid })
+  const userRes = await db.collection('uni-id-users').doc(uid).get()
+  const mobile = (userRes.data[0] && userRes.data[0].mobile) || ''
+  if (mobile) removed += await removeWhere(db, 'lb-sms-codes', { phone: mobile })
   removed += await removeWhere(db, 'lb-token', { uid })
   removed += await removeWhere(db, 'uni-id-users', { _id: uid })
 

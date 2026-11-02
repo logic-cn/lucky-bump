@@ -151,6 +151,19 @@
         <view class="dlg-actions"><text class="dlg-btn dlg-btn-ok" @click="reminderVisible = false">知道了</text></view>
       </view>
     </view>
+
+    <!-- 敏感个人信息补同意（老用户 / 协议版本更新时仍可继续浏览，但记录前需同意） -->
+    <view class="mask lb-fade" v-if="consentVisible">
+      <view class="dialog lb-pop">
+        <text class="dlg-title">健康数据使用同意</text>
+        <text class="dlg-content">幸孕记需要处理你的孕产健康数据（属于敏感个人信息）来提供记录、提醒与趋势。请阅读并单独同意《隐私政策》后继续。</text>
+        <text class="dlg-link" hover-class="lb-press" hover-stay-time="120" @click="openPrivacy">查看《隐私政策》</text>
+        <view class="dlg-actions">
+          <text class="dlg-btn dlg-btn-ghost dlg-btn-half" hover-class="lb-press" hover-stay-time="120" @click="consentVisible = false">稍后</text>
+          <text class="dlg-btn dlg-btn-half" hover-class="lb-press" hover-stay-time="120" @click="agreeConsent">{{ consentSaving ? '记录中…' : '同意并继续' }}</text>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -159,12 +172,14 @@
   import { onPageReady } from '../../utils/pageLifecycle.uts'
   import { appState } from '../../store/appStore.uts'
   import { journeyState, weekText, stageText, loadCurrentJourney, loadToday } from '../../store/journeyStore.uts'
-  import { luckyRecord } from '../../utils/request.uts'
+  import { luckyRecord, luckyId } from '../../utils/request.uts'
   import { luckyReminder } from '../../utils/request.uts'
   import { themeClass } from '../../store/themeStore.uts'
   import { weeklyFocus } from '../../utils/knowledge.uts'
   import { isQuietNow } from '../../utils/quiet.uts'
   import { track } from '../../utils/track.uts'
+  import { todayDateStr } from '../../utils/recordDate.uts'
+  import { PRIVACY_VERSION } from '../../utils/legal.uts'
   import { recentUrls, rememberRecent, recentRank } from '../../utils/recentGrid.uts'
   import { flushOffline } from '../../utils/offlineQueue.uts'
   import { notifyToday } from '../../utils/webNotify.uts'
@@ -285,6 +300,7 @@
     uni.setStorageSync('lb_family_tip_dismissed', true)
   }
   function openTodo(t: UTSJSONObject) {
+    track('reminder_open', { source: t.getString('source') ?? '' } as UTSJSONObject)
     const kind = t.getString('kind') ?? ''
     track('reminder_done', { kind: kind } as UTSJSONObject)
     if (kind.indexOf('prenatal') == 0) uni.navigateTo({ url: '/pages/care/schedule' })
@@ -351,6 +367,14 @@
       if (j == null) { uni.reLaunch({ url: '/pages/onboarding/onboarding' }); return }
       const res = await loadToday()
       todos.value = res.getArray<UTSJSONObject>('todos') ?? []
+      if (todos.value.length > 0) {
+        const dayKey = todayDateStr()
+        const lastKey = uni.getStorageSync('lb_reminder_track_date') as string
+        if (lastKey != dayKey) {
+          track('reminder_due', { count: todos.value.length } as UTSJSONObject)
+          uni.setStorageSync('lb_reminder_track_date', dayKey)
+        }
+      }
       // 浏览器通知开启时，每日首次打开推送一条待办摘要（免打扰时段不推送）
       if (todos.value.length > 0 && !isQuietNow()) {
         const first = todos.value[0].getString('title') ?? ''
@@ -442,7 +466,39 @@
     }
   }
 
+  const consentVisible = ref<boolean>(false)
+  const consentSaving = ref<boolean>(false)
+
+  function openPrivacy() { uni.navigateTo({ url: '/pages/me/privacy-policy' }) }
+
+  async function checkConsent() {
+    if (appState.token.length == 0) return
+    try {
+      const p = await luckyId('getProfile', {} as UTSJSONObject)
+      const info = p.getJSON('userInfo')
+      if (info == null) return
+      const at = info.getNumber('sensitiveConsentAt')?.toInt() ?? 0
+      const ver = info.getString('sensitiveConsentVersion') ?? ''
+      consentVisible.value = at == 0 || ver != PRIVACY_VERSION
+    } catch (e) { /* 网络失败不阻断浏览，隐私页可补同意 */ }
+  }
+
+  async function agreeConsent() {
+    if (consentSaving.value) return
+    consentSaving.value = true
+    try {
+      await luckyId('recordConsent', { sensitiveVersion: PRIVACY_VERSION, privacyVersion: PRIVACY_VERSION } as UTSJSONObject)
+      consentVisible.value = false
+      uni.showToast({ title: '已同意，继续使用', icon: 'none' })
+    } catch (e) {
+      uni.showToast({ title: (e as Error).message, icon: 'none' })
+    } finally {
+      consentSaving.value = false
+    }
+  }
+
   onPageReady(() => {
+    checkConsent()
     recent.value = recentUrls()
     load()
     // 联网后自动补写离线记录
@@ -528,6 +584,9 @@
   .dlg-actions { flex-direction: row; justify-content: center; margin-top: 36rpx; }
   .dlg-btn { width: 300rpx; height: 80rpx; line-height: 80rpx; text-align: center; font-size: 29rpx; color: #FFFFFF; background-color: var(--lb-action); border-radius: 40rpx; }
   .dlg-btn-ok { color: #FFFFFF; background-color: var(--lb-action); }
+  .dlg-btn-ghost { background-color: var(--lb-fill); color: var(--lb-text-2); }
+  .dlg-btn-half { width: 220rpx; margin: 0 8rpx; }
+  .dlg-link { font-size: 26rpx; color: var(--lb-primary-text); margin-top: 16rpx; text-align: center; }
 
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }

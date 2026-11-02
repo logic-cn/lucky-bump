@@ -517,6 +517,15 @@ def icon_water(c: Canvas, col):
         c.circle(94 * SS4 + 16 * SS4 * math.cos(ang), 78 * SS4 + 18 * SS4 * math.sin(ang), lw / 2, col)
     c.line(52 * SS4, 66 * SS4, 82 * SS4, 66 * SS4, 6 * SS4, col)
 
+def icon_journey(c: Canvas, col):
+    """旅程：蜿蜒路径 + 三个节点。"""
+    lw = 8.0 * SS4
+    c.quad((30 * SS4, 112 * SS4), (66 * SS4, 96 * SS4), (78 * SS4, 70 * SS4), lw, col)
+    c.quad((78 * SS4, 70 * SS4), (92 * SS4, 40 * SS4), (114 * SS4, 34 * SS4), lw, col)
+    c.circle(30 * SS4, 112 * SS4, 9 * SS4, col)
+    c.circle(78 * SS4, 70 * SS4, 9 * SS4, col)
+    c.circle(114 * SS4, 34 * SS4, 11 * SS4, col)
+
 def icon_add(c: Canvas, col):
     """加号。"""
     lw = 9.0 * SS4
@@ -580,7 +589,7 @@ ICONS = {
     "settings": icon_settings, "chart": icon_chart, "history": icon_history,
     "export": icon_export, "report": icon_report, "camera": icon_camera, "pill": icon_pill,
     "tip": icon_tip, "warn": icon_warn, "add": icon_add, "bag": icon_bag, "bowl": icon_bowl,
-    "water": icon_water,
+    "water": icon_water, "journey": icon_journey,
     "info": icon_info, "strip-neg": icon_strip_neg, "strip-weak": icon_strip_weak,
     "strip-strong": icon_strip_strong,
     "warn-danger": (icon_warn, (229, 72, 77, 255)),  # 红线专用红（与 --lb-danger 一致）

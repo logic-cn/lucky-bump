@@ -1,0 +1,131 @@
+<template>
+  <view class="page" :class="themeClass()">
+    <lbc-error v-if="loadFailed" :message="errorMsg" @retry="load" />
+
+    <view class="card lb-rise" v-if="!loadFailed && !denied">
+      <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">运营看板（内部）</text></view>
+      <text class="meta">生成于 {{ generatedAt }} · 数据来自 lb-events 与业务表计数</text>
+      <view class="stat-wrap">
+        <view class="stat" v-for="(s, i) in stats" :key="i">
+          <text class="stat-num">{{ s.getString('value') }}</text>
+          <text class="stat-cap">{{ s.getString('label') }}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="card lb-rise-1" v-if="!loadFailed && !denied && types.length > 0">
+      <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">近 30 天记录类型</text></view>
+      <view class="type-row" v-for="(t, i) in types" :key="i">
+        <text class="type-name">{{ typeLabel(t.getString('type') ?? '') }}</text>
+        <view class="type-bar"><view class="type-fill" :style="{ width: typePct(t.getNumber('count')?.toInt() ?? 0) + '%' }" /></view>
+        <text class="type-count">{{ t.getNumber('count')?.toInt() }}</text>
+      </view>
+    </view>
+
+    <view class="card lb-rise-2" v-if="!loadFailed && !denied && funnel.length > 0">
+      <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">激活漏斗（近似）</text></view>
+      <view class="funnel-row" v-for="(f, i) in funnel" :key="i">
+        <text class="funnel-label">{{ f.getString('label') }}</text>
+        <text class="funnel-value">{{ f.getNumber('value')?.toInt() }}</text>
+      </view>
+      <text class="meta">口径：完成建档事件数、记录事件数；两者交集暂取保守下界。后续应改为按用户集合求交。</text>
+    </view>
+
+    <lbc-empty v-if="!loadFailed && denied" title="没有访问权限" hint="运营看板仅对配置在 lucky-ops 管理员名单内的账号开放" />
+  </view>
+</template>
+
+<script setup lang="ts">
+  import { ref } from 'vue'
+  import { onPageReady } from '../../utils/pageLifecycle.uts'
+  import { callCloud, luckyId } from '../../utils/request.uts'
+  import { themeClass } from '../../store/themeStore.uts'
+
+  const stats = ref<UTSJSONObject[]>([])
+  const types = ref<UTSJSONObject[]>([])
+  const funnel = ref<UTSJSONObject[]>([])
+  const generatedAt = ref<string>('')
+  const denied = ref<boolean>(false)
+  const loadFailed = ref<boolean>(false)
+  const errorMsg = ref<string>('')
+
+  const TYPE_LABELS: Map<string, string> = new Map([
+    ['weight', '体重'], ['blood_pressure', '血压'], ['blood_glucose', '血糖'],
+    ['symptom', '症状'], ['mood', '心情'], ['fetal_movement', '胎动'],
+    ['cycle', '经期/周期'], ['diary', '日记'], ['epds', '情绪自评'],
+    ['feeding', '喂养'], ['diaper', '尿布'], ['sleep', '睡眠'],
+    ['growth', '成长'], ['vaccine', '疫苗'], ['milestone', '里程碑'],
+    ['food', '辅食'], ['medication', '用药'], ['visit', '产检'],
+    ['child_health', '儿保'], ['photo', '照片'], ['tracker', '计时器']
+  ])
+  function typeLabel(t: string): string { return TYPE_LABELS.get(t) ?? t }
+
+  let maxCount = 1
+  function typePct(n: number): number { return Math.max(4, Math.round(n * 100 / maxCount)) }
+
+  async function load() {
+    try {
+      const p = await luckyId('getProfile', {} as UTSJSONObject)
+      const info = p.getJSON('userInfo')
+      if (info == null || info.getBoolean('opsAdmin') != true) {
+        denied.value = true
+        loadFailed.value = false
+        return
+      }
+      const r = await callCloud('lucky-analytics', 'opsSummary', {} as UTSJSONObject)
+      stats.value = r.getArray<UTSJSONObject>('stats') ?? []
+      types.value = r.getArray<UTSJSONObject>('recordTypes') ?? []
+      funnel.value = r.getArray<UTSJSONObject>('funnel') ?? []
+      const ts = r.getNumber('generatedAt')?.toInt() ?? Date.now()
+      generatedAt.value = new Date(ts).toISOString().slice(0, 16).replace('T', ' ')
+      maxCount = 1
+      for (let i = 0; i < types.value.length; i++) {
+        const c = types.value[i].getNumber('count')?.toInt() ?? 0
+        if (c > maxCount) maxCount = c
+      }
+      denied.value = false
+      loadFailed.value = false
+    } catch (e) {
+      const msg = (e as Error).message
+      if (msg.indexOf('权限') >= 0) { denied.value = true; loadFailed.value = false; return }
+      loadFailed.value = true
+      errorMsg.value = msg
+    }
+  }
+
+  onPageReady(() => { load() })
+</script>
+
+<style>
+  @import '../../theme.scss';
+  .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
+  .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 36rpx; margin-top: 24rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
+  .card-head { flex-direction: row; align-items: center; margin-bottom: 20rpx; }
+  .title-bar { width: 8rpx; height: 30rpx; border-radius: 4rpx; background-image: linear-gradient(180deg, var(--lb-grad-1), var(--lb-grad-2)); margin-right: 14rpx; }
+  .card-title { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); }
+  .card-title-flush { margin-bottom: 0; }
+  .meta { font-size: 24rpx; color: var(--lb-text-3); line-height: 38rpx; margin-top: 8rpx; }
+  .stat-wrap { flex-direction: row; flex-wrap: wrap; margin-top: 8rpx; }
+  .stat { width: 50%; padding: 14rpx 0; }
+  .stat-num { font-size: 36rpx; font-weight: bold; color: var(--lb-primary-text); }
+  .stat-cap { font-size: 24rpx; color: var(--lb-text-3); margin-top: 4rpx; }
+  .type-row { flex-direction: row; align-items: center; padding: 12rpx 0; }
+  .type-name { width: 140rpx; font-size: 24rpx; color: var(--lb-text-2); }
+  .type-bar { flex: 1; height: 14rpx; background-color: var(--lb-fill); border-radius: 8rpx; margin: 0 16rpx; overflow: hidden; }
+  .type-fill { height: 14rpx; border-radius: 8rpx; background-color: var(--lb-primary); }
+  .type-count { width: 80rpx; text-align: right; font-size: 24rpx; color: var(--lb-text-3); }
+  .funnel-row { flex-direction: row; justify-content: space-between; padding: 14rpx 0; border-bottom-width: 1px; border-bottom-color: var(--lb-line); }
+  .funnel-label { font-size: 26rpx; color: var(--lb-text-2); }
+  .funnel-value { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); }
+  @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+  @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
+  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) forwards; opacity: 0; transform: scale(0.92); }
+  .lb-fade { animation: lb-fade 200ms ease-out forwards; opacity: 0; }
+  .lb-press { opacity: 0.72; transform: scale(0.98); }
+</style>

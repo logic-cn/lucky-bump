@@ -233,6 +233,7 @@ module.exports = {
     const dbase = db.call(this)
     const now = Date.now()
     const type = params.type === 'annual' ? 'annual' : (params.type === 'stage' ? 'stage' : 'cycle')
+    await auth.logEvent(dbase, { userId: uid, journeyId: j._id, event: 'report_view', props: { type } })
     const stats = []
     const lines = []
 
@@ -365,7 +366,7 @@ module.exports = {
     if (!journey) return auth.fail('NOT_FOUND', '旅程不存在')
     if (role !== 'owner') return auth.fail('NOT_FOUND', '仅旅程主人可导出全量数据')
     const j = journey
-    const collections = ['lb-journeys', 'lb-babies', 'lb-cycles', 'lb-cycle-events', 'lb-daily-logs', 'lb-tracker-sessions', 'lb-prenatal-visits', 'lb-schedule-items', 'lb-screenings', 'lb-feedings', 'lb-diaper-changes', 'lb-sleep-sessions', 'lb-growth-samples', 'lb-vaccinations', 'lb-milestones', 'lb-food-logs', 'lb-medication-logs', 'lb-child-health', 'lb-reminder-rules']
+    const collections = ['lb-journeys', 'lb-babies', 'lb-cycles', 'lb-cycle-events', 'lb-daily-logs', 'lb-tracker-sessions', 'lb-prenatal-visits', 'lb-schedule-items', 'lb-screenings', 'lb-feedings', 'lb-diaper-changes', 'lb-sleep-sessions', 'lb-growth-samples', 'lb-vaccinations', 'lb-milestones', 'lb-food-logs', 'lb-medication-logs', 'lb-child-health', 'lb-reminder-rules', 'lb-feedback', 'lb-events']
     const out = {}
     for (const c of collections) {
       const r = await db.call(this).collection(c).where({ journey_id: j._id }).limit(5000).get()

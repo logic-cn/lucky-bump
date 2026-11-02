@@ -9,6 +9,7 @@
     </view>
 
     <view class="card lb-rise-1">
+      <view class="row" hover-class="lb-press" hover-stay-time="120" @click="go('/pages/me/journeys')"><image class="row-icon" src="/static/icons/journey.png" mode="aspectFit" /><text class="row-text">我的旅程</text><text class="arrow">›</text></view>
       <view class="row" hover-class="lb-press" hover-stay-time="120" @click="go('/pages/baby/baby-home')"><image class="row-icon" src="/static/icons/baby.png" mode="aspectFit" /><text class="row-text">宝宝档案</text><text class="arrow">›</text></view>
       <view class="row" hover-class="lb-press" hover-stay-time="120" @click="go('/pages/me/family')"><image class="row-icon" src="/static/icons/family.png" mode="aspectFit" /><text class="row-text">家庭组（邀请爸爸）</text><text class="arrow">›</text></view>
       <view class="row" hover-class="lb-press" hover-stay-time="120" @click="go('/pages/me/privacy')"><image class="row-icon" src="/static/icons/privacy.png" mode="aspectFit" /><text class="row-text">隐私与安全</text><text class="arrow">›</text></view>

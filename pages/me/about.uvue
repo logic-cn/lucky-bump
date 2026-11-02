@@ -2,7 +2,7 @@
   <view class="page" :class="themeClass()">
     <view class="card lb-rise">
       <text class="title">幸孕记 Lucky Bump</text>
-      <text class="ver">v1.0.0 · 从备孕到育儿，一条不断档的生命记录</text>
+      <text class="ver">v{{ appVersion }} · 从备孕到育儿，一条不断档的生命记录</text>
     </view>
     <view class="card lb-rise-1">
       <text class="card-title">医疗边界声明</text>
@@ -20,6 +20,12 @@
     </view>
 
     <view class="card lb-rise-3">
+      <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">联系与反馈</text></view>
+      <view class="nav-row" hover-class="lb-press" hover-stay-time="120" @click="go('/pages/me/feedback')"><text class="nav-text">意见反馈</text><text class="nav-arrow">›</text></view>
+      <text class="body">使用问题、内容纠错与隐私请求，都可以通过应用内反馈提交；我们会在合理期限内处理。紧急医疗情况请直接就医或拨打急救电话。</text>
+    </view>
+
+    <view class="card lb-rise-3">
       <text class="card-title">开源与致谢</text>
       <text class="body">基于 uni-app-x 与 uniCloud 构建；登录体系兼容 uni-id 生态；疫苗程序表依据国家免疫规划（2021 版）；产检排程参考国内孕前和孕期保健指南；成长曲线参照 WHO 儿童生长标准。</text>
     </view>
@@ -29,6 +35,8 @@
 <script setup lang="ts">
   // 纯静态页面，无状态与逻辑；仅接主题 class 用于暗色模式
   import { themeClass } from '../../store/themeStore.uts'
+  import { APP_VERSION } from '../../utils/legal.uts'
+  const appVersion = APP_VERSION
 
   function go(url: string) { uni.navigateTo({ url }) }
 </script>
@@ -37,6 +45,8 @@
   @import '../../theme.scss';
   .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
   .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 32rpx; margin-top: 24rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
+  .card-head { flex-direction: row; align-items: center; margin-bottom: 16rpx; }
+  .title-bar { width: 8rpx; height: 30rpx; border-radius: 4rpx; background-image: linear-gradient(180deg, var(--lb-grad-1), var(--lb-grad-2)); margin-right: 14rpx; }
   .title { font-size: 34rpx; font-weight: bold; color: var(--lb-text-1); align-self: center; }
   .ver { font-size: 24rpx; color: var(--lb-text-3); margin-top: 12rpx; align-self: center; }
   .card-title { font-size: 28rpx; font-weight: bold; color: var(--lb-text-1); margin-bottom: 16rpx; }

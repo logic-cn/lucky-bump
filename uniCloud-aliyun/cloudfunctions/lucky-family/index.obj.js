@@ -87,6 +87,7 @@ module.exports = {
       code, family_id: fam._id, journey_id: j._id, role: ROLES.includes(params.role) ? params.role : 'recorder',
       used: false, expires_at: Date.now() + 3 * DAY, created_at: Date.now()
     })
+    await auth.logEvent(db.call(this), { userId: uid, journeyId: j._id, event: 'family_invite', props: { role: ROLES.includes(params.role) ? params.role : 'recorder' } })
     return auth.ok({ code, expiresInDays: 3 })
   },
 
@@ -102,6 +103,7 @@ module.exports = {
     if (dup.data.length > 0) return auth.fail('STATE_ERROR', '你已在家庭组中')
     await db.call(this).collection('lb-family-invites').doc(inv._id).update({ used: true })
     await db.call(this).collection('lb-family-members').add({ family_id: inv.family_id, user_id: uid, role: inv.role, nickname: String(params.nickname || '家人').slice(0, 12), joined_at: Date.now() })
+    await auth.logEvent(db.call(this), { userId: uid, journeyId: inv.journey_id, event: 'family_join', props: { role: inv.role } })
     return auth.ok({ journeyId: inv.journey_id, role: inv.role })
   },
 
