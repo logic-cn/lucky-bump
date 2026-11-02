@@ -49,7 +49,7 @@
   import { luckyRecord } from '../../utils/request.uts'
   import { journeyState } from '../../store/journeyStore.uts'
   import { themeClass } from '../../store/themeStore.uts'
-  import { todayDateStr, dateToTs } from '../../utils/recordDate.uts'
+  import { todayDateStr } from '../../utils/recordDate.uts'
   import { newClientId, isNetworkError, enqueueRecord } from '../../utils/offlineQueue.uts'
   import { track } from '../../utils/track.uts'
 
@@ -139,7 +139,7 @@
   .hero-title { font-size: 28rpx; color: rgba(255,255,255,0.92); font-weight: bold; }
   .hero-goal { font-size: 24rpx; color: rgba(255,255,255,0.86); }
   .hero-num { font-size: 72rpx; font-weight: bold; color: var(--lb-white); margin-top: 12rpx; }
-  .hero-num-row { flex-direction: row; align-items: baseline; }
+  .hero-num-row { flex-direction: row; align-items: center; }
   .hero-unit { font-size: 28rpx; font-weight: normal; color: var(--lb-white); }
   .bar { height: 12rpx; background-color: rgba(255,255,255,0.28); border-radius: 8rpx; margin-top: 16rpx; overflow: hidden; }
   .bar-fill { height: 12rpx; border-radius: 8rpx; background-color: var(--lb-white); }

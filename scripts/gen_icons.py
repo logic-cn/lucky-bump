@@ -507,6 +507,16 @@ def icon_warn(c: Canvas, col):
     c.line(72 * SS4, 58 * SS4, 72 * SS4, 84 * SS4, 8 * SS4, col)
     c.circle(72 * SS4, 98 * SS4, 4.5 * SS4, col)
 
+def icon_water(c: Canvas, col):
+    """饮水：水杯 + 杯柄。"""
+    lw = 9.0 * SS4
+    round_rect_outline(c, 40 * SS4, 40 * SS4, 94 * SS4, 118 * SS4, 16 * SS4, lw, col)
+    steps = 120
+    for i in range(steps + 1):
+        ang = -math.pi / 2 + i / steps * math.pi
+        c.circle(94 * SS4 + 16 * SS4 * math.cos(ang), 78 * SS4 + 18 * SS4 * math.sin(ang), lw / 2, col)
+    c.line(52 * SS4, 66 * SS4, 82 * SS4, 66 * SS4, 6 * SS4, col)
+
 def icon_add(c: Canvas, col):
     """加号。"""
     lw = 9.0 * SS4
@@ -570,6 +580,7 @@ ICONS = {
     "settings": icon_settings, "chart": icon_chart, "history": icon_history,
     "export": icon_export, "report": icon_report, "camera": icon_camera, "pill": icon_pill,
     "tip": icon_tip, "warn": icon_warn, "add": icon_add, "bag": icon_bag, "bowl": icon_bowl,
+    "water": icon_water,
     "info": icon_info, "strip-neg": icon_strip_neg, "strip-weak": icon_strip_weak,
     "strip-strong": icon_strip_strong,
     "warn-danger": (icon_warn, (229, 72, 77, 255)),  # 红线专用红（与 --lb-danger 一致）

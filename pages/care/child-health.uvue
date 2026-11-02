@@ -57,7 +57,7 @@
             <text class="rec-date">{{ r.getString('date') }}</text>
             <text class="rec-age">{{ r.getNumber('month_age')?.toInt() }} 月龄</text>
           </view>
-          <text class="rec-metric">体重 {{ fmt(r.getNumber('weight_kg')) }}kg · 身高 {{ fmt(r.getNumber('height_cm')) }}cm · 头围 {{ fmt(r.getNumber('head_cm')) }}cm</text>
+          <text class="rec-metric">体重 {{ fmt(r.getNumber('weight_kg') ?? 0) }}kg · 身高 {{ fmt(r.getNumber('height_cm') ?? 0) }}cm · 头围 {{ fmt(r.getNumber('head_cm') ?? 0) }}cm</text>
           <text class="rec-note" v-if="(r.getString('conclusion') ?? '').length > 0">结论：{{ r.getString('conclusion') }}</text>
           <text class="rec-note" v-if="(r.getString('advice') ?? '').length > 0">建议：{{ r.getString('advice') }}</text>
           <text class="rec-next" v-if="(r.getString('next_date') ?? '').length > 0">下次体检：{{ r.getString('next_date') }}</text>
@@ -99,8 +99,8 @@
   const loadFailed = ref<boolean>(false)
   const errorMsg = ref<string>('')
 
-  function fmt(v: number | null): string {
-    if (v == null || v <= 0) return '—'
+  function fmt(v: number): string {
+    if (v <= 0) return '—'
     return `${Math.round(v * 10) / 10}`
   }
 

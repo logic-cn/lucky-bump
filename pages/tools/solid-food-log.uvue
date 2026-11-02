@@ -107,13 +107,16 @@
   async function ensureBaby(): Promise<boolean> {
     const stored = uni.getStorageSync('current_baby_id') as string
     babyId.value = stored ?? ''
-    if (babyId.value.length == 0) {
-      const res = await luckyJourney('listBabies', { journeyId: journeyState.journeyId } as UTSJSONObject)
-      const babies = res.getArray<UTSJSONObject>('babies') ?? []
-      if (babies.length > 0) {
-        babyId.value = babies[0].getString('_id') ?? ''
-        uni.setStorageSync('current_baby_id', babyId.value)
-      }
+    const res = await luckyJourney('listBabies', { journeyId: journeyState.journeyId } as UTSJSONObject)
+    const babies = res.getArray<UTSJSONObject>('babies') ?? []
+    if (babies.length == 0) return false
+    let found = false
+    for (let i = 0; i < babies.length; i++) {
+      if ((babies[i].getString('_id') ?? '') == babyId.value) found = true
+    }
+    if (!found) {
+      babyId.value = babies[0].getString('_id') ?? ''
+      uni.setStorageSync('current_baby_id', babyId.value)
     }
     return babyId.value.length > 0
   }

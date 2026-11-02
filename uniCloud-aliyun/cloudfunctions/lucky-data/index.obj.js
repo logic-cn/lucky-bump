@@ -38,6 +38,9 @@ const CODE_LABELS = {
 }
 function codeLabel(code) { return CODE_LABELS[code] || code }
 
+const SYMPTOM_LABELS = { cramp: '痛经', backache: '腰酸', headache: '头痛', mood: '情绪波动' }
+function symptomLabel(code) { return SYMPTOM_LABELS[code] || code }
+
 /** 曲线主数值提取 */
 function primaryOf(code, value) {  if (!value) return null
   switch (code) {
@@ -266,7 +269,7 @@ module.exports = {
       stats.push({ label: '最短 / 最长', value: lens.length > 0 ? `${shortest} / ${longest} 天` : '—' })
       stats.push({ label: '近 90 天记录', value: `${logs90} 条` })
       lines.push(starts.length >= 2 ? `你的周期${regular ? '整体规律' : '有一定波动'}，近 6 个周期平均 ${avg} 天。` : '再记录 1 个完整周期，就能看到周期规律了。')
-      if (symPairs.length > 0) lines.push(`经期最常见的陪伴是：${symPairs.map(p => `${p[0]}（${p[1]} 次）`).join('、')}。`)
+      if (symPairs.length > 0) lines.push(`经期最常见的陪伴是：${symPairs.map(p => `${symptomLabel(p[0])}（${p[1]} 次）`).join('、')}。`)
       lines.push('预测会随着记录增多而收敛；如果周期持续短于 21 天或长于 35 天，建议带着这份记录就医。')
       return auth.ok({
         type, title: '周期报告', subtitle: lastStart.length > 0 ? `最近一次经期开始 ${lastStart}` : '还没有经期记录',
@@ -328,25 +331,27 @@ module.exports = {
     const topCodes = Object.keys(codeCount).map(k => [k, codeCount[k]]).sort((a, b) => b[1] - a[1]).slice(0, 3)
 
     const msRes = await dbase.collection('lb-milestones').where({ journey_id: j._id }).limit(200).get()
+    const msYear = msRes.data.filter(m => m.achieved_date >= since)
     const photoRes = await dbase.collection('lb-album').where({ journey_id: j._id }).limit(1000).get()
+    const photosYear = photoRes.data.filter(x => x.ts >= since)
     const foodRes = await dbase.collection('lb-food-logs').where({ journey_id: j._id }).limit(1000).get()
     const medRes = await dbase.collection('lb-medication-logs').where({ journey_id: j._id }).limit(1000).get()
     const feedRes = await dbase.collection('lb-feedings').where({ journey_id: j._id }).limit(5000).get()
     const feeds = feedRes.data.filter(x => x.ts >= since).length
     const triedFoods = [...new Set(foodRes.data.map(x => x.name))].length
     const anchor = j.lmp_date || j.delivery_date || j.created_at || now
-    const journeyDays = Math.max(1, Math.floor((now - anchor) / DAY))
+    const journeyDays = Math.min(365, Math.max(1, Math.floor((now - anchor) / DAY)))
 
     stats.push({ label: '记录天数', value: `${daySet.size} 天` })
     stats.push({ label: '总记录', value: `${logs.length} 条` })
     stats.push({ label: '喂养记录', value: `${feeds} 次` })
-    stats.push({ label: '成长里程碑', value: `${msRes.data.length} 个` })
-    stats.push({ label: '照片', value: `${photoRes.data.length} 张` })
+    stats.push({ label: '成长里程碑', value: `${msYear.length} 个` })
+    stats.push({ label: '照片', value: `${photosYear.length} 张` })
     stats.push({ label: '尝试食物', value: `${triedFoods} 种` })
 
-    lines.push(`这一年，你在 ${journeyDays} 天里留下了 ${logs.length} 条记录、${photoRes.data.length} 张照片。`)
+    lines.push(`这一年，你在 ${journeyDays} 天里留下了 ${logs.length} 条记录、${photosYear.length} 张照片。`)
     if (topCodes.length > 0) lines.push(`记录最多的是：${topCodes.map(p => `${codeLabel(p[0])}（${p[1]} 次）`).join('、')}。`)
-    if (msRes.data.length > 0) lines.push(`宝宝达成了 ${msRes.data.length} 个成长里程碑，每一个"第一次"都被记住了。`)
+    if (msYear.length > 0) lines.push(`宝宝达成了 ${msYear.length} 个成长里程碑，每一个"第一次"都被记住了。`)
     if (triedFoods > 0) lines.push(`一起尝试了 ${triedFoods} 种食物，记录让过敏排查有据可查。`)
     if (medRes.data.length > 0) lines.push(`记录了 ${medRes.data.length} 次用药，就诊回溯更从容。`)
     lines.push('数据属于你：可随时导出、可彻底删除，也可以打印成一份给医生看。')
