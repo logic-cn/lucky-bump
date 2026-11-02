@@ -1,13 +1,12 @@
 {
   "required": [
-    "uid",
     "event",
     "ts"
   ],
   "properties": {
     "uid": {
       "bsonType": "string",
-      "title": "用户"
+      "title": "用户（旧字段，兼容）"
     },
     "journey_id": {
       "bsonType": "string",
@@ -22,7 +21,14 @@
         "record_create",
         "reminder_done",
         "export_done",
-        "family_invite"
+        "family_invite",
+        "family_join",
+        "report_view",
+        "report_share",
+        "reminder_due",
+        "reminder_open",
+        "journey_switch",
+        "feedback_submit"
       ]
     },
     "props": {
@@ -36,6 +42,10 @@
     "ts": {
       "bsonType": "long",
       "title": "时间戳"
+    },
+    "user_id": {
+      "bsonType": "string",
+      "title": "用户"
     }
   },
   "permission": {

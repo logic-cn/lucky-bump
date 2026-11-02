@@ -2,7 +2,7 @@
   <view class="page" :class="themeClass()">
     <view class="card lb-rise">
       <text class="title">幸孕记隐私政策</text>
-      <text class="meta">版本：{{ privacyVersion }} · 生效日期 {{ effectiveDate }} · 上线前需法务复核</text>
+      <text class="meta">版本：{{ privacyVersion }} · 生效日期 {{ effectiveDate }}</text>
 
       <text class="h">1. 我们收集什么</text>
       <text class="p">账号信息：用户名、昵称、密码哈希；健康记录：孕周与日期、体重、血压、血糖、症状、胎动、宫缩、产检、喂养、尿布、睡眠、成长、疫苗与日记；设备与日志：用于登录安全与故障排查的必要信息。同房、验孕、情绪自评属敏感信息，默认仅本人可见。</text>

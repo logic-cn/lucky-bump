@@ -1,0 +1,30 @@
+[
+  {
+    "IndexName": "uniq_family_user",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "family_id",
+          "Direction": "1"
+        },
+        {
+          "Name": "user_id",
+          "Direction": "1"
+        }
+      ],
+      "MgoIsUnique": true
+    }
+  },
+  {
+    "IndexName": "idx_user",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "user_id",
+          "Direction": "1"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]

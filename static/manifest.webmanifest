@@ -7,12 +7,18 @@
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#F8F4F5",
-  "theme_color": "#E4537F",
+  "theme_color": "#BE2F5C",
   "lang": "zh-CN",
   "icons": [
     {
       "src": "/static/icon.png",
       "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/mark.png",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     }
@@ -22,19 +28,34 @@
       "name": "记录体重",
       "short_name": "体重",
       "url": "/#/pages/record/weight",
-      "icons": [{ "src": "/static/icon.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "/static/icon.png",
+          "sizes": "192x192"
+        }
+      ]
     },
     {
       "name": "写日记",
       "short_name": "日记",
       "url": "/#/pages/record/diary",
-      "icons": [{ "src": "/static/icon.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "/static/icon.png",
+          "sizes": "192x192"
+        }
+      ]
     },
     {
       "name": "经期日历",
       "short_name": "经期",
       "url": "/#/pages/record/cycle",
-      "icons": [{ "src": "/static/icon.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "/static/icon.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ]
 }

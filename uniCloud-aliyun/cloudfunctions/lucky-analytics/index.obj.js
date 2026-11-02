@@ -122,5 +122,36 @@ module.exports = {
       { label: '两者都完成（下界）', value: activated }
     ]
     return auth.ok({ stats, recordTypes: typeRows, funnel, generatedAt: now })
+  },
+
+  /** 待处理反馈（管理员）：内容、联系方式、版本与平台，最多 100 条 */
+  async listFeedback() {
+    const uid = await requireUser.call(this)
+    if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
+    const ops = auth.readConfig('lucky-ops')
+    const admins = Array.isArray(ops.adminUserIds) ? ops.adminUserIds : []
+    if (admins.indexOf(uid) < 0) return auth.fail('PERMISSION_DENIED', '仅运营管理员可查看')
+    const res = await db.call(this).collection('lb-feedback').where({ status: 'open' }).orderBy('created_at', 'desc').limit(100).get()
+    const items = res.data.map(f => ({
+      _id: f._id, content: f.content, contact: f.contact || '',
+      appVersion: f.app_version || '', platform: f.platform || '',
+      createdAt: f.created_at || 0
+    }))
+    return auth.ok({ items })
+  },
+
+  /** 标记反馈已处理（管理员） */
+  async resolveFeedback(params = {}) {
+    const uid = await requireUser.call(this)
+    if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
+    const ops = auth.readConfig('lucky-ops')
+    const admins = Array.isArray(ops.adminUserIds) ? ops.adminUserIds : []
+    if (admins.indexOf(uid) < 0) return auth.fail('PERMISSION_DENIED', '仅运营管理员可操作')
+    const id = String(params.feedbackId || '')
+    if (id.length == 0) return auth.fail('PARAM_ERROR', '缺少反馈 ID')
+    const r = await db.call(this).collection('lb-feedback').doc(id).get()
+    if (!r.data[0]) return auth.fail('NOT_FOUND', '反馈不存在')
+    await db.call(this).collection('lb-feedback').doc(id).update({ status: 'done', resolved_at: Date.now() })
+    return auth.ok({ feedbackId: id })
   }
 }

@@ -1,0 +1,34 @@
+[
+  {
+    "IndexName": "idx_journey_ts",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "journey_id",
+          "Direction": "1"
+        },
+        {
+          "Name": "ts",
+          "Direction": "-1"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  },
+  {
+    "IndexName": "idx_baby_ts",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "baby_id",
+          "Direction": "1"
+        },
+        {
+          "Name": "ts",
+          "Direction": "-1"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]

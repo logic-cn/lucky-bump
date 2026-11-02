@@ -1,0 +1,22 @@
+[
+  {
+    "IndexName": "idx_journey_type_ts",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "journey_id",
+          "Direction": "1"
+        },
+        {
+          "Name": "type",
+          "Direction": "1"
+        },
+        {
+          "Name": "ts",
+          "Direction": "-1"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]

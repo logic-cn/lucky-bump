@@ -14,7 +14,8 @@ const JOURNEY_COLLECTIONS = [
   'lb-prenatal-visits', 'lb-schedule-items', 'lb-screenings', 'lb-feedings',
   'lb-diaper-changes', 'lb-sleep-sessions', 'lb-growth-samples', 'lb-vaccinations',
   'lb-milestones', 'lb-food-logs', 'lb-medication-logs', 'lb-reminder-rules',
-  'lb-diaries', 'lb-families', 'lb-family-invites', 'lb-child-health', 'lb-events'
+  'lb-diaries', 'lb-families', 'lb-family-invites', 'lb-child-health', 'lb-events',
+  'lb-album', 'lb-audit-logs', 'lb-reminder-done'
 ]
 
 async function removeWhere(db, collection, where) {
@@ -83,11 +84,39 @@ async function purgeDueUsers(db, now = Date.now()) {
   return { scanned: (res.data || []).length, purged, errors }
 }
 
+/**
+ * 日常数据保留清理：短信验证码（过期/已用 1 天后）与分析事件（保留 400 天）。
+ * 单次上限 5000 条，避免定时任务超时；每日增量清理。
+ */
+async function cleanupExpiredData(db, now = Date.now()) {
+  const DAY = 24 * 3600 * 1000
+  let codes = 0
+  const codeRes = await db.collection('lb-sms-codes').limit(5000).get()
+  for (const row of codeRes.data || []) {
+    if (row.used || (row.expires_at || 0) < now - DAY) {
+      await db.collection('lb-sms-codes').doc(row._id).remove()
+      codes++
+    }
+  }
+  let events = 0
+  const evRes = await db.collection('lb-events').limit(5000).get()
+  for (const row of evRes.data || []) {
+    if ((row.ts || 0) < now - 400 * DAY) {
+      await db.collection('lb-events').doc(row._id).remove()
+      events++
+    }
+  }
+  return { codes, events }
+}
+
 exports.purgeDueUsers = purgeDueUsers
+exports.cleanupExpiredData = cleanupExpiredData
 
 /** 定时触发入口（uniCloud 云函数约定：exports.main） */
 exports.main = async () => {
-  const result = await purgeDueUsers(uniCloud.database(), Date.now())
-  console.log('[lucky-maintenance] 注销清理完成', JSON.stringify(result))
-  return result
+  const now = Date.now()
+  const result = await purgeDueUsers(uniCloud.database(), now)
+  const cleanup = await cleanupExpiredData(uniCloud.database(), now)
+  console.log('[lucky-maintenance] 注销清理完成', JSON.stringify(result), '数据保留清理', JSON.stringify(cleanup))
+  return { purge: result, cleanup }
 }

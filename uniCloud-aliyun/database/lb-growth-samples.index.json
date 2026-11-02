@@ -1,0 +1,18 @@
+[
+  {
+    "IndexName": "idx_baby_measure",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "baby_id",
+          "Direction": "1"
+        },
+        {
+          "Name": "measure_date",
+          "Direction": "1"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]

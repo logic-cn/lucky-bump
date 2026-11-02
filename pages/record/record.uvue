@@ -129,11 +129,11 @@
   .grid { flex-direction: row; flex-wrap: wrap; }
   .grid-item { width: 25%; align-items: center; padding: 16rpx 0; border-radius: 24rpx; transition: all 160ms ease-out; }
   .grid-chip { width: 92rpx; height: 92rpx; border-radius: 30rpx; align-items: center; justify-content: center; }
-  .grid-chip-0 { background-image: linear-gradient(160deg, #FDEDF3, #F9D6E4); }
-  .grid-chip-1 { background-image: linear-gradient(160deg, #F1EEFE, #E1DBFA); }
-  .grid-chip-2 { background-image: linear-gradient(160deg, #E6F7F0, #D0EFE2); }
-  .grid-chip-3 { background-image: linear-gradient(160deg, #FDF3E0, #FAE5C6); }
-  .grid-chip-4 { background-image: linear-gradient(160deg, #FFF0E8, #FEDFD0); }
+  .grid-chip-0 { background-color: var(--lb-chip-1); }
+  .grid-chip-1 { background-color: var(--lb-chip-2); }
+  .grid-chip-2 { background-color: var(--lb-chip-3); }
+  .grid-chip-3 { background-color: var(--lb-chip-4); }
+  .grid-chip-4 { background-color: var(--lb-chip-5); }
   .grid-icon { width: 52rpx; height: 52rpx; }
   .grid-label { font-size: 24rpx; color: var(--lb-text-2); margin-top: 12rpx; }
 

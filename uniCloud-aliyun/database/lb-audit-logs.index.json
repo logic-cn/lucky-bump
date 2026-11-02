@@ -1,0 +1,18 @@
+[
+  {
+    "IndexName": "idx_journey_date",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "journey_id",
+          "Direction": "1"
+        },
+        {
+          "Name": "date",
+          "Direction": "1"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]

@@ -24,13 +24,22 @@
       "android.permission.INTERNET",
       "android.permission.ACCESS_NETWORK_STATE",
       "android.permission.VIBRATE",
-      "android.permission.POST_NOTIFICATIONS"
+      "android.permission.POST_NOTIFICATIONS",
+      "android.permission.CAMERA"
     ]
   },
   "web": {
     "uniCloud": true,
     "router": {
       "mode": "hash"
+    }
+  },
+  "app-ios": {
+    "distribute": {
+      "privacyDescription": {
+        "NSPhotoLibraryUsageDescription": "幸孕记读取你选择的照片，仅用于产检报告、试纸与成长相册的记录，不会用于其他用途",
+        "NSCameraUsageDescription": "幸孕记使用相机拍摄产检报告、试纸与宝宝成长照片，仅保存在你的账户中"
+      }
     }
   }
 }

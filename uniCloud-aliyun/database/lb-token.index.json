@@ -1,0 +1,26 @@
+[
+  {
+    "IndexName": "uniq_jti",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "jti",
+          "Direction": "1"
+        }
+      ],
+      "MgoIsUnique": true
+    }
+  },
+  {
+    "IndexName": "idx_uid",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "uid",
+          "Direction": "1"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]

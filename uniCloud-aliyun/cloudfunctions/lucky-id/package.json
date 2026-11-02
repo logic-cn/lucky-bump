@@ -1,4 +1,7 @@
 {
   "name": "lucky-id",
-  "version": "1.0.0"
+  "version": "1.0.0",
+  "extensions": {
+    "uni-cloud-sms": {}
+  }
 }

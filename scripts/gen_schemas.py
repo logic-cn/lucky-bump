@@ -277,7 +277,7 @@ SCHEMAS = {
       "user_id": prop("string", "用户"), "journey_id": prop("string", "旅程"),
       "content": prop("string", "反馈内容"), "contact": prop("string", "联系方式"),
       "app_version": prop("string", "版本"), "platform": prop("string", "平台"),
-      "status": prop("string", "状态", enum=["open", "done"]), "created_at": prop("long", "创建时间")
+      "status": prop("string", "状态", enum=["open", "done"]), "resolved_at": prop("long", "处理时间"), "created_at": prop("long", "创建时间")
     }
   },
   "lb-reminder-rules": {

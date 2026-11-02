@@ -159,7 +159,7 @@
         <text class="dlg-content">幸孕记需要处理你的孕产健康数据（属于敏感个人信息）来提供记录、提醒与趋势。请阅读并单独同意《隐私政策》后继续。</text>
         <text class="dlg-link" hover-class="lb-press" hover-stay-time="120" @click="openPrivacy">查看《隐私政策》</text>
         <view class="dlg-actions">
-          <text class="dlg-btn dlg-btn-ghost dlg-btn-half" hover-class="lb-press" hover-stay-time="120" @click="consentVisible = false">稍后</text>
+          <text class="dlg-btn dlg-btn-ghost dlg-btn-half" hover-class="lb-press" hover-stay-time="120" @click="exitWithoutConsent">退出登录</text>
           <text class="dlg-btn dlg-btn-half" hover-class="lb-press" hover-stay-time="120" @click="agreeConsent">{{ consentSaving ? '记录中…' : '同意并继续' }}</text>
         </view>
       </view>
@@ -170,7 +170,7 @@
 <script setup lang="ts">
   import { computed, ref } from 'vue'
   import { onPageReady } from '../../utils/pageLifecycle.uts'
-  import { appState } from '../../store/appStore.uts'
+  import { appState, clearToken } from '../../store/appStore.uts'
   import { journeyState, weekText, stageText, loadCurrentJourney, loadToday } from '../../store/journeyStore.uts'
   import { luckyRecord, luckyId } from '../../utils/request.uts'
   import { luckyReminder } from '../../utils/request.uts'
@@ -471,6 +471,12 @@
 
   function openPrivacy() { uni.navigateTo({ url: '/pages/me/privacy-policy' }) }
 
+  function exitWithoutConsent() {
+    consentVisible.value = false
+    clearToken()
+    uni.reLaunch({ url: '/pages/account/login' })
+  }
+
   async function checkConsent() {
     if (appState.token.length == 0) return
     try {
@@ -560,11 +566,11 @@
   .grid { flex-direction: row; flex-wrap: wrap; }
   .grid-item { width: 25%; align-items: center; padding: 16rpx 0; border-radius: 24rpx; transition: all 160ms ease-out; }
   .grid-chip { width: 92rpx; height: 92rpx; border-radius: 30rpx; align-items: center; justify-content: center; }
-  .grid-chip-0 { background-image: linear-gradient(160deg, #FDEDF3, #F9D6E4); }
-  .grid-chip-1 { background-image: linear-gradient(160deg, #F1EEFE, #E1DBFA); }
-  .grid-chip-2 { background-image: linear-gradient(160deg, #E6F7F0, #D0EFE2); }
-  .grid-chip-3 { background-image: linear-gradient(160deg, #FDF3E0, #FAE5C6); }
-  .grid-chip-4 { background-image: linear-gradient(160deg, #FFF0E8, #FEDFD0); }
+  .grid-chip-0 { background-color: var(--lb-chip-1); }
+  .grid-chip-1 { background-color: var(--lb-chip-2); }
+  .grid-chip-2 { background-color: var(--lb-chip-3); }
+  .grid-chip-3 { background-color: var(--lb-chip-4); }
+  .grid-chip-4 { background-color: var(--lb-chip-5); }
   .grid-icon { width: 52rpx; height: 52rpx; }
   .grid-label { font-size: 24rpx; color: var(--lb-text-2); margin-top: 12rpx; }
   .trend-text { font-size: 28rpx; color: var(--lb-text-2); }

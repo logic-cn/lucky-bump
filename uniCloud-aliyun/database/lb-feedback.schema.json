@@ -36,6 +36,10 @@
         "done"
       ]
     },
+    "resolved_at": {
+      "bsonType": "long",
+      "title": "处理时间"
+    },
     "created_at": {
       "bsonType": "long",
       "title": "创建时间"

@@ -176,3 +176,73 @@ test('存量账号（无 password_set 字段）仍按密码账号处理', async 
   const del = await rt.callObject('lucky-id', 'requestDeletion', { password: '注销' }, { token: login.token })
   assert.equal(del.errCode, 'PASSWORD_ERROR', '存量密码账号不能用「注销」绕过')
 })
+
+test('运营反馈接口：非管理员拒绝查看与处理', async () => {
+  const rt = createRuntime()
+  const reg = await register(rt)
+  const ctx = { token: reg.token }
+  const list = await rt.callObject('lucky-analytics', 'listFeedback', {}, ctx)
+  assert.equal(list.errCode, 'PERMISSION_DENIED')
+  const resolve = await rt.callObject('lucky-analytics', 'resolveFeedback', { feedbackId: 'x' }, ctx)
+  assert.equal(resolve.errCode, 'PERMISSION_DENIED')
+})
+
+test('关键集合索引文件齐备且格式正确', () => {
+  const fs = require('fs')
+  const root = path.resolve(__dirname, '../../uniCloud-aliyun/database')
+  const must = ['lb-daily-logs', 'lb-cycle-events', 'lb-feedings', 'lb-events', 'lb-sms-codes',
+    'lb-feedback', 'lb-child-health', 'lb-family-members', 'lb-token', 'uni-id-users']
+  for (const c of must) {
+    const file = path.join(root, c + '.index.json')
+    assert.ok(fs.existsSync(file), `缺少索引文件 ${c}.index.json`)
+    const arr = JSON.parse(fs.readFileSync(file, 'utf-8'))
+    assert.ok(Array.isArray(arr) && arr.length > 0, `${c} 索引应为非空数组`)
+    for (const idx of arr) {
+      assert.ok(idx.IndexName && idx.MgoKeySchema && Array.isArray(idx.MgoKeySchema.MgoIndexKeys), `${c} 索引格式错误`)
+    }
+  }
+  const users = JSON.parse(fs.readFileSync(path.join(root, 'uni-id-users.index.json'), 'utf-8'))
+  assert.ok(users.some(i => i.IndexName === 'uniq_username' && i.MgoKeySchema.MgoIsUnique === true), '用户名列必须唯一索引')
+  const members = JSON.parse(fs.readFileSync(path.join(root, 'lb-family-members.index.json'), 'utf-8'))
+  assert.ok(members.some(i => i.MgoKeySchema.MgoIsUnique === true), '家庭成员应唯一索引')
+})
+
+test('注销清理覆盖相册/审计/提醒完成表', async () => {
+  const rt = createRuntime()
+  const reg = await register(rt)
+  const ctx = { token: reg.token }
+  const j = await rt.callObject('lucky-journey', 'createJourney', { mode: 'ttc', lmpDate: '2026-10-01' }, ctx)
+  const jid = j.journeyId
+  for (const c of ['lb-album', 'lb-audit-logs', 'lb-reminder-done']) {
+    await rt.db.collection(c).add({ user_id: 'u', journey_id: jid, date: '2026-11-01', ts: Date.now() })
+  }
+  await rt.callObject('lucky-id', 'requestDeletion', { password: 'password123' }, ctx)
+  const { purgeDueUsers } = require('../../uniCloud-aliyun/cloudfunctions/lucky-maintenance')
+  // 将冷静期置为已到期后执行清理
+  const users = await rt.db.collection('uni-id-users').where({}).get()
+  const me = users.data[0]
+  await rt.db.collection('uni-id-users').doc(me._id).update({ purge_at: Date.now() - 1000 })
+  const res = await purgeDueUsers(rt.db, Date.now())
+  assert.equal(res.purged.length, 1)
+  for (const c of ['lb-album', 'lb-audit-logs', 'lb-reminder-done']) {
+    const left = await rt.db.collection(c).where({ journey_id: jid }).get()
+    assert.equal(left.data.length, 0, `${c} 应在注销后清空`)
+  }
+})
+
+test('数据保留清理：过期验证码与 400 天前事件被删除', async () => {
+  const rt = createRuntime()
+  const now = Date.now()
+  await rt.db.collection('lb-sms-codes').add({ phone: '13800138000', purpose: 'login', used: true, expires_at: now, created_at: now })
+  await rt.db.collection('lb-sms-codes').add({ phone: '13800138001', purpose: 'login', used: false, expires_at: now + 300000, created_at: now })
+  await rt.db.collection('lb-events').add({ event: 'app_launch', ts: now - 401 * 24 * 3600 * 1000 })
+  await rt.db.collection('lb-events').add({ event: 'app_launch', ts: now })
+  const { cleanupExpiredData } = require('../../uniCloud-aliyun/cloudfunctions/lucky-maintenance')
+  const res = await cleanupExpiredData(rt.db, now)
+  assert.equal(res.codes, 1, '已用验证码应被清理')
+  assert.equal(res.events, 1, '400 天前事件应被清理')
+  const codes = await rt.db.collection('lb-sms-codes').where({}).get()
+  assert.equal(codes.data.length, 1)
+  const events = await rt.db.collection('lb-events').where({}).get()
+  assert.equal(events.data.length, 1)
+})
