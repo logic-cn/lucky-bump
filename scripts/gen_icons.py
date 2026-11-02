@@ -20,6 +20,22 @@ def write_png(path, w, h, pix):
     with open(path, "wb") as f:
         f.write(data)
 
+def write_png_rgb(path, w, h, pix):
+    """写出无 Alpha 通道的 RGB PNG（App Store 图标要求）。"""
+    raw = bytearray()
+    for y in range(h):
+        raw.append(0)
+        for x in range(w):
+            i = (y * w + x) * 4
+            raw += bytes((pix[i], pix[i + 1], pix[i + 2]))
+    data = (b"\x89PNG\r\n\x1a\n"
+            + _chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0))
+            + _chunk(b"IDAT", zlib.compress(bytes(raw), 9))
+            + _chunk(b"IEND", b""))
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "wb") as f:
+        f.write(data)
+
 def mix(a, b, t):
     return tuple(int(a[i] + (b[i] - a[i]) * t) for i in range(3)) + (255,)
 
@@ -121,9 +137,9 @@ WHITE = (255, 255, 255, 255)
 GRAY = (164, 148, 160, 255)     # tab 未选中：藕灰
 ROSE = (228, 83, 127, 255)      # tab 选中：蔷薇玫瑰
 
-def brand_mark(px: int):
+def brand_mark(px: int, ss: int = 4):
     """「幸运小山丘」：日出渐变圆角方 + 从左缘升起的 bump 山丘 + 右上幸运星。"""
-    SS = 4
+    SS = ss
     S = px * SS
     c = Canvas(S, S)
     m = S * 0.04
@@ -624,6 +640,53 @@ def gen_empty_scene():
     c.line(S * 0.02, S * 0.82, S * 0.98, S * 0.82, S * 0.045, (216, 203, 211, 255))
     write_png(os.path.join(os.path.dirname(__file__), "..", "static", "empty-scene.png"), 320, 320, downsample(c, SS4).pix)
 
+def brand_app_icon(px: int):
+    """App 图标（不透明全出血）：用于商店与安装包，避免 iOS 透明通道被拒。"""
+    SS = 2
+    S = px * SS
+    c = Canvas(S, S)
+    for y in range(S):
+        for x in range(S):
+            c.blend(x, y, mix(GRAD_A, GRAD_B, y / S), 1.0)
+    c.glow(S * 0.26, S * 0.16, S * 0.45, WHITE, peak=0.15)
+    c.quad((S * -0.02, S * 0.58), (S * 0.34, S * 0.26), (S * 1.02, S * 0.70), S * 0.085, WHITE)
+    c.glow(S * 0.76, S * 0.24, S * 0.11, GOLD, peak=0.30)
+    c.star4(S * 0.76, S * 0.24, S * 0.075, GOLD)
+    return downsample(c, SS)
+
+def gen_app_icons():
+    """static/app-icons/*.png：Android 四密度 + iOS App Store 1024。"""
+    root = os.path.join(os.path.dirname(__file__), "..", "static", "app-icons")
+    for name, px in [("android-hdpi", 72), ("android-xhdpi", 96),
+                     ("android-xxhdpi", 144), ("android-xxxhdpi", 192)]:
+        write_png(os.path.join(root, f"{name}.png"), px, px, brand_mark(px).pix)
+    write_png_rgb(os.path.join(root, "ios-appstore-1024.png"), 1024, 1024, brand_app_icon(1024).pix)
+
+def _blit(dst: Canvas, src: Canvas, ox: int, oy: int):
+    """把带 alpha 的画布合成到目标位置。"""
+    for y in range(src.h):
+        for x in range(src.w):
+            i = (y * src.w + x) * 4
+            a = src.pix[i + 3]
+            if a > 0:
+                dst.blend(ox + x, oy + y, (src.pix[i], src.pix[i + 1], src.pix[i + 2], 255), a / 255)
+
+def gen_splash():
+    """static/splash/*.png：Android 启动图与 Android 12 Logo。"""
+    root = os.path.join(os.path.dirname(__file__), "..", "static", "splash")
+    bg = (248, 244, 245, 255)
+    for name, w, h in [("android-480x800", 480, 800), ("android-720x1280", 720, 1280), ("android-1080x1920", 1080, 1920)]:
+        c = Canvas(w, h)
+        for y in range(h):
+            for x in range(w):
+                c.blend(x, y, bg, 1.0)
+        badge_px = int(min(w, h) * 0.30)
+        badge = brand_mark(badge_px, 2)
+        _blit(c, badge, (w - badge_px) // 2, (h - badge_px) // 2)
+        write_png(os.path.join(root, f"{name}.png"), w, h, c.pix)
+    for px in (480, 720, 1080):
+        write_png(os.path.join(root, f"logo-{px}.png"), px, px, brand_mark(px, 2).pix)
+
 def main():
     root = os.path.join(os.path.dirname(__file__), "..", "static")
     for name in ["today", "record", "data", "learn", "me"]:
@@ -633,6 +696,8 @@ def main():
     write_png(os.path.join(root, "mark.png"), 512, 512, brand_mark(512).pix)
     gen_function_icons()
     gen_empty_scene()
+    gen_app_icons()
+    gen_splash()
     print("v4 assets generated")
 
 if __name__ == "__main__":

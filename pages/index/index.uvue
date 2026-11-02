@@ -10,7 +10,7 @@
       <view class="spark-h hero-spark-2h" />
       <view class="hero-body">
         <view class="hero-row">
-          <text class="hero-week" :lines="1">{{ weekLabel }}</text>
+          <text class="hero-week">{{ weekLabel }}</text>
           <text class="hero-stage" v-if="stageLabel.length > 0 && stageLabel != weekLabel">{{ stageLabel }}</text>
         </view>
         <text class="hero-sub" v-if="showBabySize">宝宝现在{{ babySizeText }}，距预产期还有 {{ journeyState.daysToEdd }} 天</text>

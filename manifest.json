@@ -26,7 +26,28 @@
       "android.permission.VIBRATE",
       "android.permission.POST_NOTIFICATIONS",
       "android.permission.CAMERA"
-    ]
+    ],
+    "distribute": {
+      "icons": {
+        "hdpi": "static/app-icons/android-hdpi.png",
+        "xhdpi": "static/app-icons/android-xhdpi.png",
+        "xxhdpi": "static/app-icons/android-xxhdpi.png",
+        "xxxhdpi": "static/app-icons/android-xxxhdpi.png"
+      },
+      "splashScreens": {
+        "default": {
+          "hdpi": "static/splash/android-480x800.png",
+          "xhdpi": "static/splash/android-720x1280.png",
+          "xxhdpi": "static/splash/android-1080x1920.png"
+        },
+        "background": "#F8F4F5",
+        "icon": {
+          "xhdpi": "static/splash/logo-480.png",
+          "xxhdpi": "static/splash/logo-720.png",
+          "xxxhdpi": "static/splash/logo-1080.png"
+        }
+      }
+    }
   },
   "web": {
     "uniCloud": true,
@@ -39,6 +60,21 @@
       "privacyDescription": {
         "NSPhotoLibraryUsageDescription": "幸孕记读取你选择的照片，仅用于产检报告、试纸与成长相册的记录，不会用于其他用途",
         "NSCameraUsageDescription": "幸孕记使用相机拍摄产检报告、试纸与宝宝成长照片，仅保存在你的账户中"
+      },
+      "icons": {
+        "appstore": "static/app-icons/ios-appstore-1024.png"
+      }
+    }
+  },
+  "app": {
+    "distribute": {
+      "icons": {
+        "android": {
+          "hdpi": "static/app-icons/android-hdpi.png",
+          "xhdpi": "static/app-icons/android-xhdpi.png",
+          "xxhdpi": "static/app-icons/android-xxhdpi.png",
+          "xxxhdpi": "static/app-icons/android-xxxhdpi.png"
+        }
       }
     }
   }
