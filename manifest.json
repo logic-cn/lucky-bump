@@ -3,7 +3,7 @@
   "appid": "__UNI__1BC2635",
   "description": "从备孕到育儿，一条不断档的生命记录",
   "versionName": "1.0.0",
-  "versionCode": "100",
+  "versionCode": "101",
   "uni-app-x": {
     "vapor": true,
     "styleIsolationVersion": "2",

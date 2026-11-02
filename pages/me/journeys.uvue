@@ -42,7 +42,7 @@
       </view>
     </view>
 
-    <lbc-dialog :visible="archiveVisible" title="归档这段旅程？" :content="'「' + archiveTitle + '」归档后数据完整保留，但不能继续记录；可在本页回看。'" confirmText="归档" tone="danger" @confirm="doArchive" @cancel="archiveVisible = false" />
+    <lbc-dialog :visible="archiveVisible" title="归档这段旅程？" :content="archiveContent" confirmText="归档" tone="danger" @confirm="doArchive" @cancel="archiveVisible = false" />
   </view>
 </template>
 
@@ -65,6 +65,7 @@
   const archiveVisible = ref<boolean>(false)
   const archiveId = ref<string>('')
   const archiveTitle = ref<string>('')
+  const archiveContent = ref<string>('')
 
   function titleOf(j: UTSJSONObject): string {
     const t = j.getString('title') ?? ''
@@ -140,6 +141,7 @@
   function askArchive(j: UTSJSONObject) {
     archiveId.value = j.getString('_id') ?? ''
     archiveTitle.value = titleOf(j)
+    archiveContent.value = `「${archiveTitle.value}」归档后数据完整保留，但不能继续记录；可在本页回看。`
     archiveVisible.value = true
   }
 
