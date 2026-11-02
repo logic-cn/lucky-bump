@@ -11,6 +11,7 @@ dist/
 coverage/
 *.log
 .DS_Store
+.screenshots/
 
 # 密钥与本地配置（占位符文件模板已入库，真实密钥不入库）
 .env

@@ -478,3 +478,65 @@ test('web 端 showToast 有可用兜底（内置 Toast 在 vapor 下渲染失败
   assert.ok(src.includes('uniAny.showToast ='), '未覆写 uni.showToast')
   assert.ok(src.includes('lb-web-toast'), '缺少 toast 容器标记')
 })
+
+/* ---------------- v4 精装余项：fill-mode 适配 / 图标化 / 插画空态 ---------------- */
+
+test('动效 fill-mode 仅用 forwards（uvue 不支持 both），延迟类带基态', () => {
+  const offenders = []
+  for (const file of [...walkUvue(path.join(ROOT, 'pages')), ...walkUvue(path.join(ROOT, 'components'))]) {
+    const rel = path.relative(ROOT, file)
+    const src = fs.readFileSync(file, 'utf-8')
+    if (/animation:[^;{}]*\bboth\b/.test(src)) offenders.push(`${rel}: animation 仍使用 both`)
+    for (const cls of ['lb-rise-1', 'lb-rise-2', 'lb-rise-3']) {
+      const m = new RegExp(`\\.${cls} \\{([^}]*)\\}`).exec(src)
+      if (m && m[1].includes('animation:')) {
+        if (!/opacity:\s*0/.test(m[1]) || !/translateY\(28rpx\)/.test(m[1])) {
+          offenders.push(`${rel}: .${cls} 缺起始帧基态（opacity/translateY）`)
+        }
+      }
+    }
+  }
+  assert.deepEqual(offenders, [], `fill-mode 适配不完整:\n${offenders.join('\n')}`)
+})
+
+test('功能位 emoji 已替换为自绘图标（仅允许单色印刷符号）', () => {
+  // 允许：✓ ✔ ✕ ★ ☆ › ‹（单色 dingbat，各端渲染一致）；其余彩色 emoji 一律禁止
+  const ALLOWED = new Set(['✓', '✔', '✕', '★', '☆', '›', '‹'])
+  const EMOJI_RE = /[\u{1F000}-\u{1FAFF}\u{2300}-\u{23FF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}]/gu
+  const offenders = []
+  for (const file of [...walkUvue(path.join(ROOT, 'pages')), ...walkUvue(path.join(ROOT, 'components'))]) {
+    const src = fs.readFileSync(file, 'utf-8')
+    src.split('\n').forEach((line, i) => {
+      for (const m of line.matchAll(EMOJI_RE)) {
+        if (!ALLOWED.has(m[0])) offenders.push(`${path.relative(ROOT, file)}:${i + 1} ${m[0]}`)
+      }
+    })
+  }
+  assert.deepEqual(offenders, [], `以下位置仍有 emoji 字形:\n${offenders.join('\n')}`)
+})
+
+test('自绘图标资产齐备（引用文件存在 + 关键图标与空态插画）', () => {
+  const iconDir = path.join(ROOT, 'static/icons')
+  assert.ok(fs.existsSync(iconDir), '缺少 static/icons 目录')
+  const referenced = new Set()
+  for (const file of [...walkUvue(path.join(ROOT, 'pages')), ...walkUvue(path.join(ROOT, 'components'))]) {
+    const src = fs.readFileSync(file, 'utf-8')
+    // 静态引用：src="/static/icons/xxx.png"
+    for (const m of src.matchAll(/\/static\/icons\/([a-z0-9-]+)\.png/g)) referenced.add(m[1])
+    // 数据引用：icon: 'xxx'（宫格/选项/红线图标名；排除 uni.showToast 的 icon 取值）
+    const TOAST_ICONS = new Set(['none', 'success', 'error', 'info', 'loading', 'warn'])
+    for (const m of src.matchAll(/\bicon:\s*'([a-z][a-z0-9-]*)'/g)) {
+      if (!TOAST_ICONS.has(m[1])) referenced.add(m[1])
+    }
+    // 模板拼接引用中的心情图标
+    for (const m of src.matchAll(/'(mood-(?:great|good|normal|low|bad))'/g)) referenced.add(m[1])
+  }
+  const missing = []
+  for (const name of referenced) {
+    if (!fs.existsSync(path.join(iconDir, name + '.png'))) missing.push(name)
+  }
+  assert.deepEqual(missing, [], `缺少图标文件:\n${missing.join('\n')}`)
+  assert.ok(fs.existsSync(path.join(ROOT, 'static/empty-scene.png')), '缺少空态插画 empty-scene.png')
+  const empty = fs.readFileSync(path.join(ROOT, 'components/lbc-empty/lbc-empty.uvue'), 'utf-8')
+  assert.ok(empty.includes('/static/empty-scene.png'), 'lbc-empty 未接入空态插画')
+})

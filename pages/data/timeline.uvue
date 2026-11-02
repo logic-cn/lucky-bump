@@ -39,10 +39,10 @@
     ['weight', '记录了体重'], ['blood_pressure', '记录了血压'], ['blood_glucose', '记录了血糖'],
     ['symptom', '记录了症状'], ['mood', '记录了心情'], ['fetal_movement', '数了胎动'],
     ['lochia', '记录了恶露'], ['kegel', '盆底肌训练'],
-    ['period_start', '🌸 经期开始'], ['period_end', '经期结束'],
-    ['ovulation_test', '🧪 排卵试纸'], ['bbt', '🌡 基础体温'], ['intercourse', '💗 同房'], ['pregnancy_test', '🤰 验孕'],
-    ['mucus', '💧 白带记录'],
-    ['visit', '🏥 产检'], ['prenatal_visit', '🏥 产检'], ['head_up', '👶 学会了抬头'], ['roll_over', '👶 学会了翻身']
+    ['period_start', '经期开始'], ['period_end', '经期结束'],
+    ['ovulation_test', '排卵试纸'], ['bbt', '基础体温'], ['intercourse', '同房'], ['pregnancy_test', '验孕'],
+    ['mucus', '白带记录'],
+    ['visit', '产检'], ['prenatal_visit', '产检'], ['head_up', '学会了抬头'], ['roll_over', '学会了翻身']
   ])
 
   type Chapter = { title: string, sub: string, tag: string }
@@ -96,7 +96,7 @@
       const dts = Date.parse(delivery + 'T12:00:00Z')
       if (Number.isFinite(dts) && ts >= dts) {
         const days = Math.floor((ts - dts) / 86400000)
-        return { title: '👶 宝宝出生以后', sub: '', tag: days >= 0 ? `出生第 ${days + 1} 天` : '' }
+        return { title: '宝宝出生以后', sub: '', tag: days >= 0 ? `出生第 ${days + 1} 天` : '' }
       }
     }
     const lmp = journeyState.lmpDate
@@ -104,11 +104,11 @@
       const lts = Date.parse(lmp + 'T12:00:00Z')
       if (Number.isFinite(lts) && ts >= lts) {
         const days = Math.floor((ts - lts) / 86400000)
-        return { title: '🌸 孕期', sub: '', tag: `孕 ${Math.floor(days / 7)} 周` }
+        return { title: '孕期', sub: '', tag: `孕 ${Math.floor(days / 7)} 周` }
       }
-      return { title: '🌱 备孕时光', sub: '', tag: '' }
+      return { title: '备孕时光', sub: '', tag: '' }
     }
-    return { title: '🌱 备孕时光', sub: '', tag: '' }
+    return { title: '备孕时光', sub: '', tag: '' }
   }
 
   const storyTitle = computed((): string => {
@@ -167,11 +167,11 @@
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
   @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
   @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
-  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms both; }
-  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both; }
-  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms both; }
-  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-  .lb-fade { animation: lb-fade 200ms ease-out both; }
+  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) forwards; opacity: 0; transform: scale(0.92); }
+  .lb-fade { animation: lb-fade 200ms ease-out forwards; opacity: 0; }
   .lb-press { opacity: 0.72; transform: scale(0.98); }
 </style>

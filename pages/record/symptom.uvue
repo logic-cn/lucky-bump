@@ -21,7 +21,7 @@
     <button class="btn-save lb-rise-1" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</button>
 
     <view class="redline lb-rise-2" v-if="redlineMsg.length > 0">
-      <text class="redline-title">⚠️ 请注意</text>
+      <view class="redline-title-row"><image class="redline-ico" src="/static/icons/warn-danger.png" mode="aspectFit" /><text class="redline-title">请注意</text></view>
       <text class="redline-msg">{{ redlineMsg }}</text>
       <text class="redline-note">本提示仅描述现象与常规建议，不构成诊断</text>
     </view>
@@ -105,6 +105,8 @@
   .ph { color: var(--lb-text-3); }
   .btn-save { width: 702rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 48rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
   .redline { width: 702rpx; background-color: var(--lb-danger-soft); border-radius: 36rpx; padding: 40rpx; margin-top: 32rpx; }
+  .redline-title-row { flex-direction: row; align-items: center; }
+  .redline-ico { width: 36rpx; height: 36rpx; margin-right: 8rpx; }
   .redline-title { font-size: 34rpx; font-weight: bold; color: var(--lb-danger); }
   .redline-msg { font-size: 28rpx; color: var(--lb-text-1); margin-top: 16rpx; }
   .redline-note { font-size: 24rpx; color: var(--lb-text-3); margin-top: 24rpx; }
@@ -113,11 +115,11 @@
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
   @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
   @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
-  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms both; }
-  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both; }
-  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms both; }
-  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-  .lb-fade { animation: lb-fade 200ms ease-out both; }
+  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) forwards; opacity: 0; transform: scale(0.92); }
+  .lb-fade { animation: lb-fade 200ms ease-out forwards; opacity: 0; }
   .lb-press { opacity: 0.72; transform: scale(0.98); }
 </style>

@@ -37,7 +37,7 @@
       </view>
       <text class="hint">可补记今天早些时候的奶量（如夜奶）</text>
       <view v-if="mode == 'nursing'">
-        <button class="btn-save" hover-class="lb-press" hover-stay-time="120" @click="goTimer">⏱ 打开亲喂计时器</button>
+        <button class="btn-save" hover-class="lb-press" hover-stay-time="120" @click="goTimer">打开亲喂计时器</button>
       </view>
       <button class="btn-save" hover-class="lb-press" hover-stay-time="120" v-if="mode != 'nursing'" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</button>
     </view>
@@ -82,7 +82,7 @@
   const babyId = ref<string>('')
   const summary = ref<UTSJSONObject | null>(null)
   const modes = ref<FOpt[]>([
-    { value: 'nursing', label: '🍼 亲喂' },
+    { value: 'nursing', label: '亲喂' },
     { value: 'breastmilk_bottle', label: '瓶喂母乳' },
     { value: 'formula', label: '配方奶' },
     { value: 'mixed', label: '混合' }
@@ -224,11 +224,11 @@
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
   @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
   @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
-  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms both; }
-  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both; }
-  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms both; }
-  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-  .lb-fade { animation: lb-fade 200ms ease-out both; }
+  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) forwards; opacity: 0; transform: scale(0.92); }
+  .lb-fade { animation: lb-fade 200ms ease-out forwards; opacity: 0; }
   .lb-press { opacity: 0.72; transform: scale(0.98); }
 </style>

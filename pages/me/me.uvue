@@ -9,11 +9,11 @@
     </view>
 
     <view class="card lb-rise-1">
-      <view class="row" hover-class="lb-press" hover-stay-time="120" @click="go('/pages/baby/baby-home')"><text class="row-text">👶 宝宝档案</text><text class="arrow">›</text></view>
-      <view class="row" hover-class="lb-press" hover-stay-time="120" @click="go('/pages/me/family')"><text class="row-text">👪 家庭组（邀请爸爸）</text><text class="arrow">›</text></view>
-      <view class="row" hover-class="lb-press" hover-stay-time="120" @click="go('/pages/me/privacy')"><text class="row-text">🔒 隐私与安全</text><text class="arrow">›</text></view>
-      <view class="row" hover-class="lb-press" hover-stay-time="120" @click="go('/pages/me/settings')"><text class="row-text">⚙️ 提醒与设置</text><text class="arrow">›</text></view>
-      <view class="row" hover-class="lb-press" hover-stay-time="120" @click="go('/pages/me/about')"><text class="row-text">ℹ️ 关于与免责声明</text><text class="arrow">›</text></view>
+      <view class="row" hover-class="lb-press" hover-stay-time="120" @click="go('/pages/baby/baby-home')"><image class="row-icon" src="/static/icons/baby.png" mode="aspectFit" /><text class="row-text">宝宝档案</text><text class="arrow">›</text></view>
+      <view class="row" hover-class="lb-press" hover-stay-time="120" @click="go('/pages/me/family')"><image class="row-icon" src="/static/icons/family.png" mode="aspectFit" /><text class="row-text">家庭组（邀请爸爸）</text><text class="arrow">›</text></view>
+      <view class="row" hover-class="lb-press" hover-stay-time="120" @click="go('/pages/me/privacy')"><image class="row-icon" src="/static/icons/privacy.png" mode="aspectFit" /><text class="row-text">隐私与安全</text><text class="arrow">›</text></view>
+      <view class="row" hover-class="lb-press" hover-stay-time="120" @click="go('/pages/me/settings')"><image class="row-icon" src="/static/icons/settings.png" mode="aspectFit" /><text class="row-text">提醒与设置</text><text class="arrow">›</text></view>
+      <view class="row" hover-class="lb-press" hover-stay-time="120" @click="go('/pages/me/about')"><image class="row-icon" src="/static/icons/info.png" mode="aspectFit" /><text class="row-text">关于与免责声明</text><text class="arrow">›</text></view>
     </view>
 
     <button class="btn-logout lb-rise-2" hover-class="lb-press" hover-stay-time="120" @click="logout">退出登录</button>
@@ -81,6 +81,7 @@
   .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 8rpx 32rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
   .row { flex-direction: row; align-items: center; padding: 30rpx 8rpx; border-bottom-width: 1px; border-bottom-color: var(--lb-line); transition: all 160ms ease-out; }
   .row-text { flex: 1; font-size: 30rpx; color: var(--lb-text-1); }
+  .row-icon { width: 40rpx; height: 40rpx; margin-right: 16rpx; }
   .arrow { font-size: 36rpx; color: var(--lb-arrow); }
   .btn-logout { width: 702rpx; height: 100rpx; line-height: 100rpx; background-color: var(--lb-card); color: var(--lb-danger); font-size: 30rpx; border-radius: 36rpx; margin-top: 40rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
 
@@ -88,11 +89,11 @@
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
   @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
   @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
-  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms both; }
-  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both; }
-  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms both; }
-  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-  .lb-fade { animation: lb-fade 200ms ease-out both; }
+  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) forwards; opacity: 0; transform: scale(0.92); }
+  .lb-fade { animation: lb-fade 200ms ease-out forwards; opacity: 0; }
   .lb-press { opacity: 0.72; transform: scale(0.98); }
 </style>

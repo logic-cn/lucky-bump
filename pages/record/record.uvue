@@ -8,7 +8,7 @@
       <view class="grid">
         <view class="grid-item" v-for="(item, i) in g.items" :key="i" hover-class="lb-press" hover-stay-time="120" @click="go(item.url)">
           <view class="grid-chip" :class="chipClass(item.url)">
-            <text class="grid-icon">{{ item.icon }}</text>
+            <image class="grid-icon" :src="'/static/icons/' + item.icon + '.png'" mode="aspectFit" />
           </view>
           <text class="grid-label">{{ item.label }}</text>
         </view>
@@ -56,35 +56,35 @@
         const s = journeyState.stage
         const groups: RGroup[] = []
         const ttc: RItem[] = [
-          { icon: '🌸', label: '经期', url: '/pages/record/cycle' },
-          { icon: '🧪', label: '排卵试纸', url: '/pages/record/ovulation-test' },
-          { icon: '🌡', label: '基础体温', url: '/pages/record/cycle' },
-          { icon: '🤰', label: '验孕', url: '/pages/record/pregnancy-test' },
-          { icon: '🔒', label: '同房', url: '/pages/record/cycle' }
+          { icon: 'cycle', label: '经期', url: '/pages/record/cycle' },
+          { icon: 'test', label: '排卵试纸', url: '/pages/record/ovulation-test' },
+          { icon: 'thermo', label: '基础体温', url: '/pages/record/cycle' },
+          { icon: 'preg', label: '验孕', url: '/pages/record/pregnancy-test' },
+          { icon: 'privacy', label: '同房', url: '/pages/record/cycle' }
         ]
         const pregnancy: RItem[] = [
-          { icon: '⚖️', label: '体重', url: '/pages/record/weight' },
-          { icon: '🩺', label: '血压', url: '/pages/record/blood-pressure' },
-          { icon: '🩸', label: '血糖', url: '/pages/record/blood-glucose' },
-          { icon: '🦶', label: '胎动', url: '/pages/record/fetal-movement' },
-          { icon: '⏱', label: '宫缩计时', url: '/pages/record/contraction-timer' },
-          { icon: '🌸', label: '症状情绪', url: '/pages/record/symptom' },
-          { icon: '📔', label: '日记', url: '/pages/record/diary' },
-          { icon: '🎒', label: '待产包', url: '/pages/tools/hospital-bag' }
+          { icon: 'weight', label: '体重', url: '/pages/record/weight' },
+          { icon: 'bp', label: '血压', url: '/pages/record/blood-pressure' },
+          { icon: 'glucose', label: '血糖', url: '/pages/record/blood-glucose' },
+          { icon: 'fetal', label: '胎动', url: '/pages/record/fetal-movement' },
+          { icon: 'timer', label: '宫缩计时', url: '/pages/record/contraction-timer' },
+          { icon: 'symptom', label: '症状情绪', url: '/pages/record/symptom' },
+          { icon: 'diary', label: '日记', url: '/pages/record/diary' },
+          { icon: 'bag', label: '待产包', url: '/pages/tools/hospital-bag' }
         ]
         const postpartum: RItem[] = [
-          { icon: '🩸', label: '恶露', url: '/pages/record/lochia' },
-          { icon: '💗', label: '情绪自评', url: '/pages/record/epds' },
-          { icon: '⚖️', label: '体重', url: '/pages/record/weight' }
+          { icon: 'lochia', label: '恶露', url: '/pages/record/lochia' },
+          { icon: 'heart', label: '情绪自评', url: '/pages/record/epds' },
+          { icon: 'weight', label: '体重', url: '/pages/record/weight' }
         ]
         const baby: RItem[] = [
-          { icon: '🍼', label: '喂养', url: '/pages/baby/feeding' },
-          { icon: '🧷', label: '尿布', url: '/pages/baby/diaper' },
-          { icon: '😴', label: '睡眠', url: '/pages/baby/sleep' },
-          { icon: '📏', label: '成长', url: '/pages/baby/growth' },
-          { icon: '📷', label: '相册', url: '/pages/baby/album' },
-          { icon: '🥣', label: '辅食计划', url: '/pages/tools/solid-food' },
-          { icon: '💉', label: '疫苗', url: '/pages/baby/vaccines' }
+          { icon: 'feeding', label: '喂养', url: '/pages/baby/feeding' },
+          { icon: 'diaper', label: '尿布', url: '/pages/baby/diaper' },
+          { icon: 'sleep', label: '睡眠', url: '/pages/baby/sleep' },
+          { icon: 'growth', label: '成长', url: '/pages/baby/growth' },
+          { icon: 'album', label: '相册', url: '/pages/baby/album' },
+          { icon: 'bowl', label: '辅食计划', url: '/pages/tools/solid-food' },
+          { icon: 'vaccine', label: '疫苗', url: '/pages/baby/vaccines' }
         ]
         if (s == 'PRECONCEPTION') groups.push({ title: '备孕', items: orderByRecent(ttc) })
         if (s == 'T1' || s == 'T2' || s == 'T3') groups.push({ title: '孕期', items: orderByRecent(pregnancy) })
@@ -92,7 +92,7 @@
           groups.push({ title: '产后恢复', items: orderByRecent(postpartum) })
           groups.push({ title: '宝宝', items: orderByRecent(baby) })
         }
-        groups.push({ title: '产检', items: [{ icon: '🏥', label: '产检中心', url: '/pages/care/schedule' }] })
+        groups.push({ title: '产检', items: [{ icon: 'clinic', label: '产检中心', url: '/pages/care/schedule' }] })
         return groups
   })
 
@@ -126,18 +126,18 @@
   .grid-chip-2 { background-image: linear-gradient(160deg, #E6F7F0, #D0EFE2); }
   .grid-chip-3 { background-image: linear-gradient(160deg, #FDF3E0, #FAE5C6); }
   .grid-chip-4 { background-image: linear-gradient(160deg, #FFF0E8, #FEDFD0); }
-  .grid-icon { font-size: 44rpx; }
+  .grid-icon { width: 52rpx; height: 52rpx; }
   .grid-label { font-size: 24rpx; color: var(--lb-text-2); margin-top: 12rpx; }
 
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
   @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
   @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
-  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms both; }
-  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both; }
-  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms both; }
-  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-  .lb-fade { animation: lb-fade 200ms ease-out both; }
+  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) forwards; opacity: 0; transform: scale(0.92); }
+  .lb-fade { animation: lb-fade 200ms ease-out forwards; opacity: 0; }
   .lb-press { opacity: 0.72; transform: scale(0.98); }
 </style>

@@ -20,22 +20,22 @@
 
     <view class="nav-card lb-rise">
       <view class="nav-row" hover-class="lb-press" hover-stay-time="120" @click="go('/pages/data/charts')">
-        <text class="nav-icon">📈</text>
+        <image class="nav-icon" src="/static/icons/chart.png" mode="aspectFit" />
         <view class="nav-body"><text class="nav-text">指标曲线</text><text class="nav-sub">体重 / 血压 / 血糖 / 胎动趋势</text></view>
         <text class="nav-arrow">›</text>
       </view>
       <view class="nav-row" hover-class="lb-press" hover-stay-time="120" @click="go('/pages/data/timeline')">
-        <text class="nav-icon">🕰</text>
+        <image class="nav-icon" src="/static/icons/history.png" mode="aspectFit" />
         <view class="nav-body"><text class="nav-text">生命时间线</text><text class="nav-sub">从备孕到育儿的所有记录</text></view>
         <text class="nav-arrow">›</text>
       </view>
       <view class="nav-row" hover-class="lb-press" hover-stay-time="120" @click="goExport">
-        <text class="nav-icon">📦</text>
+        <image class="nav-icon" src="/static/icons/export.png" mode="aspectFit" />
         <view class="nav-body"><text class="nav-text">导出我的数据</text><text class="nav-sub">数据属于你，随时带走</text></view>
         <text class="nav-arrow">›</text>
       </view>
       <view class="nav-row" hover-class="lb-press" hover-stay-time="120" @click="go('/pages/data/export-report')">
-        <text class="nav-icon">🖨</text>
+        <image class="nav-icon" src="/static/icons/report.png" mode="aspectFit" />
         <view class="nav-body"><text class="nav-text">打印 / 导出 PDF</text><text class="nav-sub">汇总摘要，可保存或发给医生</text></view>
         <text class="nav-arrow">›</text>
       </view>
@@ -126,7 +126,7 @@
   .ov-divider { width: 2rpx; height: 56rpx; background-color: rgba(255,255,255,0.25); }
   .nav-card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 8rpx 32rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
   .nav-row { flex-direction: row; align-items: center; padding: 28rpx 0; border-bottom-width: 1px; border-bottom-color: var(--lb-line); transition: all 160ms ease-out; }
-  .nav-icon { font-size: 40rpx; margin-right: 20rpx; }
+  .nav-icon { width: 44rpx; height: 44rpx; margin-right: 20rpx; }
   .nav-body { flex: 1; }
   .nav-text { font-size: 30rpx; color: var(--lb-text-1); }
   .nav-sub { font-size: 24rpx; color: var(--lb-text-3); margin-top: 4rpx; }
@@ -144,11 +144,11 @@
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
   @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
   @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
-  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms both; }
-  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both; }
-  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms both; }
-  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-  .lb-fade { animation: lb-fade 200ms ease-out both; }
+  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) forwards; opacity: 0; transform: scale(0.92); }
+  .lb-fade { animation: lb-fade 200ms ease-out forwards; opacity: 0; }
   .lb-press { opacity: 0.72; transform: scale(0.98); }
 </style>

@@ -4,7 +4,7 @@
       <text class="label">今天的验孕结果</text>
       <view class="opts">
         <view class="opt" v-for="(o, i) in opts" :key="i" :class="result == o.value ? 'opt-active' : ''" hover-class="lb-press" hover-stay-time="120" @click="result = o.value">
-          <text class="opt-emoji">{{ o.emoji }}</text>
+          <image class="opt-emoji" :src="'/static/icons/' + o.icon + '.png'" mode="aspectFit" />
           <text class="opt-text" :class="result == o.value ? 'opt-text-active' : ''">{{ o.label }}</text>
         </view>
       </view>
@@ -14,7 +14,7 @@
 
     <!-- 好孕确认仪式（docs/02 §4.4 / docs/03 M1.7） -->
     <view class="card lb-rise-1" v-if="step == 1">
-      <text class="celebrate">🎉</text>
+      <image class="celebrate" src="/static/empty-scene.png" mode="aspectFit" />
       <text class="celebrate-title">恭喜！要先确认好孕吗？</text>
       <text class="hint">确认后你的备孕记录会无缝带孕展示，还能邀请宝宝爸爸一起记录</text>
       <text class="label">末次月经第一天</text>
@@ -31,7 +31,7 @@
     </view>
 
     <view class="card lb-rise-2" v-if="step == 2">
-      <text class="celebrate-title">已进入孕期模式 🌸</text>
+      <text class="celebrate-title">已进入孕期模式</text>
       <text class="hint">现在你处于 {{ stageLabel }}，去首页看看宝宝本周有多大吧</text>
       <button class="btn-save" @click="goHome">回到首页</button>
     </view>
@@ -49,16 +49,16 @@
   // #endif
   const todayEnd = todayDateStr()
 
-  type Opt = { value: string, label: string, emoji: string }
+  type Opt = { value: string, label: string, icon: string }
 
   const result = ref('')
   const step = ref(0)
   const lmp = ref('')
   const saving = ref(false)
   const opts = ref<Opt[]>([
-    { value: 'negative', label: '一道杠', emoji: '⚪' },
-    { value: 'faint', label: '一深一浅', emoji: '🌓' },
-    { value: 'positive', label: '两道杠', emoji: '🎉' }
+    { value: 'negative', label: '一道杠', icon: 'strip-neg' },
+    { value: 'faint', label: '一深一浅', icon: 'strip-weak' },
+    { value: 'positive', label: '两道杠', icon: 'strip-strong' }
   ])
 
   const stageLabel = computed((): string => stageText(journeyState.stage))
@@ -113,12 +113,12 @@
   .opts { flex-direction: row; justify-content: space-between; margin-bottom: 24rpx; }
   .opt { flex: 1; align-items: center; background-color: var(--lb-fill); border-radius: 24rpx; padding: 32rpx 0; margin: 0 8rpx; transition: all 160ms ease-out; }
   .opt-active { background-color: var(--lb-primary-soft); }
-  .opt-emoji { font-size: 44rpx; }
+  .opt-emoji { width: 52rpx; height: 52rpx; }
   .opt-text { font-size: 26rpx; color: var(--lb-text-1); margin-top: 12rpx; }
   .opt-text-active { color: var(--lb-primary-deep); font-weight: bold; }
   .hint { font-size: 24rpx; color: var(--lb-text-3); margin: 8rpx 0 24rpx 0; text-align: center; }
   .btn-save { width: 620rpx; height: 96rpx; line-height: 96rpx; background-color: var(--lb-primary); color: #FFFFFF; font-size: 32rpx; border-radius: 48rpx; margin-top: 16rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
-  .celebrate { font-size: 80rpx; }
+  .celebrate { width: 180rpx; height: 180rpx; }
   .celebrate-title { font-size: 36rpx; font-weight: bold; color: var(--lb-text-1); margin: 16rpx 0; }
   .date-box { width: 620rpx; height: 96rpx; background-color: var(--lb-fill); border-radius: 24rpx; align-items: center; justify-content: center; margin-bottom: 24rpx; }
   .date-text { font-size: 30rpx; color: var(--lb-text-1); }
@@ -129,11 +129,11 @@
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
   @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
   @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
-  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms both; }
-  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both; }
-  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms both; }
-  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-  .lb-fade { animation: lb-fade 200ms ease-out both; }
+  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) forwards; opacity: 0; transform: scale(0.92); }
+  .lb-fade { animation: lb-fade 200ms ease-out forwards; opacity: 0; }
   .lb-press { opacity: 0.72; transform: scale(0.98); }
 </style>

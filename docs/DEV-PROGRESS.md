@@ -196,7 +196,7 @@ Web 端已可用。后续运行只涉及：1) `npm test` 保持 70/70；2) 上�
 - [x] 首页英雄卡品牌化、宫格渐变芯片（首页+记录页）、卡题玫瑰短条、引导页品牌位、全仓渐变统一、同房入口锁形语义
 - [x] 可读性：text-3 对比度 #B6AABB→#9E8DA5（4.5:1 基线），暗色同步
 - [x] 门禁：109/109 测试全绿 + 云打包 44 页编译通过（新 APK 已含新品牌）
-- [ ] 后续可选：emoji 字形替换为自绘图标字体（uni-app x iconfont 接入）、插画级空态、动画 fill-mode 适配（both→forwards+基态，需真机验证不改坏进场）
+- [x] emoji 字形替换为自绘图标（`static/icons/*.png`，46 枚，零依赖生成；v4）、插画级空态（`empty-scene.png` + `lbc-empty` 四段式）、动画 fill-mode 适配（278 处 both→forwards + 延迟类基态）
 
 ## 精装二期（2026-10-31 下午，"所有页面友好、所有交互精心设计"）
 
@@ -205,7 +205,7 @@ Web 端已可用。后续运行只涉及：1) `npm test` 保持 70/70；2) 上�
 - [x] 登录/注册 🤰 emoji 占位 logo → mark.png 品牌标（"太 low"的真正源头）
 - [x] 首页：英雄卡加载骨架、宫格稳定取色（url 哈希）、goRecord 防污染、最近记录补血糖、产后宫格 8 项两整行
 - [x] 门禁：109/109 测试 + 云打包编译通过（新 APK 已含全部精装）
-- [ ] 三轮精装后仍可选：learn 页 header 品牌化、care/baby 子页标题条、图标字体替代 emoji、暗色导航栏（平台能力）
+- [x] learn 页 header 品牌化（mark.png 品牌条 + 知识库副标）；图标字体替代 emoji 已完成（v4 自绘图标集）；剩余可选：care/baby 子页标题条（三期已覆盖高频页）、暗色导航栏（平台能力）
 
 ## 精装三期：子页推广（2026-10-31）
 
@@ -242,3 +242,13 @@ Web 端已可用。后续运行只涉及：1) `npm test` 保持 70/70；2) 上�
   私有编译管线，直启实例白屏且崩溃 → 已清理残留进程、释放 5173 端口
 - 结论：Web 复验必须由 HBuilderX 重新「运行到浏览器」触发（同时即完成"重启运行"要求）
 - 实验探针已清理（weight 页 disclaimer/date-input probe 与显式导入），109/109 全绿
+
+## 精装 v4：图标化 · 插画空态 · 动效适配（2026-11-02）
+
+- [x] 自绘图标集：`scripts/gen_icons.py` 扩展为 46 枚 `static/icons/*.png`（宫格/导航/选项/心情/试纸结果/红线/语义图标），与 tab/品牌标同一圆头笔触；`warn-danger` 用红线专用红
+- [x] emoji 替换：首页 + 记录页宫格（44 处数据）、data/me/baby-home 导航与按钮、日记心情、排卵/验孕结果、睡眠/胎动/尿布/喂养选项、settings 用药、privacy 敏感组、6 页内联红线 + `lbc-redline` 组件、产检准备事项等；保留 ✓ ✕ ★ ☆ › 单色印刷符号
+- [x] 插画级空态：`static/empty-scene.png`（山丘+太阳+幸运星+辉光）接入 `lbc-empty`，四段式「插画→标题→提示→CTA」
+- [x] learn header 品牌化：mark.png 76rpx + 「幸孕记 · 知识库」+ 副标
+- [x] 动画 fill-mode 适配：全仓 278 处 `both→forwards`，`lb-rise-1/2/3`、`lb-pop`、`lb-fade` 补起始帧基态
+- [x] 门禁：`ui.test.js` 新增 3 条（fill-mode forwards+基态 / 功能性 emoji 禁用 / 图标资产引用存在），`npm test` 114/114 全绿
+- [ ] 仍需真机验证：进场动画首帧在低端机上的观感（fill-mode 适配后未真机复测）

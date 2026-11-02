@@ -1,5 +1,14 @@
 <template>
   <view class="page" :class="themeClass()">
+    <!-- 品牌头：知识库归属感 -->
+    <view class="learn-brand lb-rise">
+      <image class="learn-brand-mark" src="/static/mark.png" mode="aspectFit" />
+      <view class="learn-brand-body">
+        <text class="learn-brand-title">幸孕记 · 知识库</text>
+        <text class="learn-brand-sub">能不能吃 · 产检节点 · 情绪支持</text>
+      </view>
+    </view>
+
     <!-- 搜索 -->
     <view class="search-card lb-rise">
       <input class="search-input" v-model="query" placeholder="搜食物、症状、检查，如 咖啡 / 胎动" placeholder-class="ph" />
@@ -155,6 +164,11 @@
 <style>
   @import '../../theme.scss';
   .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
+  .learn-brand { width: 702rpx; flex-direction: row; align-items: center; padding: 8rpx 8rpx 20rpx 8rpx; }
+  .learn-brand-mark { width: 76rpx; height: 76rpx; border-radius: 22rpx; box-shadow: 0 6rpx 18rpx rgba(228,83,127,0.22); }
+  .learn-brand-body { flex: 1; margin-left: 20rpx; }
+  .learn-brand-title { font-size: 34rpx; font-weight: bold; color: var(--lb-text-1); }
+  .learn-brand-sub { font-size: 24rpx; color: var(--lb-text-3); margin-top: 4rpx; }
   .search-card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 16rpx 24rpx; flex-direction: row; align-items: center; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
   .search-input { flex: 1; height: 76rpx; font-size: 28rpx; color: var(--lb-text-1); }
   .ph { color: var(--lb-text-3); }
@@ -200,11 +214,11 @@
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
   @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
   @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
-  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms both; }
-  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both; }
-  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms both; }
-  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-  .lb-fade { animation: lb-fade 200ms ease-out both; }
+  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) forwards; opacity: 0; transform: scale(0.92); }
+  .lb-fade { animation: lb-fade 200ms ease-out forwards; opacity: 0; }
   .lb-press { opacity: 0.72; transform: scale(0.98); }
 </style>

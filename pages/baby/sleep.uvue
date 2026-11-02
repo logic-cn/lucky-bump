@@ -3,8 +3,8 @@
     <view class="card lb-rise">
       <text class="label">类型</text>
       <view class="opts">
-        <view class="opt" :class="kind == 'nap' ? 'opt-active' : ''" hover-class="lb-press" hover-stay-time="120" @click="kind = 'nap'"><text class="opt-text" :class="kind == 'nap' ? 'opt-text-active' : ''">🌞 小睡</text></view>
-        <view class="opt" :class="kind == 'night' ? 'opt-active' : ''" hover-class="lb-press" hover-stay-time="120" @click="kind = 'night'"><text class="opt-text" :class="kind == 'night' ? 'opt-text-active' : ''">🌙 夜觉</text></view>
+        <view class="opt" :class="kind == 'nap' ? 'opt-active' : ''" hover-class="lb-press" hover-stay-time="120" @click="kind = 'nap'"><image class="opt-ico" src="/static/icons/sun.png" mode="aspectFit" /><text class="opt-text" :class="kind == 'nap' ? 'opt-text-active' : ''">小睡</text></view>
+        <view class="opt" :class="kind == 'night' ? 'opt-active' : ''" hover-class="lb-press" hover-stay-time="120" @click="kind = 'night'"><image class="opt-ico" src="/static/icons/sleep.png" mode="aspectFit" /><text class="opt-text" :class="kind == 'night' ? 'opt-text-active' : ''">夜觉</text></view>
       </view>
       <text class="label">入睡时间</text>
       <view class="row2">
@@ -161,7 +161,8 @@
   .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 40rpx; margin-top: 24rpx; align-items: center; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
   .label { font-size: 26rpx; color: var(--lb-text-1); margin: 16rpx 0 12rpx 0; }
   .opts { flex-direction: row; }
-  .opt { background-color: var(--lb-fill); border-radius: 24rpx; padding: 20rpx 32rpx; margin: 8rpx; transition: all 160ms ease-out; }
+  .opt { flex-direction: row; align-items: center; background-color: var(--lb-fill); border-radius: 24rpx; padding: 20rpx 32rpx; margin: 8rpx; transition: all 160ms ease-out; }
+  .opt-ico { width: 34rpx; height: 34rpx; margin-right: 10rpx; }
   .opt-active { background-color: var(--lb-primary-soft); }
   .opt-text { font-size: 26rpx; color: var(--lb-text-2); }
   .opt-text-active { color: var(--lb-primary); font-weight: bold; }
@@ -183,11 +184,11 @@
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
   @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
   @keyframes lb-pulse { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
-  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms both; }
-  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both; }
-  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms both; }
-  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-  .lb-fade { animation: lb-fade 200ms ease-out both; }
+  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+  .lb-rise-1 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 70ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-rise-2 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-rise-3 { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms forwards; opacity: 0; transform: translateY(28rpx); }
+  .lb-pop { animation: lb-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) forwards; opacity: 0; transform: scale(0.92); }
+  .lb-fade { animation: lb-fade 200ms ease-out forwards; opacity: 0; }
   .lb-press { opacity: 0.72; transform: scale(0.98); }
 </style>

@@ -1,6 +1,6 @@
 <template>
   <view class="lbc-redline" :class="level == 'critical' ? 'lbc-redline-critical' : 'lbc-redline-warn'">
-    <text class="lbc-redline-title">{{ level == 'critical' ? '⚠️ 请立即就医' : '⚠️ 需要关注' }}</text>
+    <view class="lbc-redline-title-row"><image class="lbc-redline-ico" src="/static/icons/warn-danger.png" mode="aspectFit" /><text class="lbc-redline-title">{{ level == 'critical' ? '请立即就医' : '需要关注' }}</text></view>
     <text class="lbc-redline-msg" v-if="message.length > 0">{{ message }}</text>
     <text class="lbc-redline-action" v-if="action.length > 0">{{ action }}</text>
     <text class="lbc-redline-note">本提示仅描述现象与常规建议，不构成诊断</text>
@@ -21,10 +21,12 @@
   .lbc-redline { width: 702rpx; border-radius: 36rpx; padding: 40rpx; }
   .lbc-redline-critical { background-color: var(--lb-danger-soft); }
   .lbc-redline-warn { background-color: var(--lb-warning-soft); }
+  .lbc-redline-title-row { flex-direction: row; align-items: center; }
+  .lbc-redline-ico { width: 36rpx; height: 36rpx; margin-right: 8rpx; }
   .lbc-redline-title { font-size: 34rpx; font-weight: bold; color: var(--lb-danger); }
   .lbc-redline-msg { font-size: 28rpx; color: var(--lb-text-1); margin-top: 16rpx; }
   .lbc-redline-action { font-size: 30rpx; font-weight: bold; color: var(--lb-danger); margin-top: 16rpx; }
   .lbc-redline-note { font-size: 24rpx; color: var(--lb-text-3); margin-top: 24rpx; }
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
-  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .lb-rise { animation: lb-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
 </style>
