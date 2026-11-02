@@ -205,7 +205,7 @@ Web 端已可用。后续运行只涉及：1) `npm test` 保持 70/70；2) 上�
 - [x] 登录/注册 🤰 emoji 占位 logo → mark.png 品牌标（"太 low"的真正源头）
 - [x] 首页：英雄卡加载骨架、宫格稳定取色（url 哈希）、goRecord 防污染、最近记录补血糖、产后宫格 8 项两整行
 - [x] 门禁：109/109 测试 + 云打包编译通过（新 APK 已含全部精装）
-- [x] learn 页 header 品牌化（mark.png 品牌条 + 知识库副标）；图标字体替代 emoji 已完成（v4 自绘图标集）；剩余可选：care/baby 子页标题条（三期已覆盖高频页）、暗色导航栏（平台能力）
+- [x] learn 页 header 品牌化（mark.png 品牌条 + 知识库副标）；图标字体替代 emoji 已完成（v4 自绘图标集）；care/baby 子页标题条已补齐（feeding/diaper/sleep/growth/vaccines/album 共 6 页 9 处内容卡）；剩余可选：暗色导航栏（平台能力）
 
 ## 精装三期：子页推广（2026-10-31）
 

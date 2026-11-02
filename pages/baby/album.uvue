@@ -1,7 +1,7 @@
 <template>
   <view class="page" :class="themeClass()">
     <view class="card lb-rise">
-      <text class="card-title">成长相册</text>
+      <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">成长相册</text></view>
       <text class="hint">照片存在云端，家庭成员可查看；只有上传者本人可以删除。</text>
       <input class="input" v-model="caption" placeholder="照片说明（选填，最多 40 字）" placeholder-class="ph" />
       <button class="btn-save" hover-class="lb-press" hover-stay-time="120" :disabled="uploading" @click="chooseAndUpload">{{ uploading ? '上传中…' : '添加照片' }}</button>
@@ -149,6 +149,9 @@
   .dlg-btn { width: 230rpx; height: 80rpx; line-height: 80rpx; text-align: center; font-size: 29rpx; color: var(--lb-text-2); background-color: var(--lb-fill); border-radius: 40rpx; }
   .dlg-btn-ok { color: #FFFFFF; background-color: var(--lb-primary); }
 
+  .card-head { flex-direction: row; align-items: center; margin-bottom: 20rpx; }
+  .title-bar { width: 8rpx; height: 30rpx; border-radius: 4rpx; background-image: linear-gradient(180deg, var(--lb-grad-1), var(--lb-grad-2)); margin-right: 14rpx; }
+  .card-title-flush { margin-bottom: 0; }
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
   @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }

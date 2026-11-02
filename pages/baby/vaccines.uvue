@@ -1,7 +1,7 @@
 <template>
   <view class="page" :class="themeClass()">
     <view class="card lb-rise">
-      <text class="card-title">免疫规划疫苗（免费，共 {{ plan.length }} 剂次）</text>
+      <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">免疫规划疫苗（免费，共 {{ plan.length }} 剂次）</text></view>
       <view class="v-row" v-for="(v, i) in plan" :key="i">
         <view class="v-dot" :class="v.getString('status') == 'done' ? 'v-dot-done' : (v.getString('status') == 'due' ? 'v-dot-due' : 'v-dot-upcoming')" />
         <view class="v-body">
@@ -15,7 +15,7 @@
     </view>
 
     <view class="card lb-rise-1">
-      <text class="card-title">自费疫苗（自愿，咨询接种门诊）</text>
+      <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">自费疫苗（自愿，咨询接种门诊）</text></view>
       <view class="v-row" v-for="(v, i) in selfPaid" :key="i">
         <view class="v-body">
           <text class="v-name">{{ v.getString('name') ?? '' }}</text>
@@ -117,6 +117,9 @@
   .dlg-actions { flex-direction: row; justify-content: center; margin-top: 36rpx; }
   .dlg-btn { width: 300rpx; height: 80rpx; line-height: 80rpx; text-align: center; font-size: 29rpx; color: #FFFFFF; background-image: linear-gradient(135deg, #F376A0, #D43770); border-radius: 999rpx; box-shadow: 0 12rpx 32rpx rgba(228,83,127,0.28); }
 
+  .card-head { flex-direction: row; align-items: center; margin-bottom: 20rpx; }
+  .title-bar { width: 8rpx; height: 30rpx; border-radius: 4rpx; background-image: linear-gradient(180deg, var(--lb-grad-1), var(--lb-grad-2)); margin-right: 14rpx; }
+  .card-title-flush { margin-bottom: 0; }
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
   @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }

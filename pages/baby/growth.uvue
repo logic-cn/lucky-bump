@@ -20,7 +20,7 @@
     <button class="btn-save lb-rise-1" :disabled="saving" @click="save">{{ saving ? '计算中…' : '保存并看百分位' }}</button>
 
     <view class="card lb-rise-2" v-if="result != null">
-      <text class="card-title">本次结果（{{ resultMonthAge }} 月龄，参照 WHO 标准）</text>
+      <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">本次结果（{{ resultMonthAge }} 月龄，参照 WHO 标准）</text></view>
       <view class="pct-row">
         <view class="pct-col" v-if="pctWeight.length > 0"><text class="pct-num">{{ pctWeight }}</text><text class="pct-cap">体重百分位</text></view>
         <view class="pct-col" v-if="pctHeight.length > 0"><text class="pct-num">{{ pctHeight }}</text><text class="pct-cap">身长百分位</text></view>
@@ -35,7 +35,7 @@
     <lbc-error v-if="historyFailed" message="历史测量记录加载失败" @retry="load" />
 
     <view class="card lb-rise-2" v-if="chartRows.length > 0">
-      <text class="card-title">体重趋势（最近 {{ chartRows.length }} 次）</text>
+      <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">体重趋势（最近 {{ chartRows.length }} 次）</text></view>
       <view class="chart">
         <view class="bar-col" v-for="(s, i) in chartRows" :key="i">
           <view class="bar" :style="{ height: kgBar(s.kg) + 'rpx' }" />
@@ -46,7 +46,7 @@
     </view>
 
     <view class="card lb-rise-3" v-if="samples.length > 0">
-      <text class="card-title">历史测量</text>
+      <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">历史测量</text></view>
       <view class="s-row" v-for="(s, i) in samples" :key="i">
         <text class="s-date">{{ s.date }}</text>
         <text class="s-val">{{ s.val }}</text>
@@ -202,6 +202,9 @@
   .s-date { width: 220rpx; font-size: 24rpx; color: var(--lb-text-3); }
   .s-val { font-size: 26rpx; color: var(--lb-text-1); }
 
+  .card-head { flex-direction: row; align-items: center; margin-bottom: 20rpx; }
+  .title-bar { width: 8rpx; height: 30rpx; border-radius: 4rpx; background-image: linear-gradient(180deg, var(--lb-grad-1), var(--lb-grad-2)); margin-right: 14rpx; }
+  .card-title-flush { margin-bottom: 0; }
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
   @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }

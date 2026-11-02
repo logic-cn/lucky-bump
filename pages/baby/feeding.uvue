@@ -45,7 +45,7 @@
     <lbc-error v-if="loadFailed" :message="errorMsg" @retry="load" />
 
     <view class="card lb-rise-1" v-if="summary != null && !loadFailed">
-      <text class="card-title">今天：{{ feedCount }} 次 · 共 {{ totalMl }}ml（亲喂 {{ nursingMin }} 分钟）</text>
+      <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">今天：{{ feedCount }} 次 · 共 {{ totalMl }}ml（亲喂 {{ nursingMin }} 分钟）</text></view>
       <view class="f-row" v-for="(f, i) in feedings" :key="i">
         <text class="f-time">{{ f.time }}</text>
         <text class="f-desc">{{ f.desc }}</text>
@@ -220,6 +220,9 @@
   .f-time { width: 120rpx; font-size: 24rpx; color: var(--lb-text-3); }
   .f-desc { font-size: 26rpx; color: var(--lb-text-1); }
 
+  .card-head { flex-direction: row; align-items: center; margin-bottom: 20rpx; }
+  .title-bar { width: 8rpx; height: 30rpx; border-radius: 4rpx; background-image: linear-gradient(180deg, var(--lb-grad-1), var(--lb-grad-2)); margin-right: 14rpx; }
+  .card-title-flush { margin-bottom: 0; }
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
   @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
