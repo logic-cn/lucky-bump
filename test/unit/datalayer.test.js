@@ -130,6 +130,9 @@ test('C4：exportAll 不得导出他人 strict 数据', async () => {
   const strictEvents = events.filter(e => e.sensitivity === 'strict')
   assert.equal(strictEvents.length, 1, 'C4 未修复：导出应只保留本人 strict 记录（期望 1 条，实际 ' + strictEvents.length + ' 条）')
   assert.equal(strictEvents[0].date, '2026-10-06', 'C4：导出中残留了他人的 strict 记录')
+  const journeys = (ex.data && ex.data['lb-journeys']) || []
+  assert.equal(journeys.length, 1, '全量导出应包含当前旅程本身')
+  assert.equal(journeys[0]._id, jid, '全量导出的旅程记录应为当前旅程')
 })
 
 test('日记：mediaIds 落库并随列表返回', async () => {

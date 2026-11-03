@@ -369,7 +369,9 @@ module.exports = {
     const collections = ['lb-journeys', 'lb-babies', 'lb-cycles', 'lb-cycle-events', 'lb-daily-logs', 'lb-tracker-sessions', 'lb-prenatal-visits', 'lb-schedule-items', 'lb-screenings', 'lb-feedings', 'lb-diaper-changes', 'lb-sleep-sessions', 'lb-growth-samples', 'lb-vaccinations', 'lb-milestones', 'lb-food-logs', 'lb-medication-logs', 'lb-child-health', 'lb-reminder-rules', 'lb-feedback', 'lb-events']
     const out = {}
     for (const c of collections) {
-      const rows = await auth.fetchAll(db.call(this), c, { journey_id: j._id }, '', 'asc', 20000)
+      // lb-journeys 以 _id 关联（其余集合用 journey_id）
+      const where = c === 'lb-journeys' ? { _id: j._id } : { journey_id: j._id }
+      const rows = await auth.fetchAll(db.call(this), c, where, '', 'asc', 20000)
       // strict 红线：导出同样只含本人数据（安全审计 C4）
       out[c] = auth.visibilityFilter(rows, uid)
     }
