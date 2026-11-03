@@ -76,6 +76,7 @@
 ### 部署阶段（2026-10-27，用户提供 HBuilderX + uniCloud 空间后）✅
 - [x] DCloud appid 已生成（__UNI__1BC2635，用户在 HBuilderX 中完成）
 - [x] 阿里云空间 lucky-bump（<旧阿里云空间ID>）已关联工程（spacex.json 已回填）
+- [x] **2026-11-03 切换支付宝云**：空间 `<你的服务空间ID>`，云目录 `uniCloud-alipay`；12 云函数 + 31 schema 全量上传，Web 全链路实测通过；阿里云空间保留可回切
 - [x] 9 云对象 + 3 公共模块经 HBuilderX CLI 上传成功；24 张 schema 上传；--initdatabase 完成
 - [x] 生产 tokenSecret 生成并随 uni-config-center 兼容层部署（真实值 gitignore，模板入库）
 - [ ] 剩余人工：真机运行/云打包（HBuilderX 一键）、§6 回归清单（真机项）
