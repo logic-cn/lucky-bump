@@ -19,12 +19,12 @@ coverage/
 config/local.*
 
 # 生产密钥（模板已入库，真实值不入库）
-uniCloud-aliyun/cloudfunctions/common/uni-config-center/uni-id/config.json
-uniCloud-aliyun/cloudfunctions/common/uni-config-center/lucky-sms/config.json
-uniCloud-aliyun/cloudfunctions/common/uni-config-center/lucky-ops/config.json
+uniCloud-*/cloudfunctions/common/uni-config-center/uni-id/config.json
+uniCloud-*/cloudfunctions/common/uni-config-center/lucky-sms/config.json
+uniCloud-*/cloudfunctions/common/uni-config-center/lucky-ops/config.json
 
 # vendor 进云对象的公共模块副本（由 scripts/sync_commons.sh 生成，含真实密钥配置，不入库）
-uniCloud-aliyun/cloudfunctions/*/common/
+uniCloud-*/cloudfunctions/*/common/
 
 # 超能力流程 scratch 目录（SDD 台账，不入库）
 .superpowers/

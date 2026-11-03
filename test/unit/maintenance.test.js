@@ -4,8 +4,9 @@
  */
 const test = require('node:test')
 const assert = require('node:assert')
+const path = require('node:path')
 const { createRuntime } = require('../harness/unicloud-mock')
-const { purgeDueUsers } = require('../../uniCloud-aliyun/cloudfunctions/lucky-maintenance')
+const { purgeDueUsers } = require(path.join(require('../harness/cloud-dir').CLOUD_ROOT, 'cloudfunctions/lucky-maintenance'))
 
 const DAY = 24 * 3600 * 1000
 

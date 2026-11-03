@@ -29,12 +29,14 @@ else
 fi
 
 echo "[4/7] 数据库索引文件"
-idx=$(ls uniCloud-aliyun/database/*.index.json 2>/dev/null | wc -l | tr -d ' ')
+CLOUD_DIR=uniCloud-alipay
+[ -d "$CLOUD_DIR" ] || CLOUD_DIR=uniCloud-aliyun
+idx=$(ls "$CLOUD_DIR"/database/*.index.json 2>/dev/null | wc -l | tr -d ' ')
 [ "$idx" -ge 20 ] && ok "索引文件 $idx 个" || bad "索引文件过少（$idx）"
 
 echo "[5/7] 云端配置模板"
-for f in uniCloud-aliyun/cloudfunctions/common/uni-config-center/lucky-sms/config.json \
-         uniCloud-aliyun/cloudfunctions/common/uni-config-center/lucky-ops/config.json; do
+for f in "$CLOUD_DIR"/cloudfunctions/common/uni-config-center/lucky-sms/config.json \
+         "$CLOUD_DIR"/cloudfunctions/common/uni-config-center/lucky-ops/config.json; do
   [ -f "$f" ] && ok "$f 已配置" || note "$f 未创建（短信/看板将不可用）"
 done
 

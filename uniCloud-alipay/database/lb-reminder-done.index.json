@@ -1,0 +1,20 @@
+[
+  {
+    "IndexName": "idx_journey_due",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "journey_id",
+          "Direction": "1",
+          "Type": "varchar"
+        },
+        {
+          "Name": "due_date",
+          "Direction": "1",
+          "Type": "varchar"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]

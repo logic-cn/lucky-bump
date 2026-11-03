@@ -1,0 +1,38 @@
+[
+  {
+    "IndexName": "idx_baby_ts",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "baby_id",
+          "Direction": "1",
+          "Type": "varchar"
+        },
+        {
+          "Name": "ts",
+          "Direction": "-1",
+          "Type": "long"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  },
+  {
+    "IndexName": "idx_journey_name",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "journey_id",
+          "Direction": "1",
+          "Type": "varchar"
+        },
+        {
+          "Name": "name",
+          "Direction": "1",
+          "Type": "varchar"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]

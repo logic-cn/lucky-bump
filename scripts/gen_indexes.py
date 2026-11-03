@@ -9,7 +9,9 @@ from __future__ import annotations
 import json
 import pathlib
 
-BASE = pathlib.Path(__file__).resolve().parent.parent / 'uniCloud-aliyun' / 'database'
+_ROOT = pathlib.Path(__file__).resolve().parent.parent
+_CLOUD = next((n for n in ('uniCloud-alipay', 'uniCloud-aliyun', 'uniCloud-tcb') if (_ROOT / n).is_dir()), 'uniCloud-alipay')
+BASE = _ROOT / _CLOUD / 'database'
 
 
 def idx(name: str, keys: list[tuple[str, str]], unique: bool = False) -> dict:
@@ -66,8 +68,30 @@ INDEXES: dict[str, list[dict]] = {
 }
 
 
+TYPE_MAP = {
+    'string': 'varchar', 'long': 'long', 'int': 'int',
+    'bool': 'bool', 'double': 'double', 'array': 'array',
+}
+
+
+def schema_types(collection: str) -> dict[str, str]:
+    """读取 schema 字段 bsonType，支付宝云索引要求为每个字段标注 Type。"""
+    path = BASE / f'{collection}.schema.json'
+    try:
+        props = json.loads(path.read_text(encoding='utf-8')).get('properties', {})
+    except Exception:
+        return {}
+    return {k: v.get('bsonType', '') for k, v in props.items()}
+
+
 def main() -> None:
     for collection, indexes in INDEXES.items():
+        types = schema_types(collection)
+        for index in indexes:
+            for key in index['MgoKeySchema']['MgoIndexKeys']:
+                t = TYPE_MAP.get(types.get(key['Name'], ''))
+                if t:
+                    key['Type'] = t
         path = BASE / f'{collection}.index.json'
         path.write_text(json.dumps(indexes, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     print(f'generated {len(INDEXES)} index files')

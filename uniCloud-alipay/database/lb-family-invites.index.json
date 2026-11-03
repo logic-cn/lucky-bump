@@ -1,0 +1,28 @@
+[
+  {
+    "IndexName": "uniq_code",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "code",
+          "Direction": "1",
+          "Type": "varchar"
+        }
+      ],
+      "MgoIsUnique": true
+    }
+  },
+  {
+    "IndexName": "idx_family",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "family_id",
+          "Direction": "1",
+          "Type": "varchar"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]

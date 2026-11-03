@@ -28,7 +28,7 @@ npm run schemas    # 重新生成数据库 schema
 ├── pages/               # 36 个 .uvue 页面（账户/引导/今天/记录/产检/宝宝/数据/知识/我的）
 ├── components/lbc-*     # 设计系统组件（easycom）
 ├── store/ utils/        # 状态与请求层（云对象 RPC + token 拦截）
-├── uniCloud-aliyun/
+├── uniCloud-alipay/   # 当前服务商：支付宝云（切回阿里云时改为 uniCloud-aliyun）
 │   ├── cloudfunctions/  # 9 个云对象 + 2 个公共模块（零第三方依赖，Node 本地可测）
 │   └── database/        # 24 张表 schema
 ├── test/                # 内存版 uniCloud 运行时 + 单元测试 + E2E 全生命周期

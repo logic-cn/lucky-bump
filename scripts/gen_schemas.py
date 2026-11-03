@@ -4,7 +4,14 @@
 """
 import json, os
 
-BASE = os.path.join(os.path.dirname(__file__), '..', 'uniCloud-aliyun', 'database')
+def _cloud_dir() -> str:
+    root = os.path.join(os.path.dirname(__file__), '..')
+    for name in ('uniCloud-alipay', 'uniCloud-aliyun', 'uniCloud-tcb'):
+        if os.path.isdir(os.path.join(root, name)):
+            return name
+    return 'uniCloud-alipay'
+
+BASE = os.path.join(os.path.dirname(__file__), '..', _cloud_dir(), 'database')
 LOCKED = {"read": False, "create": False, "update": False, "delete": False}
 
 def prop(b, title, enum=None, fmt=None):
@@ -167,7 +174,8 @@ SCHEMAS = {
       "user_id": prop("string", "用户"), "journey_id": prop("string", "旅程"),
       "text": prop("string", "日记内容"), "mood": prop("string", "心情", enum=["great", "good", "normal", "low", "bad"]),
       "media_ids": prop("array", "媒体fileID"), "date": prop("string", "日期"),
-      "ts": prop("long", "时间戳"), "sensitivity": prop("string", "敏感级")
+      "ts": prop("long", "时间戳"), "client_id": prop("string", "离线幂等ID"),
+      "sensitivity": prop("string", "敏感级"), "created_at": prop("long", "创建时间")
     }
   },
   "lb-screenings": {

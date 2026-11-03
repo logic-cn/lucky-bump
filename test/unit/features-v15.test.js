@@ -8,7 +8,8 @@ const path = require('path')
 
 const ROOT = path.resolve(__dirname, '../..')
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf-8')
-const obj = (name) => read(`uniCloud-aliyun/cloudfunctions/${name}/index.obj.js`)
+const { CLOUD_DIR } = require('../harness/cloud-dir')
+const obj = (name) => read(`${CLOUD_DIR}/cloudfunctions/${name}/index.obj.js`)
 
 test('规划功能页面均已注册且文件存在', () => {
   const declared = JSON.parse(read('pages.json')).pages.map(p => p.path)
@@ -38,7 +39,7 @@ test('后端能力齐备：里程碑 / 辅食 / 用药 / 儿保 / 报告', () =>
   }
   assert.ok(data.includes("type: 'medication'"), '时间线未聚合用药记录')
   assert.ok(data.includes("'lb-child-health'"), '全量导出未包含儿保记录')
-  const schema = JSON.parse(read('uniCloud-aliyun/database/lb-child-health.schema.json'))
+  const schema = JSON.parse(read(`${CLOUD_DIR}/database/lb-child-health.schema.json`))
   assert.equal(schema.permission.create, false, 'lb-child-health 必须关闭 clientDB 写入')
   assert.equal(schema.permission.read, false, 'lb-child-health 必须关闭 clientDB 读取')
 })

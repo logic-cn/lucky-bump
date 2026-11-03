@@ -5,7 +5,9 @@
 # 引用，随对象自身代码一并上传。测试与部署前请先运行本脚本。
 set -euo pipefail
 cd "$(dirname "$0")/.."
-ROOT=uniCloud-aliyun/cloudfunctions
+CLOUD_DIR=uniCloud-alipay
+[ -d "$CLOUD_DIR" ] || CLOUD_DIR=uniCloud-aliyun
+ROOT="$CLOUD_DIR/cloudfunctions"
 
 sync_one() {
   obj="$1"; shift

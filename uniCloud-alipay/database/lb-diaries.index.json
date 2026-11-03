@@ -1,0 +1,38 @@
+[
+  {
+    "IndexName": "idx_journey_ts",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "journey_id",
+          "Direction": "1",
+          "Type": "varchar"
+        },
+        {
+          "Name": "ts",
+          "Direction": "-1",
+          "Type": "long"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  },
+  {
+    "IndexName": "idx_journey_client",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "journey_id",
+          "Direction": "1",
+          "Type": "varchar"
+        },
+        {
+          "Name": "client_id",
+          "Direction": "1",
+          "Type": "varchar"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]

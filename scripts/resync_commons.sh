@@ -3,7 +3,9 @@
 # 目的：让云对象自包含，避免 HBuilderX CLI 上传时缺少公共模块。
 set -euo pipefail
 cd "$(dirname "$0")/.."
-ROOT=uniCloud-aliyun/cloudfunctions
+CLOUD_DIR=uniCloud-alipay
+[ -d "$CLOUD_DIR" ] || CLOUD_DIR=uniCloud-aliyun
+ROOT="$CLOUD_DIR/cloudfunctions"
 
 vendor() {
   obj="$1"; shift

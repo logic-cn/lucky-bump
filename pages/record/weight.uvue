@@ -6,7 +6,7 @@
     <lbc-date-field :value="recordDate" :end="todayEnd" @change="onDateChange" />
     <!-- #endif -->
     <!-- #ifdef WEB -->
-    <view :end="todayEnd" hover-class="lb-press" hover-stay-time="120" @click="onPickWeb0">
+    <view hover-class="lb-press" hover-stay-time="120" @click="onPickWeb0">
         <view class="date-box" hover-class="lb-press" hover-stay-time="120">
           <text class="date-text">{{ recordDate }}{{ isTodayDate ? '（今天）' : '' }}</text>
         </view>

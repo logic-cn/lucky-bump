@@ -3,6 +3,7 @@
  */
 const test = require('node:test')
 const assert = require('node:assert')
+const path = require('node:path')
 const { createRuntime } = require('../harness/unicloud-mock')
 
 async function setup() {
@@ -75,7 +76,7 @@ test('未设置恢复凭证的账号重置会得到明确提示', async () => {
 })
 
 test('C4：visibilityFilter 只保留本人 strict 记录', () => {
-  const auth = require('../../uniCloud-aliyun/cloudfunctions/common/lucky-auth-common')
+  const auth = require(path.join(require('../harness/cloud-dir').CLOUD_ROOT, 'cloudfunctions/common/lucky-auth-common'))
   const rows = [
     { _id: '1', user_id: 'u1', sensitivity: 'strict' },
     { _id: '2', user_id: 'u2', sensitivity: 'strict' },
@@ -114,7 +115,7 @@ test('C4：admin 角色的 dataScope 为 self，看不到他人 strict 记录', 
 })
 
 test('C4：resolveJourneyAccess 为 admin 返回 dataScope=self 且保留原始 memberRole', () => {
-  const auth = require('../../uniCloud-aliyun/cloudfunctions/common/lucky-auth-common')
+  const auth = require(path.join(require('../harness/cloud-dir').CLOUD_ROOT, 'cloudfunctions/common/lucky-auth-common'))
   const docs = {
     'lb-journeys': [{ _id: 'j1', user_id: 'mom' }],
     'lb-families': [{ _id: 'f1', journey_id: 'j1', matrix: { admin: { reports: true } } }],
@@ -137,13 +138,13 @@ test('C4：resolveJourneyAccess 为 admin 返回 dataScope=self 且保留原始 
 /* ---------------- H5：密钥 fail-closed ---------------- */
 
 test('H5：配置中心已加载但缺 tokenSecret 时必须抛错', () => {
-  const auth = require('../../uniCloud-aliyun/cloudfunctions/common/lucky-auth-common')
+  const auth = require(path.join(require('../harness/cloud-dir').CLOUD_ROOT, 'cloudfunctions/common/lucky-auth-common'))
   assert.throws(() => auth.assertSecretConfigured(true, {}), /tokenSecret/)
   assert.throws(() => auth.assertSecretConfigured(true, null), /tokenSecret/)
 })
 
 test('H5：本地开发（配置中心不可用）与已配置密钥时不应抛错', () => {
-  const auth = require('../../uniCloud-aliyun/cloudfunctions/common/lucky-auth-common')
+  const auth = require(path.join(require('../harness/cloud-dir').CLOUD_ROOT, 'cloudfunctions/common/lucky-auth-common'))
   assert.doesNotThrow(() => auth.assertSecretConfigured(false, {}))
   assert.doesNotThrow(() => auth.assertSecretConfigured(true, { tokenSecret: 'real-secret' }))
 })

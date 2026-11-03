@@ -1,0 +1,43 @@
+[
+  {
+    "IndexName": "idx_journey_ts",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "journey_id",
+          "Direction": "1",
+          "Type": "varchar"
+        },
+        {
+          "Name": "ts",
+          "Direction": "-1",
+          "Type": "long"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  },
+  {
+    "IndexName": "idx_journey_code_ts",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "journey_id",
+          "Direction": "1",
+          "Type": "varchar"
+        },
+        {
+          "Name": "code",
+          "Direction": "1",
+          "Type": "varchar"
+        },
+        {
+          "Name": "ts",
+          "Direction": "-1",
+          "Type": "long"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]

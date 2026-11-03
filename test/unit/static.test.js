@@ -11,7 +11,8 @@ const path = require('path')
 
 const ROOT = path.resolve(__dirname, '../..')
 const PAGES_JSON = JSON.parse(fs.readFileSync(path.join(ROOT, 'pages.json'), 'utf-8'))
-const OBJ_DIR = path.join(ROOT, 'uniCloud-aliyun/cloudfunctions')
+const { CLOUD_ROOT } = require('../harness/cloud-dir')
+const OBJ_DIR = path.join(CLOUD_ROOT, 'cloudfunctions')
 
 const OBJ_ALIAS = {
   luckyId: 'lucky-id', luckyJourney: 'lucky-journey', luckyRecord: 'lucky-record',

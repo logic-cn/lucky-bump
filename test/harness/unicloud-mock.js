@@ -6,7 +6,8 @@
 'use strict'
 const path = require('path')
 
-const OBJ_DIR = path.resolve(__dirname, '../../uniCloud-aliyun/cloudfunctions')
+const { CLOUD_ROOT } = require('./cloud-dir')
+const OBJ_DIR = path.join(CLOUD_ROOT, 'cloudfunctions')
 
 class MockCollection {
   constructor(store, name) {

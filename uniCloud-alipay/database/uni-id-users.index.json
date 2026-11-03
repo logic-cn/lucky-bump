@@ -1,0 +1,28 @@
+[
+  {
+    "IndexName": "uniq_username",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "username",
+          "Direction": "1",
+          "Type": "varchar"
+        }
+      ],
+      "MgoIsUnique": true
+    }
+  },
+  {
+    "IndexName": "idx_mobile",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "mobile",
+          "Direction": "1",
+          "Type": "varchar"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]

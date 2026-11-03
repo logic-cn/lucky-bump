@@ -376,7 +376,7 @@ test('提醒完成闭环：首页打勾回写', () => {
   assert.ok(index.includes('completeTodo'), '首页缺少完成回写')
   assert.ok(index.includes("luckyReminder('completeTodo'"), '未调用完成接口')
   assert.ok(index.includes('todo-check'), '缺少待办打勾入口')
-  const server = fs.readFileSync(path.join(ROOT, 'uniCloud-aliyun/cloudfunctions/lucky-reminder/index.obj.js'), 'utf-8')
+  const server = fs.readFileSync(path.join(require('../harness/cloud-dir').CLOUD_ROOT, 'cloudfunctions/lucky-reminder/index.obj.js'), 'utf-8')
   assert.ok(server.includes('lb-reminder-done'), '服务端未记录完成状态')
   const settings = fs.readFileSync(path.join(ROOT, 'pages/me/settings.uvue'), 'utf-8')
   assert.ok(settings.includes('askRemoveRule'), '设置页缺少删除提醒入口')

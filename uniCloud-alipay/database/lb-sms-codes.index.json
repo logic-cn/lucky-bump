@@ -1,0 +1,43 @@
+[
+  {
+    "IndexName": "idx_phone_lookup",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "phone",
+          "Direction": "1",
+          "Type": "varchar"
+        },
+        {
+          "Name": "purpose",
+          "Direction": "1",
+          "Type": "varchar"
+        },
+        {
+          "Name": "used",
+          "Direction": "1",
+          "Type": "bool"
+        },
+        {
+          "Name": "created_at",
+          "Direction": "-1",
+          "Type": "long"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  },
+  {
+    "IndexName": "idx_expiry",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "expires_at",
+          "Direction": "1",
+          "Type": "long"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]
