@@ -27,16 +27,24 @@ function waitForPick(id: string): Promise<string> {
   })
 }
 
-export function pickDate(value: string, end: string): Promise<string> {
+function openPicker(mode: string, value: string, end: string): string {
   const id = `pick${Date.now()}`
-  const p = waitForPick(id)
-  uni.navigateTo({ url: `/pages/util/date-picker?mode=date&id=${id}&value=${value}&end=${end}` })
-  return p
+  // 请求同时写入存储：HBuilderX 5.34 vapor Web 下 onLoad 可能不触发，选择页启动时直接读存储
+  uni.setStorageSync('lb_pick_req', `${id}\n${mode}\n${value}\n${end}\n${Date.now()}`)
+  // 保留 query 作为 App/正常会话的兜底
+  const q = mode == 'date'
+    ? `/pages/util/date-picker?mode=date&id=${id}&value=${value}&end=${end}`
+    : `/pages/util/date-picker?mode=time&id=${id}&value=${value}`
+  uni.navigateTo({ url: q })
+  return id
+}
+
+export function pickDate(value: string, end: string): Promise<string> {
+  const id = openPicker('date', value, end)
+  return waitForPick(id)
 }
 
 export function pickTime(value: string): Promise<string> {
-  const id = `pick${Date.now()}`
-  const p = waitForPick(id)
-  uni.navigateTo({ url: `/pages/util/date-picker?mode=time&id=${id}&value=${value}` })
-  return p
+  const id = openPicker('time', value, '')
+  return waitForPick(id)
 }

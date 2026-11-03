@@ -68,11 +68,7 @@
 
   function pad2(n: number): string { return n < 10 ? '0' + n : '' + n }
 
-  onLoad((q: OnLoadOptions) => {
-    mode.value = q.getString('mode') ?? 'date'
-    pickId.value = q.getString('id') ?? ''
-    picked.value = q.getString('value') ?? ''
-    endLimit.value = q.getString('end') ?? ''
+  function initView() {
     if (mode.value == 'date') {
       const base = picked.value.length > 0 ? picked.value : `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`
       const d = new Date(Date.parse(base + 'T12:00:00'))
@@ -82,6 +78,70 @@
       selHour.value = Math.max(0, Math.min(23, parseInt(parts[0]) || 0))
       selMinute.value = Math.max(0, Math.min(55, Math.round((parseInt(parts[1]) || 0) / 5) * 5))
     }
+  }
+
+  /** 从存储读取 pickDate.uts 写入的请求：不依赖 onLoad（vapor Web 下可能不触发） */
+  function readStoredRequest(): boolean {
+    const raw = uni.getStorageSync('lb_pick_req') as string
+    if (raw == null || raw.length == 0) return false
+    const parts = raw.split('\n')
+    if (parts.length < 5) return false
+    const ts = parseInt(parts[4]) || 0
+    if (ts <= 0 || Date.now() - ts > 60000) return false
+    pickId.value = parts[0]
+    mode.value = parts[1]
+    picked.value = parts[2]
+    endLimit.value = parts[3]
+    uni.removeStorageSync('lb_pick_req')
+    return true
+  }
+
+  /** Web 端兜底：onLoad 不触发且没有存储请求时，直接解析 location 的 query（便于直接打开链接测试） */
+  function readWebQuery(): boolean {
+    // #ifdef WEB
+    try {
+      const g: any = globalThis
+      const href: string = g.location != null ? String(g.location.href) : ''
+      const qi = href.indexOf('?')
+      if (qi >= 0) {
+        const segs = href.slice(qi + 1).split('&')
+        let id = ''
+        let modeV = ''
+        let valueV = ''
+        let endV = ''
+        for (let i = 0; i < segs.length; i++) {
+          const kv = segs[i].split('=')
+          const v = decodeURIComponent(kv.length > 1 ? kv[1] : '')
+          if (kv[0] == 'id') id = v
+          else if (kv[0] == 'mode') modeV = v
+          else if (kv[0] == 'value') valueV = v
+          else if (kv[0] == 'end') endV = v
+        }
+        if (id.length > 0) {
+          pickId.value = id
+          if (modeV.length > 0) mode.value = modeV
+          picked.value = valueV
+          endLimit.value = endV
+          return true
+        }
+      }
+    } catch (e) { /* 解析失败走默认 */ }
+    // #endif
+    return false
+  }
+
+  if (readStoredRequest()) initView()
+  else if (readWebQuery()) initView()
+
+  onLoad((q: OnLoadOptions) => {
+    // 只有拿到真实 id 时才用 query 覆盖，避免空 query 冲掉存储请求
+    const qid = q.getString('id') ?? ''
+    if (qid.length == 0) return
+    mode.value = q.getString('mode') ?? 'date'
+    pickId.value = qid
+    picked.value = q.getString('value') ?? ''
+    endLimit.value = q.getString('end') ?? ''
+    initView()
   })
 
   function pickMinute(m: number) {
@@ -89,13 +149,22 @@
     // 点分钟即完成：关键路径不经过头部按钮（缺陷③规避）
     emitBack(`${pad2(selHour.value)}:${pad2(selMinute.value)}`)
   }
+  function goBack() {
+    // #ifdef WEB
+    try {
+      const g: any = globalThis
+      if (g.history != null) { g.history.back(); return }
+    } catch (e) { /* 回退失败再走 uni */ }
+    // #endif
+    uni.navigateBack({ delta: 1 })
+  }
   function emitBack(v: string) {
     if (pickId.value.length == 0) return
     // 回传走本地存储：Web 端页面栈回退重建实例，$once 监听不可靠
     uni.setStorageSync(`lb_pick_${pickId.value}`, v)
-    uni.navigateBack({ delta: 1 })
+    goBack()
   }
-  function cancel() { uni.navigateBack({ delta: 1 }) }
+  function cancel() { goBack() }
   function shiftMonth(delta: number) {
     let m = viewMonth.value + delta
     let y = viewYear.value
