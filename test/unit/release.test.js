@@ -82,3 +82,28 @@ test('模板标签行引号配对且属性未嵌套（防止 WEB 分支运行时
   }
   assert.deepEqual(offenders, [], `模板属性损坏:\n${offenders.join('\n')}`)
 })
+
+test('Web 选择器使用页面内浮层，且页面无 pickDate 命名冲突', () => {
+  const util = read('utils/pickDate.uts')
+  assert.ok(util.includes('function webPick('), 'Web 端需使用页面内浮层（避免返回重建页面丢失表单状态）')
+  assert.ok(util.includes("return webPick('date'"), 'pickDate 的 WEB 分支应调用 webPick')
+  const fs2 = require('fs')
+  const path2 = require('path')
+  const root = path2.resolve(__dirname, '../..')
+  const walk = (dir, acc = []) => {
+    for (const f of fs2.readdirSync(dir)) {
+      const full = path2.join(dir, f)
+      if (fs2.statSync(full).isDirectory()) walk(full, acc)
+      else if (f.endsWith('.uvue')) acc.push(full)
+    }
+    return acc
+  }
+  const offenders = []
+  for (const file of walk(path2.join(root, 'pages'))) {
+    const src = fs2.readFileSync(file, 'utf-8')
+    if (!src.includes("from '../../utils/pickDate.uts'")) continue
+    const importedPlain = /import\s*\{\s*pickDate\s*\}\s*from\s*'\.\.\/\.\.\/utils\/pickDate\.uts'/.test(src)
+    if (importedPlain && /function\s+pickDate\s*\(/.test(src)) offenders.push(path2.relative(root, file))
+  }
+  assert.deepEqual(offenders, [], `以下页面同时导入并声明了 pickDate，导入会被遮蔽:\n${offenders.join('\n')}`)
+})

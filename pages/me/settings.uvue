@@ -386,7 +386,7 @@
 
   // #ifdef WEB
   async function onPickQuietStartWeb() {
-    const v = await pickTime(quietStartTime)
+    const v = await pickTime(quietStartTime.value)
     if (v.length > 0) {
       onQuietStartChange(v)
     }
@@ -395,7 +395,7 @@
 
   // #ifdef WEB
   async function onPickQuietEndWeb() {
-    const v = await pickTime(quietEndTime)
+    const v = await pickTime(quietEndTime.value)
     if (v.length > 0) {
       onQuietEndChange(v)
     }

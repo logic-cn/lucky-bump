@@ -96,7 +96,7 @@
     <lbc-date-field :value="mucusDate" :end="todayEnd" @change="onMucusDateChange" />
     <!-- #endif -->
     <!-- #ifdef WEB -->
-    <view :end="todayEnd" hover-class="lb-press" hover-stay-time="120" @click="onPickBbtDateWeb">
+    <view hover-class="lb-press" hover-stay-time="120" @click="onPickMucusDateWeb">
           <view class="bbt-date-box" hover-class="lb-press" hover-stay-time="120">
             <text class="bbt-date-text">{{ mucusDate }}</text>
           </view>
@@ -122,7 +122,7 @@
     <lbc-date-field :value="bbtDate" :end="todayEnd" @change="onBbtDateChange" />
     <!-- #endif -->
     <!-- #ifdef WEB -->
-    <view :end="todayEnd" hover-class="lb-press" hover-stay-time="120" @click="onPickMucusDateWeb">
+    <view hover-class="lb-press" hover-stay-time="120" @click="onPickBbtDateWeb">
           <view class="bbt-date-box" hover-class="lb-press" hover-stay-time="120">
             <text class="bbt-date-text">{{ bbtDate }}</text>
           </view>
@@ -160,7 +160,7 @@
   import { themeClass } from '../../store/themeStore.uts'
   import { todayDateStr, dateToTs } from '../../utils/recordDate.uts'
   // #ifdef WEB
-  import { pickDate } from '../../utils/pickDate.uts'
+  import { pickDate as pickDateDialog } from '../../utils/pickDate.uts'
   // #endif
   const todayEnd = todayDateStr()
 
@@ -519,18 +519,18 @@
 
   // #ifdef WEB
   async function onPickBbtDateWeb() {
-    const v = await pickDate(mucusDate.value, todayEnd)
+    const v = await pickDateDialog(bbtDate.value, todayEnd)
     if (v.length > 0) {
-      onMucusDateChange(v)
+      onBbtDateChange(v)
     }
   }
   // #endif
 
   // #ifdef WEB
   async function onPickMucusDateWeb() {
-    const v = await pickDate(bbtDate.value, todayEnd)
+    const v = await pickDateDialog(mucusDate.value, todayEnd)
     if (v.length > 0) {
-      onBbtDateChange(v)
+      onMucusDateChange(v)
     }
   }
   // #endif

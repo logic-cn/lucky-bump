@@ -1,6 +1,8 @@
-/** 跨页日期/时间选择（Web 端 picker 平台缺陷绕过，2026-10-31）：
- * 打开独立选择器页（页面渲染路径在 Web 可靠）。
- * 回传走本地存储 + 轮询：Web 端页面栈回退会重建页面实例，闭包/$once 监听不可靠。 */
+/** 跨页日期/时间选择。
+ * App：打开独立选择器页（原生页面栈保留调用页状态）。
+ * Web：HBuilderX 5.34 vapor 下页面栈返回会重建页面、丢失表单状态，改为页面内 DOM 浮层，
+ *      不导航、不改页面、无需调用方改造；浮层继承当前页面主题变量（支持暗色）。
+ */
 
 const POLL_MS = 300
 const POLL_MAX = 200
@@ -27,11 +29,10 @@ function waitForPick(id: string): Promise<string> {
   })
 }
 
-function openPicker(mode: string, value: string, end: string): string {
+function openPickerPage(mode: string, value: string, end: string): string {
   const id = `pick${Date.now()}`
-  // 请求同时写入存储：HBuilderX 5.34 vapor Web 下 onLoad 可能不触发，选择页启动时直接读存储
+  // 请求同时写入存储：选择页启动时直接读取，不依赖 onLoad
   uni.setStorageSync('lb_pick_req', `${id}\n${mode}\n${value}\n${end}\n${Date.now()}`)
-  // 保留 query 作为 App/正常会话的兜底
   const q = mode == 'date'
     ? `/pages/util/date-picker?mode=date&id=${id}&value=${value}&end=${end}`
     : `/pages/util/date-picker?mode=time&id=${id}&value=${value}`
@@ -39,12 +40,158 @@ function openPicker(mode: string, value: string, end: string): string {
   return id
 }
 
+// #ifdef WEB
+const WEB_STYLE_ID = 'lbw-pick-style'
+
+const WEB_CSS = `
+.lbw-pick-mask{position:fixed;top:0;right:0;bottom:0;left:0;background:var(--lb-mask,rgba(50,36,48,.5));display:flex;align-items:center;justify-content:center;z-index:9999;animation:lbw-fade .18s ease-out}
+.lbw-pick-card{width:min(92vw,360px);max-height:86vh;overflow-y:auto;background:var(--lb-card,#fff);border-radius:20px;padding:16px;box-shadow:0 16px 48px rgba(50,36,48,.18);animation:lbw-pop .2s cubic-bezier(.22,1,.36,1)}
+.lbw-pick-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.lbw-pick-title{font-size:17px;font-weight:700;color:var(--lb-text-1,#322430)}
+.lbw-pick-cancel{font-size:14px;color:var(--lb-text-2,#685B6F);cursor:pointer;padding:6px 8px}
+.lbw-pick-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.lbw-pick-month{font-size:15px;font-weight:700;color:var(--lb-text-1,#322430)}
+.lbw-pick-arrow{width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:50%;color:var(--lb-primary-text,#BE2F5C);cursor:pointer;font-size:20px;user-select:none}
+.lbw-pick-arrow:active{background:var(--lb-fill,#F6EFF2)}
+.lbw-pick-week{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:4px}
+.lbw-pick-wd{text-align:center;font-size:12px;color:var(--lb-text-3,#786779);padding:4px 0}
+.lbw-pick-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.lbw-pick-day{height:36px;display:flex;align-items:center;justify-content:center;border-radius:12px;font-size:14px;color:var(--lb-text-1,#322430);cursor:pointer}
+.lbw-pick-day:hover{background:var(--lb-fill,#F6EFF2)}
+.lbw-pick-day.sel{background:var(--lb-action,#BE2F5C);color:var(--lb-white,#fff);font-weight:700}
+.lbw-pick-day.dis{color:var(--lb-text-3,#786779);opacity:.45;cursor:default;pointer-events:none}
+.lbw-pick-day.empty{pointer-events:none}
+.lbw-pick-hint{font-size:12px;color:var(--lb-text-3,#786779);margin-top:10px;text-align:center}
+.lbw-pick-label{font-size:13px;color:var(--lb-text-2,#685B6F);margin:10px 0 6px}
+.lbw-pick-chips{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.lbw-pick-chips.min{grid-template-columns:repeat(4,1fr)}
+.lbw-pick-chip{height:36px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:var(--lb-fill,#F6EFF2);color:var(--lb-text-2,#685B6F);font-size:14px;cursor:pointer}
+.lbw-pick-chip.sel{background:var(--lb-primary-soft,#FBE7EF);color:var(--lb-primary-text,#BE2F5C);font-weight:700}
+@keyframes lbw-fade{from{opacity:0}to{opacity:1}}
+@keyframes lbw-pop{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+`
+
+function pad2(n: number): string { return n < 10 ? '0' + n : '' + n }
+
+function dateStr(y: number, m: number, d: number): string {
+  return `${y}-${pad2(m)}-${pad2(d)}`
+}
+
+function ensureWebStyle(doc: any): void {
+  if (doc.getElementById(WEB_STYLE_ID) != null) return
+  const style = doc.createElement('style')
+  style.id = WEB_STYLE_ID
+  style.textContent = WEB_CSS
+  const head: any = doc.head || doc.body
+  head.appendChild(style)
+}
+
+function webPick(mode: string, value: string, end: string): Promise<string> {
+  return new Promise<string>((resolve) => {
+    const g: any = globalThis
+    const doc: any = g.document
+    if (doc == null) { resolve(''); return }
+    ensureWebStyle(doc)
+    const host: any = doc.querySelector('.page') || doc.body
+    const mask: any = doc.createElement('div')
+    mask.className = 'lbw-pick-mask'
+    host.appendChild(mask)
+
+    const now = new Date()
+    let viewYear = now.getFullYear()
+    let viewMonth = now.getMonth() + 1
+    let picked = value
+    if (picked.length > 0 && mode == 'date') {
+      const d = new Date(picked + 'T12:00:00')
+      if (Number.isFinite(d.getTime())) { viewYear = d.getFullYear(); viewMonth = d.getMonth() + 1 }
+    }
+    let selHour = 8
+    let selMinute = 0
+    if (mode == 'time') {
+      const parts = (value.length > 0 ? value : '08:00').split(':')
+      selHour = Math.max(0, Math.min(23, parseInt(parts[0]) || 0))
+      selMinute = Math.max(0, Math.min(55, Math.round((parseInt(parts[1]) || 0) / 5) * 5))
+    }
+
+    let done = false
+    function finish(v: string) {
+      if (done) return
+      done = true
+      try { host.removeChild(mask) } catch (e) { /* 已移除 */ }
+      try { doc.removeEventListener('keydown', onKey) } catch (e) { /* ignore */ }
+      resolve(v)
+    }
+    function onKey(ev: any) {
+      if (ev != null && ev.key == 'Escape') finish('')
+    }
+    doc.addEventListener('keydown', onKey)
+
+    function render() {
+      if (mode == 'date') {
+        const offset = (new Date(viewYear, viewMonth - 1, 1).getDay() + 6) % 7
+        const days = new Date(viewYear, viewMonth, 0).getDate()
+        let cells = ''
+        for (let i = 0; i < offset; i++) cells += '<div class="lbw-pick-day empty"></div>'
+        for (let d = 1; d <= days; d++) {
+          const ds = dateStr(viewYear, viewMonth, d)
+          const disabled = end.length > 0 && ds > end
+          const cls = disabled ? 'lbw-pick-day dis' : ('lbw-pick-day' + (ds == picked ? ' sel' : ''))
+          cells += `<div class="${cls}" data-day="${ds}">${d}</div>`
+        }
+        mask.innerHTML = `<div class="lbw-pick-card"><div class="lbw-pick-head"><span class="lbw-pick-title">选择日期</span><span class="lbw-pick-cancel" data-act="cancel">取消</span></div><div class="lbw-pick-nav"><span class="lbw-pick-arrow" data-nav="-1">‹</span><span class="lbw-pick-month">${viewYear} 年 ${viewMonth} 月</span><span class="lbw-pick-arrow" data-nav="1">›</span></div><div class="lbw-pick-week"><span class="lbw-pick-wd">一</span><span class="lbw-pick-wd">二</span><span class="lbw-pick-wd">三</span><span class="lbw-pick-wd">四</span><span class="lbw-pick-wd">五</span><span class="lbw-pick-wd">六</span><span class="lbw-pick-wd">日</span></div><div class="lbw-pick-grid">${cells}</div><div class="lbw-pick-hint">灰色日期超出可选范围</div></div>`
+      } else {
+        let hs = ''
+        for (let h = 0; h < 24; h++) hs += `<div class="lbw-pick-chip${h == selHour ? ' sel' : ''}" data-hour="${h}">${pad2(h)}</div>`
+        let ms = ''
+        for (let m = 0; m < 60; m += 5) ms += `<div class="lbw-pick-chip${m == selMinute ? ' sel' : ''}" data-minute="${m}">${pad2(m)}</div>`
+        mask.innerHTML = `<div class="lbw-pick-card"><div class="lbw-pick-head"><span class="lbw-pick-title">选择时间</span><span class="lbw-pick-cancel" data-act="cancel">取消</span></div><div class="lbw-pick-label">小时</div><div class="lbw-pick-chips">${hs}</div><div class="lbw-pick-label">分钟</div><div class="lbw-pick-chips min">${ms}</div><div class="lbw-pick-hint">点分钟即完成</div></div>`
+      }
+    }
+
+    mask.addEventListener('click', (ev: any) => {
+      const t: any = ev.target
+      if (t == null) return
+      const act = t.getAttribute('data-act')
+      if (act == 'cancel') { finish(''); return }
+      const nav = t.getAttribute('data-nav')
+      if (nav != null) {
+        let m = viewMonth + parseInt(nav)
+        let y = viewYear
+        if (m < 1) { m = 12; y -= 1 }
+        if (m > 12) { m = 1; y += 1 }
+        viewMonth = m; viewYear = y
+        render()
+        return
+      }
+      const day = t.getAttribute('data-day')
+      if (day != null && day.length > 0) { picked = day; finish(day); return }
+      const hour = t.getAttribute('data-hour')
+      if (hour != null) { selHour = parseInt(hour); render(); return }
+      const minute = t.getAttribute('data-minute')
+      if (minute != null) { selMinute = parseInt(minute); finish(`${pad2(selHour)}:${pad2(selMinute)}`); return }
+    })
+
+    render()
+  })
+}
+// #endif
+
 export function pickDate(value: string, end: string): Promise<string> {
-  const id = openPicker('date', value, end)
+  // #ifdef WEB
+  return webPick('date', value, end)
+  // #endif
+  // #ifndef WEB
+  const id = openPickerPage('date', value, end)
   return waitForPick(id)
+  // #endif
 }
 
 export function pickTime(value: string): Promise<string> {
-  const id = openPicker('time', value, '')
+  // #ifdef WEB
+  return webPick('time', value, '')
+  // #endif
+  // #ifndef WEB
+  const id = openPickerPage('time', value, '')
   return waitForPick(id)
+  // #endif
 }

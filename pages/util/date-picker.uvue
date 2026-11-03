@@ -150,12 +150,7 @@
     emitBack(`${pad2(selHour.value)}:${pad2(selMinute.value)}`)
   }
   function goBack() {
-    // #ifdef WEB
-    try {
-      const g: any = globalThis
-      if (g.history != null) { g.history.back(); return }
-    } catch (e) { /* 回退失败再走 uni */ }
-    // #endif
+    // 实验：仅用 uni 的 SPA 返回，验证 Web 页面栈是否保留调用页状态
     uni.navigateBack({ delta: 1 })
   }
   function emitBack(v: string) {
