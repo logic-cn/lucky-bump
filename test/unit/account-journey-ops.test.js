@@ -246,3 +246,25 @@ test('数据保留清理：过期验证码与 400 天前事件被删除', async 
   const events = await rt.db.collection('lb-events').where({}).get()
   assert.equal(events.data.length, 1)
 })
+
+test('儿保体检：写入、月龄计算与列表查询', async () => {
+  const rt = createRuntime()
+  const reg = await register(rt)
+  const ctx = { token: reg.token }
+  const prof = await rt.callObject('lucky-id', 'getProfile', {}, ctx)
+  const j = await rt.callObject('lucky-journey', 'createJourney', { mode: 'ttc', lmpDate: '2026-10-01' }, ctx)
+  const baby = await rt.db.collection('lb-babies').add({
+    user_id: prof.userInfo.id, journey_id: j.journeyId, nickname: '宝宝',
+    sex: 'female', birth_date: Date.now() - 180 * 24 * 3600 * 1000
+  })
+  const add = await rt.callObject('lucky-care', 'addChildHealth', {
+    journeyId: j.journeyId, babyId: baby.id, date: '2026-11-02',
+    weightKg: 8.2, heightCm: 70.5, headCm: 44, conclusion: '发育正常', nextDate: '2027-02-02'
+  }, ctx)
+  assert.equal(add.errCode, 0, JSON.stringify(add))
+  assert.ok(add.monthAge >= 5 && add.monthAge <= 7, `月龄计算异常: ${add.monthAge}`)
+  const list = await rt.callObject('lucky-care', 'listChildHealth', { journeyId: j.journeyId, babyId: baby.id }, ctx)
+  assert.equal(list.errCode, 0, JSON.stringify(list))
+  assert.equal(list.records.length, 1)
+  assert.equal(list.records[0].weight_kg, 8.2)
+})

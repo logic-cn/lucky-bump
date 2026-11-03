@@ -37,8 +37,24 @@ function scheduleOne(title: string, content: string, dueTs: number): void {
   // #endif
 }
 
+/** Android 13+ 运行时通知权限：HBuilderX 5.25 起不再自动申请，首次同步时主动请求一次 */
+function ensureNotificationPermission(): void {
+  // #ifdef APP-ANDROID
+  if ((uni.getStorageSync('lb_notify_perm_asked') as string) == '1') return
+  try {
+    const u: any = uni as any
+    if (u.requestSystemPermission == null) return
+    u.requestSystemPermission({
+      permissions: ['android.permission.POST_NOTIFICATIONS'],
+      complete: () => { uni.setStorageSync('lb_notify_perm_asked', '1') }
+    })
+  } catch (e) { /* 旧基座无该 API 时静默降级 */ }
+  // #endif
+}
+
 /** 首页加载待办后调用：把未来 14 天的关键待办注册为系统本地通知（每日 + 签名去重） */
 export function syncLocalNotifications(todos: UTSJSONObject[]): void {
+  ensureNotificationPermission()
   const d = new Date()
   const today = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`
   const sig = signatureOf(todos)
