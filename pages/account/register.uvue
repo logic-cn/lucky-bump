@@ -9,6 +9,12 @@
       <input class="input" v-model="nickname" placeholder="昵称（选填）" placeholder-class="ph" />
       <input class="input" v-model="password" :password="true" placeholder="密码（8-32 位）" placeholder-class="ph" />
       <input class="input" v-model="password2" :password="true" placeholder="再输入一次密码" placeholder-class="ph" />
+      <view class="consent-row" hover-class="lb-press" hover-stay-time="120" @click="agreed = !agreed">
+        <view class="consent-box" :class="agreed ? 'consent-on' : ''"><text class="consent-check" v-if="agreed">✓</text></view>
+        <text class="consent-text">我已阅读并单独同意</text>
+        <text class="consent-link" @click.stop="goPrivacy">《隐私政策》</text>
+        <text class="consent-text">中关于敏感个人信息（健康数据）的处理</text>
+      </view>
       <button class="btn-primary" hover-class="lb-press" hover-stay-time="120" :disabled="loading" @click="doRegister">{{ loading ? '注册中…' : '注册并开始' }}</button>
       <view class="row-links">
         <view class="link-wrap" hover-class="lb-press" hover-stay-time="120">
@@ -17,7 +23,7 @@
       </view>
     </view>
     <view class="agreement-row lb-rise-2">
-      <text class="agreement">注册即代表同意</text>
+      <text class="agreement">查看</text>
       <text class="agreement-link" @click="goAgreement">《用户协议》</text>
       <text class="agreement">与</text>
       <text class="agreement-link" @click="goPrivacy">《隐私政策》</text>
@@ -30,24 +36,31 @@
   import { ref } from 'vue'
   import { luckyId, applyLoginResult } from '../../utils/request.uts'
   import { themeClass } from '../../store/themeStore.uts'
+  import { PRIVACY_VERSION } from '../../utils/legal.uts'
 
   const username = ref<string>('')
   const nickname = ref<string>('')
   const password = ref<string>('')
   const password2 = ref<string>('')
   const loading = ref<boolean>(false)
+  const agreed = ref<boolean>(false)
 
   function goLogin() { uni.navigateBack() }
   function goAgreement() { uni.navigateTo({ url: '/pages/me/agreement' }) }
   function goPrivacy() { uni.navigateTo({ url: '/pages/me/privacy-policy' }) }
   async function doRegister() {
     if (loading.value) return
+    if (!agreed.value) { uni.showToast({ title: '请先阅读并同意隐私政策', icon: 'none' }); return }
     if (password.value.length < 8) { uni.showToast({ title: '密码至少 8 位', icon: 'none' }); return }
     if (password.value != password2.value) { uni.showToast({ title: '两次密码不一致', icon: 'none' }); return }
     loading.value = true
     try {
       const res = await luckyId('register', { username: username.value, password: password.value, nickname: nickname.value } as UTSJSONObject)
       applyLoginResult(res)
+      // 注册是唯一一次显式同意：立即落库；失败时引导页提交前会再补录一次
+      try {
+        await luckyId('recordConsent', { sensitiveVersion: PRIVACY_VERSION, privacyVersion: PRIVACY_VERSION } as UTSJSONObject)
+      } catch (e) { /* 不阻塞注册，引导页会重试 */ }
       uni.reLaunch({ url: '/pages/onboarding/onboarding' })
     } catch (e) {
       uni.showToast({ title: (e as Error).message, icon: 'none' })
@@ -66,6 +79,12 @@
   .card { width: 640rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 48rpx 40rpx; }
   .input { height: 96rpx; border-bottom-width: 1px; border-bottom-color: var(--lb-line); font-size: 28rpx; margin-bottom: 32rpx; padding: 0 8rpx; }
   .ph { color: var(--lb-text-3); }
+  .consent-row { flex-direction: row; flex-wrap: wrap; align-items: center; margin-bottom: 20rpx; padding: 8rpx 0; min-height: 64rpx; }
+  .consent-box { width: 40rpx; height: 40rpx; border-radius: 10rpx; border-width: 2px; border-style: solid; border-color: var(--lb-line-deep); align-items: center; justify-content: center; margin-right: 12rpx; }
+  .consent-on { background-color: var(--lb-action); border-color: var(--lb-action); }
+  .consent-check { font-size: 26rpx; color: var(--lb-white); font-weight: bold; }
+  .consent-text { font-size: 24rpx; color: var(--lb-text-2); line-height: 36rpx; }
+  .consent-link { font-size: 24rpx; color: var(--lb-primary-text); line-height: 36rpx; }
   .btn-primary { background-color: var(--lb-action); color: #FFFFFF; font-size: 32rpx; height: 96rpx; line-height: 96rpx; border-radius: 48rpx; margin-top: 16rpx; transition: all 160ms ease-out; }
   .row-links { align-items: center; margin-top: 32rpx; }
   .link-wrap { padding: 8rpx 24rpx; border-radius: 24rpx; transition: all 160ms ease-out; }

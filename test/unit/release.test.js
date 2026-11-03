@@ -118,3 +118,15 @@ test('Web 页面可滚动、引导页返回可恢复状态、隐私页不重复�
   const privacy = read('pages/me/privacy.uvue')
   assert.ok(!privacy.includes('agreeConsent'), '隐私页不应再次要求同意（同意只在注册/首次引导一次）')
 })
+
+test('隐私同意只在注册时进行一次，引导页不再二次确认', () => {
+  const reg = read('pages/account/register.uvue')
+  assert.ok(reg.includes('PRIVACY_VERSION'), '注册页需使用统一的隐私条款版本号')
+  assert.ok(reg.includes('recordConsent'), '注册成功后应立即落库同意记录')
+  assert.ok(reg.includes('请先阅读并同意隐私政策'), '注册页需有显式同意门禁')
+  assert.ok(reg.includes('consent-row'), '注册页需展示同意勾选')
+  assert.ok(/\.consent-box[^}]*border-style:\s*solid/.test(reg), '勾选框需设置 border-style，否则 Web 端不可见')
+  const onb = read('pages/onboarding/onboarding.uvue')
+  assert.ok(!onb.includes('consent-row'), '引导页不应再展示同意勾选')
+  assert.ok(!onb.includes('请先阅读并同意隐私政策'), '引导页不应再次拦截同意')
+})
