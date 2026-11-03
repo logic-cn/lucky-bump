@@ -27,7 +27,7 @@
     <lbc-time-field :value="feedTime" @change="onTimeChange" />
     <!-- #endif -->
     <!-- #ifdef WEB -->
-    <view :value="feedTime.length  hover-class="lb-press" hover-stay-time="120" @click="onPickFeedTimeWeb"> 0 ? feedTime : feedFallback" @change="onTimeChange">
+    <view hover-class="lb-press" hover-stay-time="120" @click="onPickFeedTimeWeb">
           <view class="time-box" hover-class="lb-press" hover-stay-time="120">
             <text class="time-text">{{ feedTime == '' ? '现在' : feedTime }}</text>
           </view>

@@ -51,3 +51,34 @@ test('发布自检脚本存在并登记为 npm 命令', () => {
   const pkg = JSON.parse(read('package.json'))
   assert.equal(pkg.scripts['release:check'], 'bash scripts/preflight_release.sh')
 })
+
+test('模板标签行引号配对且属性未嵌套（防止 WEB 分支运行时解析错误）', () => {
+  const fs = require('fs')
+  const path = require('path')
+  const root = path.resolve(__dirname, '../..')
+  const walk = (dir, acc = []) => {
+    for (const f of fs.readdirSync(dir)) {
+      const full = path.join(dir, f)
+      if (fs.statSync(full).isDirectory()) walk(full, acc)
+      else if (f.endsWith('.uvue')) acc.push(full)
+    }
+    return acc
+  }
+  const offenders = []
+  for (const file of [...walk(path.join(root, 'pages')), ...walk(path.join(root, 'components'))]) {
+    const src = fs.readFileSync(file, 'utf-8')
+    const m = /<template>([\s\S]*?)<\/template>/.exec(src)
+    if (!m) continue
+    m[1].split('\n').forEach((line, i) => {
+      const t = line.trim()
+      if (!t.startsWith('<')) return
+      if ((line.match(/"/g) || []).length % 2 === 1) {
+        offenders.push(`${path.relative(root, file)}:${i + 1} 引号未配对`)
+      }
+      if (/:[a-zA-Z-]+="[^"]*(hover-class|@click|@change)=/.test(line)) {
+        offenders.push(`${path.relative(root, file)}:${i + 1} 属性嵌套损坏`)
+      }
+    })
+  }
+  assert.deepEqual(offenders, [], `模板属性损坏:\n${offenders.join('\n')}`)
+})
