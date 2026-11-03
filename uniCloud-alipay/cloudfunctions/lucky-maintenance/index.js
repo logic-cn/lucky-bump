@@ -99,7 +99,8 @@ async function cleanupExpiredData(db, now = Date.now()) {
   const DAY = 24 * 3600 * 1000
   let codes = 0
   for (let round = 0; round < 5; round++) {
-    const codeRes = await db.collection('lb-sms-codes').limit(1000).get()
+    // 按创建时间升序，保证过期/已用记录优先被清理，避免新记录占满前 1000 条
+    const codeRes = await db.collection('lb-sms-codes').orderBy('created_at', 'asc').limit(1000).get()
     let removedThisRound = 0
     for (const row of codeRes.data || []) {
       if (row.used || (row.expires_at || 0) < now - DAY) {
@@ -112,7 +113,7 @@ async function cleanupExpiredData(db, now = Date.now()) {
   }
   let events = 0
   for (let round = 0; round < 5; round++) {
-    const evRes = await db.collection('lb-events').limit(1000).get()
+    const evRes = await db.collection('lb-events').orderBy('ts', 'asc').limit(1000).get()
     let removedThisRound = 0
     for (const row of evRes.data || []) {
       if ((row.ts || 0) < now - 400 * DAY) {
