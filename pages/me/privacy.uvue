@@ -35,10 +35,7 @@
     <view class="card lb-rise-1">
       <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">敏感信息授权</text></view>
       <text class="hint">{{ consentText }}</text>
-      <view class="p-row" v-if="!consentOk" hover-class="lb-press" hover-stay-time="120" @click="agreeConsent">
-        <text class="p-label">同意当前版本《隐私政策》</text>
-        <text class="p-value">去同意 ›</text>
-      </view>
+      <text class="hint" v-if="!consentOk">敏感信息同意只在注册/首次引导时进行一次；如你的账号尚未记录同意，打开应用时会统一提示。</text>
       <text class="hint" v-else>同房、验孕、情绪自评永远仅本人可见；可随时在账号中导出或删除。</text>
     </view>
     <view class="card lb-rise-2">
@@ -108,15 +105,7 @@
     } catch (e) { /* 未登录或网络失败时保持默认提示 */ }
   }
 
-  async function agreeConsent() {
-    try {
-      await luckyId('recordConsent', { sensitiveVersion: PRIVACY_VERSION, privacyVersion: PRIVACY_VERSION } as UTSJSONObject)
-      uni.showToast({ title: '已记录同意', icon: 'none' })
-      await loadConsent()
-    } catch (e) {
-      uni.showToast({ title: (e as Error).message, icon: 'none' })
-    }
-  }
+
 
   onPageReady(() => { loadAudit(); loadConsent() })
 

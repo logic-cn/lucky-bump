@@ -93,3 +93,10 @@
 .btn-primary, .btn-save, .btn-half, .btn-small, .btn-record,
 .btn-quick, .btn-logout, .btn-unlock, .btn-ghost,
 .btn-copy, .btn-print, .btn-journey { text-align: center; }
+
+/* —— Web 端页面滚动 ——
+ * uni-app x H5 的页面根容器固定高度且裁剪溢出；各页 .page 为 flex:1，
+ * 内容超过一屏（隐私政策/经期/协议等）时无法滚动。App 端保持原生页面滚动，不套此规则。 */
+/* #ifdef WEB */
+.page { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+/* #endif */

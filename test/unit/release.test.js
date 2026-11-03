@@ -107,3 +107,14 @@ test('Web 选择器使用页面内浮层，且页面无 pickDate 命名冲突', 
   }
   assert.deepEqual(offenders, [], `以下页面同时导入并声明了 pickDate，导入会被遮蔽:\n${offenders.join('\n')}`)
 })
+
+test('Web 页面可滚动、引导页返回可恢复状态、隐私页不重复要求同意', () => {
+  const theme = read('theme.scss')
+  assert.ok(theme.includes('overflow-y: auto'), 'Web 端 .page 需要 overflow-y: auto，否则长页面无法滚动')
+  const onb = read('pages/onboarding/onboarding.uvue')
+  assert.ok(onb.includes('lb_onboarding_state'), '引导页需持久化状态以应对 Web 返回重建页面')
+  assert.ok(onb.includes('function restoreState') && onb.includes('restoreState()'), '引导页需恢复状态')
+  assert.ok(onb.includes('function goPrivacy') && onb.includes('saveState()'), '跳转隐私政策前需保存引导状态')
+  const privacy = read('pages/me/privacy.uvue')
+  assert.ok(!privacy.includes('agreeConsent'), '隐私页不应再次要求同意（同意只在注册/首次引导一次）')
+})

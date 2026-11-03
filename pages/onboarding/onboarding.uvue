@@ -42,7 +42,7 @@
       </view>
       <button class="btn-primary" hover-class="lb-press" hover-stay-time="120" :disabled="loading" @click="submit">{{ loading ? '保存中…' : '开始' }}</button>
       <view class="link-wrap" hover-class="lb-press" hover-stay-time="120">
-        <text class="link" @click="step = 0">返回上一步</text>
+        <text class="link" @click="backStep">返回上一步</text>
       </view>
     </view>
 
@@ -69,8 +69,38 @@
   const preWeightKg = ref<string>('')
   const loading = ref<boolean>(false)
   const agreed = ref<boolean>(false)
+  const OB_KEY = 'lb_onboarding_state'
 
-  function goPrivacy() { uni.navigateTo({ url: '/pages/me/privacy-policy' }) }
+  /** 保存引导页状态：Web 页面栈返回会重建页面，跳转隐私政策/选择器前后需要恢复 */
+  function saveState(): void {
+    const raw = [mode.value, step.value, dateValue.value, heightCm.value, preWeightKg.value, agreed.value ? '1' : '0', Date.now()].join('\n')
+    uni.setStorageSync(OB_KEY, raw)
+  }
+
+  function restoreState(): boolean {
+    const raw = uni.getStorageSync(OB_KEY) as string
+    if (raw == null || raw.length == 0) return false
+    const parts = raw.split('\n')
+    if (parts.length < 7) return false
+    const ts = parseInt(parts[6]) || 0
+    if (ts <= 0 || Date.now() - ts > 10 * 60 * 1000) {
+      uni.removeStorageSync(OB_KEY)
+      return false
+    }
+    mode.value = parts[0]
+    step.value = parseInt(parts[1]) || 1
+    dateValue.value = parts[2]
+    heightCm.value = parts[3]
+    preWeightKg.value = parts[4]
+    agreed.value = parts[5] == '1'
+    uni.removeStorageSync(OB_KEY)
+    return true
+  }
+
+  function goPrivacy() {
+    saveState()
+    uni.navigateTo({ url: '/pages/me/privacy-policy' })
+  }
 
   /** 敏感个人信息单独同意：建档前必须落库，失败则阻断（PIPL） */
   async function recordLegalConsent(): Promise<boolean> {
@@ -93,9 +123,15 @@
     mode.value = m
     dateValue.value = ''
     step.value = 1
+    saveState()
   }
   function onDateChange(v: string) {
     dateValue.value = v
+    saveState()
+  }
+  function backStep() {
+    step.value = 0
+    saveState()
   }
   async function submit() {
     if (loading.value) return
@@ -107,6 +143,7 @@
       if (mode.value == 'parenting') {
         // 宝宝已出生：先建旅程占位，引导到分娩登记补录
         const res = await luckyJourney('createJourney', { mode: 'ttc', title: '我的旅程' } as UTSJSONObject)
+        uni.removeStorageSync(OB_KEY)
         loading.value = false
         uni.showToast({ title: '请先补充分娩登记', icon: 'none' })
         uni.reLaunch({ url: '/pages/baby/birth-register' })
@@ -127,6 +164,7 @@
         }
         // 不在跳转前 applyJourney：首页 onShow 会经 loadCurrentJourney 拉取最新旅程并写入状态；
         // 此处若先改全局 reactive 再立即 reLaunch，会触发 web 端 vdom 回退渲染的 proxy 竞态
+        uni.removeStorageSync(OB_KEY)
         loading.value = false
         uni.reLaunch({ url: '/pages/index/index' })
         return
@@ -147,6 +185,8 @@
     }
   }
   // #endif
+
+  restoreState()
 </script>
 
 <style>
