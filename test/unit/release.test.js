@@ -130,3 +130,38 @@ test('隐私同意只在注册时进行一次，引导页不再二次确认', ()
   assert.ok(!onb.includes('consent-row'), '引导页不应再展示同意勾选')
   assert.ok(!onb.includes('请先阅读并同意隐私政策'), '引导页不应再次拦截同意')
 })
+
+test('时间线按旅程阶段分章，指标显示中文', () => {
+  const tl = read('pages/data/timeline.uvue')
+  assert.ok(tl.includes("'water', '记录了饮水'"), '饮水记录应显示中文，不能露出 water 原始码')
+  assert.ok(tl.includes("journeyState.stage == 'T1'"), '孕期章节需判断阶段，不能只因存在末次月经就判定为孕期')
+  assert.ok(!/const lmp = journeyState\.lmpDate[\s\S]{0,200}return \{ title: '孕期'/.test(tl), '备孕旅程不能误标孕期')
+})
+
+test('分娩登记性别选择可点击且映射完整', () => {
+  const br = read('pages/baby/birth-register.uvue')
+  assert.ok(!br.includes('babies.value[i].sex'), 'v-for 项应直接赋值 b.sex，babies.value[i] 在模板中不存在')
+  for (const n of ['0', '1', '2']) assert.ok(br.includes(`@click="b.sex = ${n}"`), `缺少性别选项 ${n}`)
+  assert.ok(br.includes("['male', 'female', 'unknown'][b.sex]"), '性别需映射为 male/female/unknown')
+})
+
+test('家人可跳过建档用邀请码加入家庭', () => {
+  const onb = read('pages/onboarding/onboarding.uvue')
+  assert.ok(onb.includes('goJoinFamily'), '引导页需提供家人加入入口')
+  assert.ok(onb.includes('lb_family_join_mode'), '家人加入模式需持久化')
+  const fam = read('pages/me/family.uvue')
+  assert.ok(fam.includes("getStorageSync('lb_family_join_mode')"), '家庭页需识别家人加入模式')
+  assert.ok(fam.includes('cancelJoin'), '加入页需能返回建档')
+})
+
+test('提醒模板点击即创建，不是只填表单', () => {
+  const st = read('pages/me/settings.uvue')
+  assert.ok(/function applyMedTemplate[\s\S]{0,320}add\(\)/.test(st), '模板文案承诺一键创建，点击需直接落库')
+})
+
+test('家人视角快捷记录按角色收敛', () => {
+  const idx = read('pages/index/index.uvue')
+  assert.ok(idx.includes('isFamilyView.value'), '快捷记录需区分家人视角')
+  assert.ok(idx.includes("journeyState.myRole == 'viewer'"), '只读成员不应出现写入口')
+  assert.ok(idx.includes('v-if="quickItems.length > 0"'), '无可记录项时应隐藏快捷记录卡片')
+})

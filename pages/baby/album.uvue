@@ -92,7 +92,9 @@
       caption.value = ''
       load()
     } catch (e) {
-      uni.showToast({ title: (e as Error).message, icon: 'none' })
+      const msg = (e as Error).message
+      const network = msg.indexOf('Access to XMLHttpRequest') >= 0 || msg.indexOf('Failed to fetch') >= 0 || msg.indexOf('Network') >= 0
+      uni.showToast({ title: network ? '照片上传失败，请检查网络后重试' : (msg.length > 0 ? msg : '照片上传失败，请稍后重试'), icon: 'none' })
     } finally { uploading.value = false }
   }
 

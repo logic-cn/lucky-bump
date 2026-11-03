@@ -40,6 +40,12 @@ async function accessOf(uid, journeyId) {
   return role === 'admin' ? 'owner' : role
 }
 
+/** 成员展示名：兼容历史数据里占位的“我”，避免两个“我”同时出现 */
+function memberView(m, ownerId) {
+  const nick = m.nickname && m.nickname !== '我' ? m.nickname : (m.user_id === ownerId ? '妈妈' : '家人')
+  return { _id: m._id, user_id: m.user_id, role: m.role, nickname: nick, joinedAt: m.joined_at, isMe: false }
+}
+
 module.exports = {
   _accessOf: accessOf,
 
@@ -59,7 +65,16 @@ module.exports = {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
     const j = await ownedJourney.call(this, uid, params.journeyId)
-    if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
+    if (!j) {
+      // 受邀成员没有自己的旅程：按成员关系返回所在家庭，供成员端查看
+      const mine = await db.call(this).collection('lb-family-members').where({ user_id: uid }).limit(1).get()
+      if (mine.data.length === 0) return auth.fail('NOT_FOUND', '旅程不存在')
+      const fr = await db.call(this).collection('lb-families').doc(mine.data[0].family_id).get()
+      if (!fr.data || fr.data.length === 0) return auth.fail('NOT_FOUND', '家庭组不存在')
+      const f = Array.isArray(fr.data) ? fr.data[0] : fr.data
+      const members = await db.call(this).collection('lb-family-members').where({ family_id: f._id }).get()
+      return auth.ok({ family: f, members: members.data.map(m => Object.assign(memberView(m, f.owner_id), { isMe: m.user_id === uid })) })
+    }
     let fam = await familyOf.call(this, j._id)
     if (!fam) {
       const r = await db.call(this).collection('lb-families').add({
@@ -71,7 +86,7 @@ module.exports = {
       fam = Object.assign({ _id: r.id })
     }
     const members = await db.call(this).collection('lb-family-members').where({ family_id: fam._id }).get()
-    return auth.ok({ family: fam, members: members.data.map(m => ({ _id: m._id, user_id: m.user_id, role: m.role, nickname: m.nickname, joinedAt: m.joined_at, isMe: m.user_id === uid })) })
+    return auth.ok({ family: fam, members: members.data.map(m => Object.assign(memberView(m, fam.owner_id), { isMe: m.user_id === uid })) })
   },
 
   /** 生成邀请码（默认邀请为记录者/爸爸） */

@@ -37,8 +37,9 @@
 
   const CODE_TEXT: Map<string, string> = new Map([
     ['weight', '记录了体重'], ['blood_pressure', '记录了血压'], ['blood_glucose', '记录了血糖'],
+    ['hcg', '记录了 hCG'], ['progesterone', '记录了孕酮'],
     ['symptom', '记录了症状'], ['mood', '记录了心情'], ['fetal_movement', '数了胎动'],
-    ['lochia', '记录了恶露'], ['kegel', '盆底肌训练'],
+    ['lochia', '记录了恶露'], ['kegel', '盆底肌训练'], ['water', '记录了饮水'],
     ['period_start', '经期开始'], ['period_end', '经期结束'],
     ['ovulation_test', '排卵试纸'], ['bbt', '基础体温'], ['intercourse', '同房'], ['pregnancy_test', '验孕'],
     ['mucus', '白带记录'],
@@ -100,7 +101,7 @@
   }
   function goFirst() { uni.switchTab({ url: '/pages/record/record' }) }
 
-  /** 章节归属：分娩日 → 宝宝出生后；末次月经 → 孕期（带孕周标签）；更早 → 备孕时光 */
+  /** 章节归属：分娩日 → 宝宝出生后；孕期阶段 → 孕期（带孕周标签）；其余 → 备孕时光 */
   function chapterOf(e: UTSJSONObject): Chapter {
     const ts = e.getNumber('ts') ?? 0
     const delivery = journeyState.deliveryDate
@@ -111,14 +112,14 @@
         return { title: '宝宝出生以后', sub: '', tag: days >= 0 ? `出生第 ${days + 1} 天` : '' }
       }
     }
-    const lmp = journeyState.lmpDate
-    if (lmp.length > 0) {
-      const lts = Date.parse(lmp + 'T12:00:00Z')
+    const pregnant = journeyState.stage == 'T1' || journeyState.stage == 'T2' || journeyState.stage == 'T3'
+    // 备孕旅程也会存末次月经锚点，不能据此把记录误标成孕期
+    if ((pregnant || delivery.length > 0) && journeyState.lmpDate.length > 0) {
+      const lts = Date.parse(journeyState.lmpDate + 'T12:00:00Z')
       if (Number.isFinite(lts) && ts >= lts) {
         const days = Math.floor((ts - lts) / 86400000)
         return { title: '孕期', sub: '', tag: `孕 ${Math.floor(days / 7)} 周` }
       }
-      return { title: '备孕时光', sub: '', tag: '' }
     }
     return { title: '备孕时光', sub: '', tag: '' }
   }
@@ -126,7 +127,7 @@
   const storyTitle = computed((): string => {
     if (events.value.length == 0) return ''
     if (journeyState.deliveryDate.length > 0) return '从两道杠，到抱在怀里'
-    if (journeyState.lmpDate.length > 0) return '从末次月经开始的故事'
+    if (journeyState.stage == 'T1' || journeyState.stage == 'T2' || journeyState.stage == 'T3') return '从末次月经开始的故事'
     return '记录的每一步都在这里'
   })
   const storySub = computed((): string => `共 ${events.value.length} 条记录 · 数据只属于你们`)

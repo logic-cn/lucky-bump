@@ -135,6 +135,18 @@ test('C4：exportAll 不得导出他人 strict 数据', async () => {
   assert.equal(journeys[0]._id, jid, '全量导出的旅程记录应为当前旅程')
 })
 
+test('年度报告包含用药统计且不报错', async () => {
+  const { rt, jid, victimToken } = await twoUsers()
+  const add = await rt.callObject('lucky-record', 'addMetric', {
+    journeyId: jid, code: 'medication', value: { name: '叶酸', dose: '0.4mg' },
+    date: '2026-11-01', ts: Date.now()
+  }, { token: victimToken })
+  assert.equal(add.errCode, 0, JSON.stringify(add))
+  const rep = await rt.callObject('lucky-data', 'report', { journeyId: jid, type: 'annual' }, { token: victimToken })
+  assert.equal(rep.errCode, 0, JSON.stringify(rep))
+  assert.ok((rep.lines || []).some(l => l.includes('用药')), '年度报告应包含用药统计')
+})
+
 test('日记：mediaIds 落库并随列表返回', async () => {
   const { rt, jid, victimToken } = await twoUsers()
   const add = await rt.callObject('lucky-record', 'addDiary', {

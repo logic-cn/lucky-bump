@@ -337,6 +337,7 @@ module.exports = {
     const photosYear = photos.filter(x => x.ts >= since)
     const foods = await auth.fetchAll(dbase, 'lb-food-logs', { journey_id: j._id }, 'ts', 'desc', 5000)
     const meds = await auth.fetchAll(dbase, 'lb-medication-logs', { journey_id: j._id }, 'ts', 'desc', 5000)
+    const medsYear = meds.filter(x => x.ts >= since)
     const feedRows = await auth.fetchAll(dbase, 'lb-feedings', { journey_id: j._id }, 'ts', 'desc', 5000)
     const feeds = feedRows.filter(x => x.ts >= since).length
     const triedFoods = [...new Set(foods.map(x => x.name))].length
@@ -354,7 +355,7 @@ module.exports = {
     if (topCodes.length > 0) lines.push(`记录最多的是：${topCodes.map(p => `${codeLabel(p[0])}（${p[1]} 次）`).join('、')}。`)
     if (msYear.length > 0) lines.push(`宝宝达成了 ${msYear.length} 个成长里程碑，每一个"第一次"都被记住了。`)
     if (triedFoods > 0) lines.push(`一起尝试了 ${triedFoods} 种食物，记录让过敏排查有据可查。`)
-    if (medRes.data.length > 0) lines.push(`记录了 ${medRes.data.length} 次用药，就诊回溯更从容。`)
+    if (medsYear.length > 0) lines.push(`记录了 ${medsYear.length} 次用药，就诊回溯更从容。`)
     lines.push('数据属于你：可随时导出、可彻底删除，也可以打印成一份给医生看。')
     return auth.ok({ type, title: '年度报告', subtitle: `${daySet.size} 天有记录 · 从 ${dateOf(anchor)} 到今天`, stats, lines, generatedAt: now })
   },
@@ -404,7 +405,7 @@ module.exports = {
     const latestBp = await db.call(this).collection('lb-daily-logs').where({ journey_id: j._id, code: 'blood_pressure', user_id: uid }).orderBy('ts', 'desc').limit(1).get()
     const lines = [
       '幸孕记 · 数据摘要',
-      `旅程：${j.title || '未命名'}（${stageOf(j)}）`,
+      `旅程：${j.title || '我的旅程'}（${stageOf(j)}）`,
       `预产期：${j.edd ? dateOf(j.edd) : '未设置'}　分娩日：${j.delivery_date ? dateOf(j.delivery_date) : '未登记'}`,
       `记录总量：${parts.length > 0 ? parts.join(' · ') : '暂无记录'}`
     ]

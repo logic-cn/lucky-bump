@@ -23,10 +23,11 @@
         <text class="baby-tag">{{ babies.length > 1 ? `宝宝 ${i + 1}` : '宝宝' }}</text>
         <view class="row2">
           <input class="input half" v-model="b.nickname" placeholder="小名" placeholder-class="ph" />
-          <view class="half sex-row">
-            <view class="sex-chip" :class="b.sex == 1 ? 'sex-chip-sel' : ''" hover-class="lb-press" hover-stay-time="120" @click="babies.value[i].sex = 1"><text class="sex-chip-text" :class="b.sex == 1 ? 'sex-chip-text-sel' : ''">{{ sexLabels[1] }}</text></view>
-            <view class="sex-chip" :class="b.sex == 2 ? 'sex-chip-sel' : ''" hover-class="lb-press" hover-stay-time="120" @click="babies.value[i].sex = 2"><text class="sex-chip-text" :class="b.sex == 2 ? 'sex-chip-text-sel' : ''">{{ sexLabels[2] }}</text></view>
-          </view>
+        </view>
+        <view class="sex-row">
+          <view class="sex-chip" :class="b.sex == 0 ? 'sex-chip-sel' : ''" hover-class="lb-press" hover-stay-time="120" @click="b.sex = 0"><text class="sex-chip-text" :class="b.sex == 0 ? 'sex-chip-text-sel' : ''">{{ sexLabels[0] }}</text></view>
+          <view class="sex-chip" :class="b.sex == 1 ? 'sex-chip-sel' : ''" hover-class="lb-press" hover-stay-time="120" @click="b.sex = 1"><text class="sex-chip-text" :class="b.sex == 1 ? 'sex-chip-text-sel' : ''">{{ sexLabels[1] }}</text></view>
+          <view class="sex-chip" :class="b.sex == 2 ? 'sex-chip-sel' : ''" hover-class="lb-press" hover-stay-time="120" @click="b.sex = 2"><text class="sex-chip-text" :class="b.sex == 2 ? 'sex-chip-text-sel' : ''">{{ sexLabels[2] }}</text></view>
         </view>
         <view class="row2">
           <input class="input half" type="number" v-model="b.weightG" placeholder="出生体重 g" placeholder-class="ph" />
@@ -77,7 +78,7 @@
   const modes = ref<MOpt[]>([
     { value: 'vaginal', label: '顺产' }, { value: 'assisted', label: '助产' }, { value: 'c_section', label: '剖宫产' }
   ])
-  const sexLabels = ref<string[]>(['男', '女', '还不告诉你们'])
+  const sexLabels = ref<string[]>(['男', '女', '暂不透露'])
   const cardVisible = ref<boolean>(false)
   const deliveredAt = ref<string>('')
   const cardNames = ref<string>('')
@@ -191,10 +192,10 @@
   .bcard-btn { font-size: 26rpx; color: #FFFFFF; background-color: var(--lb-action); border-radius: 40rpx; padding: 16rpx 28rpx; margin-left: 16rpx; }
   .bcard-btn-ghost { color: var(--lb-text-2); background-color: var(--lb-fill); margin-left: 0; }
 
-  .sex-row { flex-direction: row; }
-  .sex-chip { flex: 1; height: 88rpx; border-radius: 24rpx; background-color: var(--lb-fill); align-items: center; justify-content: center; margin-right: 12rpx; }
+  .sex-row { flex-direction: row; margin-top: 16rpx; }
+  .sex-chip { flex: 1; height: 80rpx; border-radius: 24rpx; background-color: var(--lb-fill); align-items: center; justify-content: center; margin-right: 12rpx; }
   .sex-chip-sel { background-color: var(--lb-primary-soft); }
-  .sex-chip-text { font-size: 28rpx; color: var(--lb-text-2); }
+  .sex-chip-text { font-size: 26rpx; color: var(--lb-text-2); }
   .sex-chip-text-sel { color: var(--lb-primary-deep); font-weight: bold; }
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }

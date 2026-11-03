@@ -77,7 +77,7 @@
     </view>
 
     <!-- 快捷记录宫格 -->
-    <view class="card lb-rise-2">
+    <view class="card lb-rise-2" v-if="quickItems.length > 0">
       <view class="card-head">
         <view class="title-bar" />
         <text class="card-title card-title-flush">快捷记录</text>
@@ -259,8 +259,24 @@
     return used.concat(rest)
   }
   const quickItems = computed((): QuickItem[] => {
-    const s = journeyState.stage
     const items: QuickItem[] = []
+    // 家人视角：只读成员不出现写入口；记录者只保留可协作的记录
+    if (isFamilyView.value) {
+      if (journeyState.myRole == 'viewer') return items
+      if (isPostpartum.value) {
+        items.push({ icon: 'feeding', label: '喂养', url: '/pages/baby/feeding' })
+        items.push({ icon: 'diaper', label: '尿布', url: '/pages/baby/diaper' })
+        items.push({ icon: 'sleep', label: '睡眠', url: '/pages/baby/sleep' })
+        items.push({ icon: 'growth', label: '成长', url: '/pages/baby/growth' })
+        items.push({ icon: 'album', label: '相册', url: '/pages/baby/album' })
+      } else {
+        items.push({ icon: 'weight', label: '体重', url: '/pages/record/weight' })
+        items.push({ icon: 'symptom', label: '症状', url: '/pages/record/symptom' })
+        items.push({ icon: 'diary', label: '日记', url: '/pages/record/diary' })
+      }
+      return orderByRecent(items)
+    }
+    const s = journeyState.stage
     if (s == 'PRECONCEPTION') {
       items.push({ icon: 'cycle', label: '经期', url: '/pages/record/cycle' })
       items.push({ icon: 'test', label: '排卵试纸', url: '/pages/record/ovulation-test' })

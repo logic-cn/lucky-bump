@@ -172,8 +172,9 @@ module.exports = {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
     const now = Date.now()
-    const doc = { user_id: uid, title: String(params.title || '').slice(0, 20), fetus_count: Math.max(1, Math.min(3, +params.fetusCount || 1)), stage_code: 'PRECONCEPTION', created_at: now, updated_at: now, high_risk: !!params.highRisk }
     const mode = params.mode || 'ttc'
+    const defaultTitle = mode === 'pregnant' ? '孕期旅程' : '备孕旅程'
+    const doc = { user_id: uid, title: String(params.title || defaultTitle).slice(0, 20), fetus_count: Math.max(1, Math.min(3, +params.fetusCount || 1)), stage_code: 'PRECONCEPTION', created_at: now, updated_at: now, high_risk: !!params.highRisk }
     if (mode === 'ttc') {
       if (params.lmpDate && Number.isFinite(parseDate(params.lmpDate))) doc.lmp_date = parseDate(params.lmpDate)
     } else if (mode === 'pregnant') {

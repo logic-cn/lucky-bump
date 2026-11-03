@@ -2,7 +2,7 @@
   <view class="page" :class="themeClass()">
     <lbc-error v-if="loadFailed" :message="errorMsg" @retry="load" />
 
-    <view class="card lb-rise" v-if="!loadFailed">
+    <view class="card lb-rise" v-if="!loadFailed && !joinMode">
       <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">家庭成员（{{ members.length }}）</text></view>
       <view class="m-row" v-for="(m, i) in members" :key="i">
         <view class="m-avatar"><text class="m-avatar-text">{{ (m.getString('nickname') ?? '?').slice(0, 1) }}</text></view>
@@ -28,14 +28,17 @@
       </view>
     </view>
 
-    <view class="card lb-rise-2" v-if="!isOwner && joinCodeMode && !loadFailed">
+    <view class="card lb-rise-2" v-if="(joinMode || !isOwner) && joinCodeMode && !loadFailed">
       <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">加入家庭</text></view>
       <input class="input" v-model="joinCode" placeholder="输入邀请码" placeholder-class="ph" />
       <button class="btn-save" hover-class="lb-press" hover-stay-time="120" @click="join">加入</button>
+      <view class="link-wrap" v-if="joinMode" hover-class="lb-press" hover-stay-time="120">
+        <text class="link" @click="cancelJoin">返回建档</text>
+      </view>
     </view>
-    <view class="card lb-rise-2" v-if="!isOwner && !joinCodeMode && !loadFailed">
-      <text class="hint">你是受邀加入的成员，感谢一起记录宝宝的成长</text>
-      <view class="link-wrap" hover-class="lb-press" hover-stay-time="120">
+    <view class="card lb-rise-2" v-if="!isOwner && !joinMode && !joinCodeMode && !loadFailed">
+      <text class="hint">你是受邀加入的成员，感谢一起记录这段旅程</text>
+      <view class="link-wrap" v-if="!isMember" hover-class="lb-press" hover-stay-time="120">
         <text class="link" @click="joinCodeMode = true">我要用邀请码加入其他家庭</text>
       </view>
     </view>
@@ -79,9 +82,11 @@
   const confirmContent = ref<string>('')
   const confirmTarget = ref<string>('')
   const isOwner = ref<boolean>(false)
+  const isMember = ref<boolean>(false)
   const inviteCode = ref<string>('')
   const joinCode = ref<string>('')
   const joinCodeMode = ref<boolean>(false)
+  const joinMode = ref<boolean>(false)
   const loadFailed = ref<boolean>(false)
   const errorMsg = ref<string>('')
   const groups = ref<GOpt[]>([
@@ -94,12 +99,14 @@
   function roleText(r: string): string {
     if (r == 'admin') return '管理员'
     if (r == 'recorder') return '记录者'
-    return '围观者'
+    return '只读成员'
   }
   async function load() {
+    if (joinMode.value) return
     try {
       const res = await luckyFamily('getFamily', { journeyId: journeyState.journeyId } as UTSJSONObject)
       members.value = res.getArray<UTSJSONObject>('members') ?? []
+      isMember.value = members.value.some(m => m.getBoolean('isMe') == true)
       const fam = res.getJSON('family')
       isOwner.value = members.value.some(m => m.getBoolean('isMe') == true && m.getString('role') == 'admin')
       if (fam != null) {
@@ -125,7 +132,7 @@
   }
   async function join() {
     try {
-      const res = await luckyFamily('join', { code: joinCode.value, nickname: '我' } as UTSJSONObject)
+      const res = await luckyFamily('join', { code: joinCode.value } as UTSJSONObject)
       // 成员没有自己的旅程：立即写入共享旅程与角色，避免回首页被误导向建档引导
       const jid = res.getString('journeyId') ?? ''
       if (jid.length > 0) {
@@ -135,8 +142,18 @@
         uni.setStorageSync('lb_has_record', true)
       }
       uni.showToast({ title: '加入成功', icon: 'success' })
+      if (joinMode.value) {
+        uni.removeStorageSync('lb_family_join_mode')
+        uni.reLaunch({ url: '/pages/index/index' })
+        return
+      }
       load()
     } catch (e) { uni.showToast({ title: (e as Error).message, icon: 'none' }) }
+  }
+  /** 家人加入模式：不要求本人先建档 */
+  function cancelJoin() {
+    uni.removeStorageSync('lb_family_join_mode')
+    uni.redirectTo({ url: '/pages/onboarding/onboarding' })
   }
   async function togglePerm(group: string, e: UniSwitchChangeEvent) {
     try {
@@ -164,7 +181,17 @@
     }
   }
 
-  onPageReady(() => { load() })
+  onPageReady(() => {
+    const jm = uni.getStorageSync('lb_family_join_mode') as string
+    if (jm == '1') {
+      joinMode.value = true
+      joinCodeMode.value = true
+      isOwner.value = false
+      loadFailed.value = false
+      return
+    }
+    load()
+  })
 </script>
 
 <style>

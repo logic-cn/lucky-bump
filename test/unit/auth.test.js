@@ -99,6 +99,12 @@ test('C4：admin 角色的 dataScope 为 self，看不到他人 strict 记录', 
   const join = await rt.callObject('lucky-family', 'join', { code: inv.code }, { token: reg2.token })
   assert.equal(join.errCode, 0, JSON.stringify(join))
 
+  // 受邀成员没有自己的旅程：仍应能读取所在家庭与成员列表
+  const dadFam = await rt.callObject('lucky-family', 'getFamily', { journeyId: 'not-mine' }, { token: reg2.token })
+  assert.equal(dadFam.errCode, 0, JSON.stringify(dadFam))
+  assert.ok((dadFam.members || []).some(m => m.isMe === true), '成员应能查看家庭并按 isMe 标识自己')
+  assert.ok((dadFam.members || []).every(m => m.nickname && m.nickname !== '我'), '成员列表不应出现多个“我”')
+
   // 爸爸写入自己的 strict 记录
   const ev = await rt.callObject('lucky-record', 'addCycleEvent', { journeyId: jid, type: 'intercourse', date: '2026-10-01' }, { token: reg2.token })
   assert.equal(ev.errCode, 0, JSON.stringify(ev))

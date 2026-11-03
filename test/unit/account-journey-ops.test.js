@@ -111,6 +111,16 @@ test('旅程管理：创建即当前、切换、重命名、归档后回退', as
   assert.equal(archived.archived, true)
 })
 
+test('新建旅程默认名称按阶段生成', async () => {
+  const rt = createRuntime()
+  const reg = await register(rt)
+  const ctx = { token: reg.token }
+  const ttc = await rt.callObject('lucky-journey', 'createJourney', { mode: 'ttc', lmpDate: '2026-10-01' }, ctx)
+  assert.equal(ttc.view.title, '备孕旅程')
+  const preg = await rt.callObject('lucky-journey', 'createJourney', { mode: 'pregnant', lmpDate: '2026-09-01' }, ctx)
+  assert.equal(preg.view.title, '孕期旅程')
+})
+
 test('服务端埋点：记录写入即产生 record_create，报告查看产生 report_view', async () => {
   const rt = createRuntime()
   const reg = await register(rt)
