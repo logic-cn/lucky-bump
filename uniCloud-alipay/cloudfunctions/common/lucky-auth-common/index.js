@@ -194,7 +194,8 @@ async function fetchAll(db, collection, where, orderField = '', orderDir = 'desc
   while (out.length < maxRows) {
     const hasWhere = where != null && Object.keys(where).length > 0
     let q = hasWhere ? db.collection(collection).where(where) : db.collection(collection)
-    if (orderField) q = q.orderBy(orderField, orderDir)
+    // 无业务排序时按 _id 稳定排序，避免 skip/limit 分页在数据变动时重复或漏读
+    q = q.orderBy(orderField || '_id', orderDir)
     const pageSize = Math.min(1000, maxRows - out.length)
     const r = await q.skip(skip).limit(pageSize).get()
     const rows = r.data || []

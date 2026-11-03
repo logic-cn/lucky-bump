@@ -284,3 +284,17 @@ test('fetchAll 分页读取完整（内置库单次上限 1000）', async () => 
   assert.equal(rows[0].ts, 0)
   assert.equal(rows[rows.length - 1].ts, 1204)
 })
+
+test('fetchAll 无排序字段时回退 _id 稳定排序（导出场景）', async () => {
+  const seen = []
+  const fakeDb = {
+    collection: () => ({
+      orderBy: (field, dir) => {
+        seen.push([field, dir])
+        return { skip: () => ({ limit: () => ({ get: async () => ({ data: [] }) }) }) }
+      }
+    })
+  }
+  await auth.fetchAll(fakeDb, 'lb-events', {}, '', 'asc', 10)
+  assert.deepEqual(seen[0], ['_id', 'asc'], '未指定排序时应按 _id 稳定分页')
+})
