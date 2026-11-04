@@ -9,7 +9,7 @@
           <text class="v-sub">{{ v.getNumber('ageMonths')?.toInt() }} 月龄 · 应接种 {{ v.getString('dueDate') ?? '' }}</text>
           <text class="v-record" v-if="v.getString('status') == 'done'">已接种 {{ (v.getJSON('record') as UTSJSONObject | null)?.getString('date') ?? '' }}</text>
         </view>
-        <button class="btn-record" v-if="v.getString('status') != 'done'" hover-class="lb-press" hover-stay-time="120" @click="record(v)">接种了</button>
+        <button class="btn-record" :class="v.getString('status') == 'due' ? 'btn-record-due' : ''" v-if="v.getString('status') != 'done'" hover-class="lb-press" hover-stay-time="120" @click="record(v)">接种了</button>
       </view>
       <text class="hint">漏种会持续提醒；不同省份程序细节略有差异，可在接种门诊核实后微调</text>
     </view>
@@ -107,7 +107,8 @@
   .v-name { font-size: 28rpx; color: var(--lb-text-1); }
   .v-sub { font-size: 24rpx; color: var(--lb-text-3); margin-top: 4rpx; }
   .v-record { font-size: 24rpx; color: var(--lb-success-text); background-color: var(--lb-success-soft); border-radius: 999rpx; padding: 4rpx 16rpx; margin-top: 4rpx; align-self: flex-start; }
-  .btn-record { width: 140rpx; height: 64rpx; line-height: 64rpx; background-color: var(--lb-action); color: #FFFFFF; font-size: 24rpx; border-radius: 36rpx; transition: all 160ms ease-out; }
+  .btn-record { width: 140rpx; height: 64rpx; line-height: 64rpx; background-color: var(--lb-primary-soft); color: var(--lb-primary-deep); font-size: 24rpx; border-radius: 36rpx; transition: all 160ms ease-out; }
+  .btn-record-due { background-color: var(--lb-action); color: #FFFFFF; }
   .hint { font-size: 24rpx; color: var(--lb-text-3); margin-top: 24rpx; }
 
   .mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--lb-mask); justify-content: center; align-items: center; }

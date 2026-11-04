@@ -173,3 +173,10 @@ test('Web 图表高度使用 px，不依赖内联 rpx', () => {
   const growth = read('pages/baby/growth.uvue')
   assert.ok(growth.includes('kgBarPx') && !growth.includes("kgBar(s.kg) + 'rpx'"), '成长趋势柱高需转 px 后绑定')
 })
+
+test('列表页避免主按钮过载与单条目空卡', () => {
+  const vac = read('pages/baby/vaccines.uvue')
+  assert.ok(vac.includes('btn-record-due'), '疫苗页仅“该接种”使用主按钮，其余用弱按钮')
+  const rec = read('pages/record/record.uvue')
+  assert.ok(rec.includes('single-row'), '单条目分组应使用横向行卡片')
+})

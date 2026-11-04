@@ -8,16 +8,18 @@
         <text class="stale-btn stale-btn-ghost" @click="discardStale">放弃这条</text>
       </view>
     </view>
-    <view class="hero lb-rise">
-      <text class="timer-text">{{ running ? display : '亲喂' }}</text>
-      <text class="hint lb-pulse" v-if="running">当前：{{ side == 'left' ? '左侧' : '右侧' }} · 记得换边哦</text>
-      <text class="hint" v-else>选择侧别开始计时，睡意朦胧也能 3 秒完成</text>
+    <view class="main">
+      <view class="hero lb-rise">
+        <text class="timer-text">{{ running ? display : '亲喂' }}</text>
+        <text class="hint lb-pulse" v-if="running">当前：{{ side == 'left' ? '左侧' : '右侧' }} · 记得换边哦</text>
+        <text class="hint" v-else>选择侧别开始计时，睡意朦胧也能 3 秒完成</text>
+      </view>
+      <view class="side-row lb-rise-1" v-if="!running">
+        <view class="side-btn" hover-class="lb-press" hover-stay-time="120" @click="start('left')"><text class="side-text">左侧开始</text></view>
+        <view class="side-btn" hover-class="lb-press" hover-stay-time="120" @click="start('right')"><text class="side-text">右侧开始</text></view>
+      </view>
+      <view class="big-btn lb-rise-1" v-if="running" hover-class="lb-press" hover-stay-time="120" @click="stop"><text class="big-btn-text">结束本次</text></view>
     </view>
-    <view class="side-row lb-rise-1" v-if="!running">
-      <view class="side-btn" hover-class="lb-press" hover-stay-time="120" @click="start('left')"><text class="side-text">左侧开始</text></view>
-      <view class="side-btn" hover-class="lb-press" hover-stay-time="120" @click="start('right')"><text class="side-text">右侧开始</text></view>
-    </view>
-    <view class="big-btn lb-rise-1" v-if="running" hover-class="lb-press" hover-stay-time="120" @click="stop"><text class="big-btn-text">结束本次</text></view>
 
     <view class="card lb-rise-2" v-if="hint.length > 0">
       <view class="hint-row"><image class="hint-ico" src="/static/icons/tip.png" mode="aspectFit" /><text class="hint-strong">{{ hint }}</text></view>
@@ -166,7 +168,8 @@
 <style>
   @import '../../theme.scss';
   .page { flex: 1; background-color: var(--lb-bg); padding: 24rpx; align-items: center; }
-  .hero { align-items: center; margin-top: 40rpx; }
+  .main { flex: 1; width: 100%; align-items: center; justify-content: center; }
+  .hero { align-items: center; }
   .timer-text { font-size: 96rpx; font-weight: bold; color: var(--lb-text-1); }
   .hint { font-size: 24rpx; color: var(--lb-text-3); margin-top: 16rpx; }
   .side-row { flex-direction: row; margin: 40rpx 0; }

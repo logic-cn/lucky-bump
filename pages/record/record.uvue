@@ -5,12 +5,25 @@
         <view class="title-bar" />
         <text class="group-title">{{ g.title }}</text>
       </view>
-      <view class="grid">
+      <view class="grid" v-if="g.items.length != 1">
         <view class="grid-item" v-for="(item, i) in g.items" :key="i" hover-class="lb-press" hover-stay-time="120" @click="go(item.url)">
           <view class="grid-chip" :class="chipClass(item.url)">
             <image class="grid-icon" :src="'/static/icons/' + item.icon + '.png'" mode="aspectFit" />
           </view>
           <text class="grid-label">{{ item.label }}</text>
+        </view>
+      </view>
+      <!-- 单条目分组用横向行卡片，避免一张卡只放一个图标、空出三列 -->
+      <view v-if="g.items.length == 1">
+        <view class="single-row" v-for="(item, i) in g.items" :key="i" hover-class="lb-press" hover-stay-time="120" @click="go(item.url)">
+          <view class="grid-chip single-chip" :class="chipClass(item.url)">
+            <image class="grid-icon" :src="'/static/icons/' + item.icon + '.png'" mode="aspectFit" />
+          </view>
+          <view class="single-body">
+            <text class="single-label">{{ item.label }}</text>
+            <text class="single-sub">查看排程与历史记录</text>
+          </view>
+          <text class="single-arrow">›</text>
         </view>
       </view>
     </view>
@@ -136,6 +149,12 @@
   .grid-chip-4 { background-color: var(--lb-chip-5); }
   .grid-icon { width: 52rpx; height: 52rpx; }
   .grid-label { font-size: 24rpx; color: var(--lb-text-2); margin-top: 12rpx; }
+  .single-row { flex-direction: row; align-items: center; width: 100%; padding: 8rpx; border-radius: 24rpx; }
+  .single-chip { width: 76rpx; height: 76rpx; border-radius: 24rpx; }
+  .single-body { flex: 1; margin-left: 20rpx; }
+  .single-label { font-size: 30rpx; font-weight: bold; color: var(--lb-text-1); }
+  .single-sub { font-size: 24rpx; color: var(--lb-text-3); margin-top: 6rpx; }
+  .single-arrow { font-size: 36rpx; color: var(--lb-text-3); margin-right: 8rpx; }
 
   @keyframes lb-rise { from { opacity: 0; transform: translateY(28rpx); } to { opacity: 1; transform: translateY(0); } }
   @keyframes lb-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
