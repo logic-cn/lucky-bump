@@ -133,9 +133,10 @@ test('隐私同意只在注册时进行一次，引导页不再二次确认', ()
 
 test('时间线按旅程阶段分章，指标显示中文', () => {
   const tl = read('pages/data/timeline.uvue')
-  assert.ok(tl.includes("'water', '记录了饮水'"), '饮水记录应显示中文，不能露出 water 原始码')
+  assert.ok(tl.includes("'water', '饮水'"), '饮水记录应显示中文，不能露出 water 原始码')
   assert.ok(tl.includes("journeyState.stage == 'T1'"), '孕期章节需判断阶段，不能只因存在末次月经就判定为孕期')
   assert.ok(!/const lmp = journeyState\.lmpDate[\s\S]{0,200}return \{ title: '孕期'/.test(tl), '备孕旅程不能误标孕期')
+  assert.ok(tl.includes('DayGroup') && tl.includes('showChapter'), '时间线需按天分组，日期只出现一次')
 })
 
 test('分娩登记性别选择可点击且映射完整', () => {

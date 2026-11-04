@@ -6,21 +6,32 @@
       <text class="story-sub">{{ storySub }}</text>
     </view>
 
-    <view class="lb-rise-1" v-for="(r, i) in rows" :key="i">
-      <view class="chapter-row" v-if="r.kind == 'chapter'">
-        <text class="chapter-title">{{ r.title }}</text>
-        <text class="chapter-sub" v-if="r.sub.length > 0">{{ r.sub }}</text>
+    <view v-for="(g, gi) in groups" :key="g.date">
+      <view class="chapter-row" v-if="g.showChapter">
+        <text class="chapter-title">{{ g.chapter }}</text>
+        <view class="chapter-rule" />
       </view>
-      <view class="row" v-else>
-        <view class="time-col">
-          <text class="time">{{ r.time }}</text>
-          <text class="date">{{ r.date }}</text>
+      <view class="day-group">
+        <view class="day-spine">
+          <text class="day-num">{{ g.day }}</text>
+          <text class="day-month">{{ g.month }}</text>
+          <text class="day-wd">{{ g.weekday }}</text>
+          <view class="spine-line" />
         </view>
-        <view class="dot-line">
-          <view class="dot" :class="'dot-' + r.dotType" />
-          <view class="line" v-if="r.showLine" />
+        <view class="day-card">
+          <view class="day-head">
+            <text class="day-count">{{ g.items.length }} 条记录</text>
+            <view class="week-chip" v-if="g.weekTag.length > 0"><text class="week-chip-text">{{ g.weekTag }}</text></view>
+          </view>
+          <view class="event-row" v-for="(it, ii) in g.items" :key="ii">
+            <text class="event-time">{{ it.time }}</text>
+            <view class="dot-col"><view class="dot" :class="'dot-' + it.dotType" /></view>
+            <view class="event-body">
+              <text class="event-title">{{ it.title }}</text>
+              <text class="event-sub" v-if="it.detail.length > 0">{{ it.detail }}</text>
+            </view>
+          </view>
         </view>
-        <text class="content">{{ r.content }}</text>
       </view>
     </view>
     <lbc-error v-if="loadFailed" :message="errorMsg" @retry="load" />
@@ -36,10 +47,10 @@
   import { themeClass } from '../../store/themeStore.uts'
 
   const CODE_TEXT: Map<string, string> = new Map([
-    ['weight', '记录了体重'], ['blood_pressure', '记录了血压'], ['blood_glucose', '记录了血糖'],
-    ['hcg', '记录了 hCG'], ['progesterone', '记录了孕酮'],
-    ['symptom', '记录了症状'], ['mood', '记录了心情'], ['fetal_movement', '数了胎动'],
-    ['lochia', '记录了恶露'], ['kegel', '盆底肌训练'], ['water', '记录了饮水'],
+    ['weight', '体重'], ['blood_pressure', '血压'], ['blood_glucose', '血糖'],
+    ['hcg', 'hCG'], ['progesterone', '孕酮'],
+    ['symptom', '症状记录'], ['mood', '情绪'], ['fetal_movement', '胎动'],
+    ['lochia', '恶露'], ['kegel', '盆底肌训练'], ['water', '饮水'],
     ['period_start', '经期开始'], ['period_end', '经期结束'],
     ['ovulation_test', '排卵试纸'], ['bbt', '基础体温'], ['intercourse', '同房'], ['pregnancy_test', '验孕'],
     ['mucus', '白带记录'],
@@ -52,8 +63,9 @@
     ['medication', '用药记录']
   ])
 
+  type DayEvent = { time: string, title: string, detail: string, dotType: string }
+  type DayGroup = { date: string, day: string, month: string, weekday: string, weekTag: string, chapter: string, showChapter: boolean, items: DayEvent[] }
   type Chapter = { title: string, sub: string, tag: string }
-  type Row = { kind: string, title: string, sub: string, time: string, date: string, dotType: string, content: string, tag: string, showLine: boolean }
 
   const events = ref<UTSJSONObject[]>([])
   const loadFailed = ref<boolean>(false)
@@ -89,15 +101,67 @@
     const da = d.getDate()
     return `${d.getFullYear()}-${mo < 10 ? '0' + mo : '' + mo}-${da < 10 ? '0' + da : '' + da}`
   }
-  function contentText(e: UTSJSONObject): string {
+  function fmtNum(n: number): string {
+    return `${Math.round(n * 10) / 10}`
+  }
+  function titleOf(e: UTSJSONObject): string {
     const code = e.getString('code') ?? ''
-    if (code == 'medication') {
-      const v = e.getJSON('value') as UTSJSONObject | null
-      const n = v?.getString('name') ?? ''
-      const d = v?.getString('dose') ?? ''
-      return `用药：${n}${d.length > 0 ? ' · ' + d : ''}`
-    }
+    if (code == 'medication') return '用药'
     return CODE_TEXT.get(code) ?? code
+  }
+  function slotText(s: string): string {
+    if (s == 'fasting') return '空腹'
+    if (s == '1h') return '餐后 1h'
+    if (s == '2h') return '餐后 2h'
+    if (s == 'random') return '随机'
+    return s
+  }
+  /** 事件副标题：具体数值/医院等，让时间线不止有标题 */
+  function detailOf(e: UTSJSONObject): string {
+    const code = e.getString('code') ?? ''
+    const v = e.getJSON('value') as UTSJSONObject | null
+    if (v == null) return ''
+    if (code == 'weight') return `${fmtNum(v.getNumber('kg') ?? 0)} kg`
+    if (code == 'water') return `${fmtNum(v.getNumber('ml') ?? 0)} ml`
+    if (code == 'blood_pressure') {
+      const hr = v.getNumber('hr') ?? 0
+      return `${fmtNum(v.getNumber('sbp') ?? 0)}/${fmtNum(v.getNumber('dbp') ?? 0)} mmHg${hr > 0 ? ` · 心率 ${fmtNum(hr)}` : ''}`
+    }
+    if (code == 'blood_glucose') return `${fmtNum(v.getNumber('mmol') ?? 0)} mmol/L · ${slotText(v.getString('slot') ?? '')}`
+    if (code == 'fetal_movement') return `${fmtNum(v.getNumber('count') ?? 0)} 次${(v.getNumber('durationMin') ?? 0) > 0 ? ` / ${fmtNum(v.getNumber('durationMin') ?? 0)} 分钟` : ''}`
+    if (code == 'mood') return `${fmtNum(v.getNumber('score') ?? 0)} / 5 分`
+    if (code == 'kegel') return `${fmtNum(v.getNumber('sets') ?? 0)} 组 × ${fmtNum(v.getNumber('reps') ?? 0)} 次`
+    if (code == 'symptom') {
+      const codes = v.getArray<string>('codes') ?? []
+      const sev = v.getNumber('severity') ?? 0
+      const sevText = sev == 1 ? '轻' : (sev == 2 ? '中' : (sev == 3 ? '重' : ''))
+      return `${codes.length} 项${sevText.length > 0 ? ' · ' + sevText : ''}`
+    }
+    if (code == 'medication') {
+      const name = v.getString('name') ?? ''
+      const dose = v.getString('dose') ?? ''
+      return `${name}${dose.length > 0 ? ' · ' + dose : ''}`
+    }
+    if (code == 'visit' || code == 'prenatal_visit') {
+      const week = v.getNumber('week') ?? 0
+      const hospital = v.getString('hospital') ?? ''
+      const parts: string[] = []
+      if (week > 0) parts.push(`孕 ${fmtNum(week)} 周`)
+      if (hospital.length > 0) parts.push(hospital)
+      return parts.join(' · ')
+    }
+    if (code == 'lochia') {
+      const color = v.getString('color') ?? ''
+      const amount = v.getString('amount') ?? ''
+      return [color, amount].filter(x => x.length > 0).join(' · ')
+    }
+    return ''
+  }
+  function weekdayOf(ds: string): string {
+    const ts = Date.parse(ds + 'T12:00:00')
+    if (!Number.isFinite(ts)) return ''
+    const names = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+    return names[new Date(ts).getDay()]
   }
   function goFirst() { uni.switchTab({ url: '/pages/record/record' }) }
 
@@ -132,18 +196,24 @@
   })
   const storySub = computed((): string => `共 ${events.value.length} 条记录 · 数据只属于你们`)
 
-  /** 事件按章节分组渲染（章节头 + 事件行），构成"生命故事流" */
-  const rows = computed((): Row[] => {
-    const out: Row[] = []
+  /** 按天分组：日期只出现一次，事件进入当天卡片 */
+  const groups = computed((): DayGroup[] => {
+    const out: DayGroup[] = []
     let lastChapter = ''
     for (let i = 0; i < events.value.length; i++) {
       const e = events.value[i]
+      const ds = dateText(e)
       const ch = chapterOf(e)
-      if (ch.title != lastChapter) {
-        out.push({ kind: 'chapter', title: ch.title, sub: ch.sub, time: '', date: '', dotType: '', content: '', tag: '', showLine: false })
+      if (out.length == 0 || out[out.length - 1].date != ds) {
+        out.push({
+          date: ds, day: ds.slice(8, 10), month: `${parseInt(ds.slice(5, 7))}月`, weekday: weekdayOf(ds),
+          weekTag: ch.tag, chapter: ch.title, showChapter: ch.title != lastChapter, items: []
+        })
         lastChapter = ch.title
       }
-      out.push({ kind: 'event', title: '', sub: '', time: timeText(e), date: dateText(e), dotType: e.getString('type') ?? 'metric', content: ch.tag.length > 0 ? `${contentText(e)} · ${ch.tag}` : contentText(e), tag: '', showLine: i + 1 < events.value.length })
+      out[out.length - 1].items.push({
+        time: timeText(e), title: titleOf(e), detail: detailOf(e), dotType: e.getString('type') ?? 'metric'
+      })
     }
     return out
   })
@@ -158,22 +228,31 @@
   .story { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 36rpx; margin-top: 16rpx; align-items: center; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
   .story-title { font-size: 32rpx; font-weight: bold; color: var(--lb-text-1); }
   .story-sub { font-size: 24rpx; color: var(--lb-text-3); margin-top: 12rpx; }
-  .chapter-row { width: 702rpx; flex-direction: row; align-items: center; padding: 24rpx 8rpx 8rpx 8rpx; }
+  .chapter-row { width: 702rpx; flex-direction: row; align-items: center; padding: 28rpx 8rpx 4rpx 8rpx; }
   .chapter-title { font-size: 30rpx; font-weight: bold; color: var(--lb-primary-deep); }
-  .chapter-sub { font-size: 24rpx; color: var(--lb-text-3); margin-left: 16rpx; }
-  .row { width: 702rpx; flex-direction: row; }
-  .time-col { width: 144rpx; align-items: flex-start; padding-top: 8rpx; }
-  .time { font-size: 24rpx; color: var(--lb-text-1); font-weight: bold; }
-  .date { font-size: 24rpx; color: var(--lb-text-3); margin-top: 4rpx; }
-  .dot-line { align-items: center; margin: 0 16rpx; }
-  .dot { width: 16rpx; height: 16rpx; border-radius: 8rpx; background-color: var(--lb-primary); }
+  .chapter-rule { flex: 1; height: 1px; background-color: var(--lb-line); margin-left: 16rpx; }
+  .day-group { width: 702rpx; flex-direction: row; margin-top: 16rpx; }
+  .day-spine { width: 104rpx; align-items: flex-start; padding-top: 8rpx; }
+  .day-num { font-size: 44rpx; font-weight: bold; color: var(--lb-text-1); line-height: 1; }
+  .day-month { font-size: 24rpx; color: var(--lb-text-2); margin-top: 6rpx; }
+  .day-wd { font-size: 24rpx; color: var(--lb-text-3); margin-top: 2rpx; }
+  .spine-line { width: 2px; flex: 1; min-height: 24rpx; background-color: var(--lb-line); margin-top: 12rpx; }
+  .day-card { flex: 1; background-color: var(--lb-card); border-radius: 28rpx; padding: 8rpx 28rpx; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
+  .day-head { flex-direction: row; align-items: center; justify-content: space-between; padding: 12rpx 0 4rpx 0; }
+  .day-count { font-size: 24rpx; color: var(--lb-text-3); }
+  .week-chip { background-color: var(--lb-primary-soft); border-radius: 999rpx; padding: 6rpx 16rpx; }
+  .week-chip-text { font-size: 24rpx; color: var(--lb-primary-deep); font-weight: bold; }
+  .event-row { flex-direction: row; padding: 20rpx 0; border-bottom-width: 1px; border-bottom-color: var(--lb-line); }
+  .event-time { width: 88rpx; font-size: 24rpx; color: var(--lb-text-3); padding-top: 2rpx; }
+  .dot-col { width: 36rpx; padding-top: 10rpx; align-items: flex-start; }
+  .dot { width: 14rpx; height: 14rpx; border-radius: 7rpx; background-color: var(--lb-primary); }
   .dot-cycle { background-color: var(--lb-warning); }
   .dot-visit { background-color: var(--lb-secondary); }
   .dot-milestone { background-color: var(--lb-success); }
   .dot-medication { background-color: var(--lb-warning); }
-  .line { width: 2px; height: 64rpx; background-color: var(--lb-line); }
-  .content { flex: 1; font-size: 26rpx; color: var(--lb-text-1); padding-bottom: 32rpx; }
-  .card { width: 702rpx; background-color: var(--lb-card); border-radius: 36rpx; padding: 40rpx; margin-top: 40rpx; align-items: center; box-shadow: 0 6rpx 24rpx rgba(50,36,48,0.04); }
+  .event-body { flex: 1; }
+  .event-title { font-size: 28rpx; color: var(--lb-text-1); font-weight: bold; }
+  .event-sub { font-size: 24rpx; color: var(--lb-text-2); margin-top: 6rpx; line-height: 36rpx; }
   .empty { font-size: 28rpx; color: var(--lb-text-2); }
   .hint { font-size: 24rpx; color: var(--lb-text-3); margin-top: 12rpx; }
 
