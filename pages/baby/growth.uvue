@@ -38,7 +38,7 @@
       <view class="card-head"><view class="title-bar" /><text class="card-title card-title-flush">体重趋势（最近 {{ chartRows.length }} 次）</text></view>
       <view class="chart">
         <view class="bar-col" v-for="(s, i) in chartRows" :key="i">
-          <view class="bar" :style="{ height: kgBar(s.kg) + 'rpx' }" />
+          <view class="bar" :style="{ height: kgBarPx(s.kg) }" />
           <text class="bar-date">{{ s.date.slice(5) }}</text>
           <text class="bar-val">{{ s.kg }}</text>
         </view>
@@ -106,6 +106,10 @@
   })
   function kgBar(kg: number): number {
     return Math.max(24, Math.round(kg / maxKg.value * 150))
+  }
+  /** Web 端不支持内联样式里的 rpx，统一转为 px 后绑定 */
+  function kgBarPx(kg: number): string {
+    return `${uni.rpx2px(kgBar(kg))}px`
   }
 
   function onDateChange(v: string) { measureDate.value = v }

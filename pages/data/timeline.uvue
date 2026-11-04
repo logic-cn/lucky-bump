@@ -162,7 +162,7 @@
   .chapter-title { font-size: 30rpx; font-weight: bold; color: var(--lb-primary-deep); }
   .chapter-sub { font-size: 24rpx; color: var(--lb-text-3); margin-left: 16rpx; }
   .row { width: 702rpx; flex-direction: row; }
-  .time-col { width: 110rpx; align-items: flex-start; padding-top: 8rpx; }
+  .time-col { width: 144rpx; align-items: flex-start; padding-top: 8rpx; }
   .time { font-size: 24rpx; color: var(--lb-text-1); font-weight: bold; }
   .date { font-size: 24rpx; color: var(--lb-text-3); margin-top: 4rpx; }
   .dot-line { align-items: center; margin: 0 16rpx; }

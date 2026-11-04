@@ -165,3 +165,10 @@ test('家人视角快捷记录按角色收敛', () => {
   assert.ok(idx.includes("journeyState.myRole == 'viewer'"), '只读成员不应出现写入口')
   assert.ok(idx.includes('v-if="quickItems.length > 0"'), '无可记录项时应隐藏快捷记录卡片')
 })
+
+test('Web 图表高度使用 px，不依赖内联 rpx', () => {
+  const charts = read('pages/data/charts.uvue')
+  assert.ok(charts.includes('barPx') && !charts.includes("barHeight(p.y) + 'rpx'"), '指标曲线柱高需转 px 后绑定')
+  const growth = read('pages/baby/growth.uvue')
+  assert.ok(growth.includes('kgBarPx') && !growth.includes("kgBar(s.kg) + 'rpx'"), '成长趋势柱高需转 px 后绑定')
+})

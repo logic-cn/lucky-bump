@@ -20,7 +20,7 @@
         </view>
         <view class="chart">
           <view class="bar-col" v-for="(p, i) in points" :key="i">
-            <view class="bar" :class="i == points.length - 1 ? 'bar-latest' : ''" :style="{ height: barHeight(p.y) + 'rpx' }" />
+            <view class="bar" :class="i == points.length - 1 ? 'bar-latest' : ''" :style="{ height: barPx(p.y) }" />
             <text class="bar-date">{{ p.date.slice(5) }}</text>
             <text class="bar-val" :class="i == points.length - 1 ? 'bar-val-latest' : ''">{{ p.y }}</text>
           </view>
@@ -113,6 +113,10 @@
     const range = axisTop.value - baseline.value
     if (range <= 0) return 80
     return Math.max(12, Math.round((y - baseline.value) / range * 160))
+  }
+  /** Web 端不支持内联样式里的 rpx，统一转为 px 后绑定 */
+  function barPx(y: number): string {
+    return `${uni.rpx2px(barHeight(y))}px`
   }
   async function load() {
     try {
