@@ -4,6 +4,7 @@
 const test = require('node:test')
 const assert = require('node:assert')
 const path = require('node:path')
+const crypto = require('node:crypto')
 const { createRuntime } = require('../harness/unicloud-mock')
 
 async function setup() {
@@ -153,5 +154,29 @@ test('H5：本地开发（配置中心不可用）与已配置密钥时不应抛
   const auth = require(path.join(require('../harness/cloud-dir').CLOUD_ROOT, 'cloudfunctions/common/lucky-auth-common'))
   assert.doesNotThrow(() => auth.assertSecretConfigured(false, {}))
   assert.doesNotThrow(() => auth.assertSecretConfigured(true, { tokenSecret: 'real-secret' }))
+})
+
+/* ---------------- C6：token 会话与 uid 绑定 ---------------- */
+
+function b64url(buf) {
+  return Buffer.from(buf).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
+test('C6：不能借用他人 jti 伪造身份（即使签名密钥泄露）', async () => {
+  const rt = createRuntime()
+  const a = await rt.callObject('lucky-id', 'register', { username: 'attacker9', password: 'password123' })
+  const b = await rt.callObject('lucky-id', 'register', { username: 'victim9', password: 'password123' })
+  assert.equal(a.errCode, 0, JSON.stringify(a))
+  assert.equal(b.errCode, 0, JSON.stringify(b))
+  const victim = await rt.callObject('lucky-id', 'getProfile', {}, { token: b.token })
+  const victimUid = victim.userInfo.id
+  const session = JSON.parse(Buffer.from(a.token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString())
+  const payload = b64url(JSON.stringify({ uid: victimUid, exp: Date.now() + 86400000, jti: session.jti }))
+  const forged = `lb.${payload}.${b64url(crypto.createHmac('sha256', 'lb-dev-secret-DO-NOT-USE-IN-PRODUCTION').update(payload).digest())}`
+  const res = await rt.callObject('lucky-id', 'getProfile', {}, { token: forged })
+  assert.notEqual(res.errCode, 0, 'C6：借用他人 jti 伪造 uid 必须被拒绝')
+  // 阳性对照：攻击者自己的真实 token 仍可用
+  const own = await rt.callObject('lucky-id', 'getProfile', {}, { token: a.token })
+  assert.equal(own.errCode, 0, JSON.stringify(own))
 })
 

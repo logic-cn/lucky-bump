@@ -129,6 +129,8 @@ async function requireUser(db, token) {
   if (!v.ok) return { ok: false, errCode: v.errCode, errMsg: v.errMsg }
   const tr = await db.collection(TOKEN_COL).where({ jti: v.jti, revoked: false }).get()
   if (tr.data.length === 0) return { ok: false, errCode: 'TOKEN_INVALID', errMsg: 'token 已失效' }
+  // 会话归属必须与 token 中的 uid 一致：即使签名密钥泄露，也不能借自己的 jti 伪造他人身份
+  if (tr.data[0].uid !== v.uid) return { ok: false, errCode: 'TOKEN_INVALID', errMsg: 'token 已失效' }
   return { ok: true, uid: v.uid, jti: v.jti }
 }
 
