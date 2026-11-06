@@ -81,6 +81,8 @@ module.exports = {
     const access = await auth.resolveJourneyAccess(db.call(this), uid, params.journeyId)
     if (!access.role || !access.journey) return auth.fail('NOT_FOUND', '旅程不存在')
     const j = access.journey
+    const diaryAllowed = auth.canAccessGroup(access, 'diary')
+    const prenatalAllowed = auth.canAccessGroup(access, 'prenatal')
     // 产品红线：哀伤模式零孕育类待办（docs/03）；保持返回结构完整，前端依赖 journey/latest 字段
     if (j.stage_code === 'MOURNING') {
       return auth.ok({
@@ -111,7 +113,9 @@ module.exports = {
         todos.push({ source: 'rule', ruleId: r._id, title: r.title, dueTs: due, dueDate, urgent: r.urgent, kind: 'reminder' })
       }
     }
-    const plans = await db.call(this).collection('lb-schedule-items').where({ journey_id: j._id, status: 'upcoming' }).orderBy('plan_date', 'asc').limit(10).get()
+    const plans = prenatalAllowed
+      ? await db.call(this).collection('lb-schedule-items').where({ journey_id: j._id, status: 'upcoming' }).orderBy('plan_date', 'asc').limit(10).get()
+      : { data: [] }
     for (const p of plans.data) {
       if (p.plan_date <= horizon) todos.push({ source: 'schedule', scheduleId: p._id, title: p.title, dueTs: p.plan_date, dueDate: dateOf(p.plan_date), prep: p.prep || '', kind: p.kind })
     }
@@ -141,7 +145,9 @@ module.exports = {
     const weekAgo = now - 7 * DAY
     const recentLogs = await db.call(this).collection('lb-daily-logs').where({ journey_id: j._id }).orderBy('ts', 'desc').limit(200).get()
     const weekLogs = recentLogs.data.filter(d => d.ts >= weekAgo).length
-    const recentDiaries = await db.call(this).collection('lb-diaries').where({ journey_id: j._id }).orderBy('ts', 'desc').limit(100).get()
+    const recentDiaries = diaryAllowed
+      ? await db.call(this).collection('lb-diaries').where({ journey_id: j._id }).orderBy('ts', 'desc').limit(100).get()
+      : { data: [] }
     const weekDiaries = recentDiaries.data.filter(d => d.ts >= weekAgo).length
     // 连续记录周数（含本周）：按 7 天桶往前数，中断即止；数据资产感的量化表达
     const WEEK = 7 * DAY
@@ -157,7 +163,7 @@ module.exports = {
     for (const d of dones.data) { if (d.due_date === todayStr2) todayDone++ }
     // 下一项日程（产检等）：取 14 天内最近一项
     let nextVisit = null
-    if (plans.data.length > 0) nextVisit = { title: plans.data[0].title || '', date: dateOf(plans.data[0].plan_date) }
+    if (prenatalAllowed && plans.data.length > 0) nextVisit = { title: plans.data[0].title || '', date: dateOf(plans.data[0].plan_date) }
     const weekStats = { records: weekLogs + weekDiaries, weightDelta, streakWeeks, todayDone, nextVisit }
     // 留痕：仅家庭成员访问记录，主人本人操作不写（docs/03 M7.2）
     if (access.memberRole && access.memberRole !== 'owner') {
@@ -200,16 +206,31 @@ module.exports = {
   async timeline(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await accessibleJourney.call(this, uid, params.journeyId)
-    if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
+    const access = await auth.resolveJourneyAccess(db.call(this), uid, params.journeyId)
+    if (!access.role || !access.journey) return auth.fail('NOT_FOUND', '旅程不存在')
+    const j = access.journey
+    const prenatalAllowed = auth.canAccessGroup(access, 'prenatal')
+    const reportsAllowed = auth.canAccessGroup(access, 'reports')
+    const emotionsAllowed = auth.canAccessGroup(access, 'emotions')
+    // 情绪组未授权时不返回情绪类指标（H1）
+    const EMOTION_CODES = new Set(['mood', 'symptom'])
     const limit = Math.min(200, +params.limit || 60)
     const events = []
     const metrics = await db.call(this).collection('lb-daily-logs').where({ journey_id: j._id }).orderBy('ts', 'desc').limit(limit).get()
-    for (const m of metrics.data) events.push({ ts: m.ts, type: 'metric', code: m.code, value: m.value, sensitivity: m.sensitivity, _owner: m.user_id })
+    for (const m of metrics.data) {
+      if (!emotionsAllowed && EMOTION_CODES.has(m.code)) continue
+      events.push({ ts: m.ts, type: 'metric', code: m.code, value: m.value, sensitivity: m.sensitivity, _owner: m.user_id })
+    }
     const cycle = await db.call(this).collection('lb-cycle-events').where({ journey_id: j._id }).orderBy('ts', 'desc').limit(limit).get()
     for (const c of cycle.data) events.push({ ts: c.ts, type: 'cycle', code: c.type, value: c.value, sensitivity: c.sensitivity, _owner: c.user_id })
-    const visits = await db.call(this).collection('lb-prenatal-visits').where({ journey_id: j._id }).orderBy('visit_ts', 'desc').limit(limit).get()
-    for (const v of visits.data) events.push({ ts: v.visit_ts, type: 'visit', code: 'prenatal_visit', value: { hospital: v.hospital, week: v.week, conclusion: v.conclusion }, sensitivity: v.sensitivity, _owner: v.user_id })
+    const visits = prenatalAllowed
+      ? await db.call(this).collection('lb-prenatal-visits').where({ journey_id: j._id }).orderBy('visit_ts', 'desc').limit(limit).get()
+      : { data: [] }
+    for (const v of visits.data) {
+      const value = { hospital: v.hospital, week: v.week }
+      if (reportsAllowed) value.conclusion = v.conclusion
+      events.push({ ts: v.visit_ts, type: 'visit', code: 'prenatal_visit', value, sensitivity: v.sensitivity, _owner: v.user_id })
+    }
     const milestones = await db.call(this).collection('lb-milestones').where({ journey_id: j._id }).orderBy('achieved_date', 'desc').limit(limit).get()
     for (const m of milestones.data) events.push({ ts: m.achieved_date, type: 'milestone', code: m.code, value: { dim: m.dim }, sensitivity: 'normal', _owner: m.user_id })
     const meds = await db.call(this).collection('lb-medication-logs').where({ journey_id: j._id }).orderBy('ts', 'desc').limit(limit).get()

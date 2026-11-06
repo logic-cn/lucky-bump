@@ -12,6 +12,20 @@ const TOKEN_TTL_DAYS = 30
 function db() { return uniCloud.database() }
 const usersCol = 'uni-id-users'
 const tokenCol = 'lb-token'
+const USERNAME_RE = /^[a-zA-Z0-9_]{4,24}$/
+
+/**
+ * 调用方标识：优先 IP，其次设备 ID；都缺失时返回空串。
+ * 空串时只按账号/手机号维度限速，避免退化成全站共享桶把所有人一起锁死。
+ */
+function clientKey(ctx) {
+  try {
+    const info = (ctx.getClientInfo && ctx.getClientInfo()) || {}
+    return String(info.clientIP || info.deviceId || '')
+  } catch (e) {
+    return ''
+  }
+}
 
 /** 从调用上下文取 token 并校验（优先 uni_id_token 通道，兼容测试注入） */
 async function requireUser() {
@@ -29,12 +43,12 @@ module.exports = {
     const nickname = String(params.nickname || '').trim() || ('用户' + username.slice(-4))
     // 防脚本批量注册：按来源 IP 限速（测试进程跳过，避免用例互相影响）
     if (process.env.NODE_ENV !== 'test') {
-      const ip = (this.getClientInfo && this.getClientInfo().clientIP) || 'na'
-      if (!auth.rateLimit(`register:${ip}`, 10, 60 * 60 * 1000)) {
+      const ipKey = clientKey(this)
+      if (ipKey && !auth.rateLimit(`register:${ipKey}`, 10, 60 * 60 * 1000)) {
         return auth.fail('TOO_MANY_REQUESTS', '注册过于频繁，请稍后再试')
       }
     }
-    if (!/^[a-zA-Z0-9_]{4,24}$/.test(username)) return auth.fail('PARAM_ERROR', '用户名需 4-24 位字母数字下划线')
+    if (!USERNAME_RE.test(username)) return auth.fail('PARAM_ERROR', '用户名需 4-24 位字母数字下划线')
     if (password.length < 8 || password.length > 32) return auth.fail('PARAM_ERROR', '密码长度需 8-32 位')
     const exists = await db.call(this).collection(usersCol).where({ username }).count()
     if (exists.total > 0) return auth.fail('USERNAME_EXISTS', '用户名已被注册')
@@ -67,8 +81,11 @@ module.exports = {
   async login(params = {}) {
     const username = String(params.username || '').trim()
     const password = String(params.password || '')
-    // 防爆破：按「账号+IP」限速（锁定的是账号而非整个出口 IP）
-    const rateKey = `login:${username}:${this.getClientInfo().clientIP || 'na'}`
+    // 用户名先做格式校验：既限制匿名 key 的空间，也避免超长输入进入限流表
+    if (!USERNAME_RE.test(username)) return auth.fail('PASSWORD_ERROR', '用户名或密码错误')
+    // 防爆破：按「账号+IP」限速（锁定的是账号而非整个出口 IP）；三个密码入口共享同一预算
+    const ipKey = clientKey(this)
+    const rateKey = `pw:${username}` + (ipKey ? `:${ipKey}` : '')
     if (!auth.rateLimit(rateKey, 10, 10 * 60 * 1000)) {
       return auth.fail('TOO_MANY_REQUESTS', '尝试过于频繁，请稍后再试')
     }
@@ -143,9 +160,9 @@ module.exports = {
     if (typeof uniCloud.sendSms !== 'function') return auth.fail('CONFIG_MISSING', '当前云环境未启用短信扩展库')
     const ttl = Math.min(600, Math.max(60, +cfg.codeTtlSeconds || 300))
     const resend = Math.min(300, Math.max(30, +cfg.resendSeconds || 60))
-    const ip = (this.getClientInfo && this.getClientInfo().clientIP) || ''
+    const ip = clientKey(this)
     // 同一 IP 每小时最多 20 次，先于手机号计数判断，避免刷接口提前耗尽真实用户的发送额度
-    if (!auth.rateLimit(`smsip:${ip}`, 20, 60 * 60 * 1000)) return auth.fail('TOO_MANY_REQUESTS', '发送过于频繁，请稍后再试')
+    if (ip && !auth.rateLimit(`smsip:${ip}`, 20, 60 * 60 * 1000)) return auth.fail('TOO_MANY_REQUESTS', '发送过于频繁，请稍后再试')
     // 同一手机号 60s 内只发一次、每小时最多 5 次
     if (!auth.rateLimit(`sms:${mobile}`, 1, resend * 1000)) return auth.fail('TOO_MANY_REQUESTS', '发送过于频繁，请稍后再试')
     if (!auth.rateLimit(`smsh:${mobile}`, 5, 60 * 60 * 1000)) return auth.fail('TOO_MANY_REQUESTS', '今日验证码次数已达上限，请稍后再试')
@@ -179,7 +196,8 @@ module.exports = {
     const code = String(params.code || '').replace(/\D/g, '')
     if (!/^1[3-9]\d{9}$/.test(mobile)) return auth.fail('PARAM_ERROR', '请输入有效的手机号')
     if (!/^\d{6}$/.test(code)) return auth.fail('PARAM_ERROR', '请输入 6 位验证码')
-    if (!auth.rateLimit(`smslogin:${mobile}:${(this.getClientInfo && this.getClientInfo().clientIP) || 'na'}`, 10, 10 * 60 * 1000)) {
+    const ipKey = clientKey(this)
+    if (!auth.rateLimit(`smslogin:${mobile}${ipKey ? ':' + ipKey : ''}`, 10, 10 * 60 * 1000)) {
       return auth.fail('TOO_MANY_REQUESTS', '尝试过于频繁，请稍后再试')
     }
     const r = await db.call(this).collection('lb-sms-codes').where({ phone: mobile, purpose: 'login', used: false }).orderBy('created_at', 'desc').limit(1).get()
@@ -317,10 +335,12 @@ module.exports = {
     const username = String(params.username || '').trim()
     const code = String(params.code || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase()
     const np = String(params.newPassword || '')
+    if (!USERNAME_RE.test(username)) return auth.fail('RECOVERY_ERROR', '账号或恢复凭证不正确')
     if (np.length < 8 || np.length > 32) return auth.fail('PARAM_ERROR', '新密码长度需 8-32 位')
-    // 防爆破：按「账号+IP」限速
-    const rateKey = `recover:${username}:${this.getClientInfo().clientIP || 'na'}`
-    if (!auth.rateLimit(rateKey, 5, 10 * 60 * 1000)) {
+    // 防爆破：按「账号+IP」限速；与登录、撤回注销共享同一密码尝试预算
+    const ipKey = clientKey(this)
+    const rateKey = `pw:${username}` + (ipKey ? `:${ipKey}` : '')
+    if (!auth.rateLimit(rateKey, 10, 10 * 60 * 1000)) {
       return auth.fail('TOO_MANY_REQUESTS', '尝试过于频繁，请稍后再试')
     }
     const res = await db.call(this).collection(usersCol).where({ username }).get()
@@ -372,9 +392,11 @@ module.exports = {
   async cancelDeletion(params = {}) {
     const username = String(params.username || '').trim()
     const password = String(params.password || '')
-    // 防密码爆破：该入口匿名可调，必须与登录同级的「账号+IP」限速
-    const rateKey = `cancel:${username}:${this.getClientInfo().clientIP || 'na'}`
-    if (!auth.rateLimit(rateKey, 5, 10 * 60 * 1000)) {
+    if (!USERNAME_RE.test(username)) return auth.fail('PASSWORD_ERROR', '用户名或密码错误')
+    // 防密码爆破：该入口匿名可调，与登录、找回密码共享「账号+IP」预算
+    const ipKey = clientKey(this)
+    const rateKey = `pw:${username}` + (ipKey ? `:${ipKey}` : '')
+    if (!auth.rateLimit(rateKey, 10, 10 * 60 * 1000)) {
       return auth.fail('TOO_MANY_REQUESTS', '尝试过于频繁，请稍后再试')
     }
     const res = await db.call(this).collection(usersCol).where({ username }).get()

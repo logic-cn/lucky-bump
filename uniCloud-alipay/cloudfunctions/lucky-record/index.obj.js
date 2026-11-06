@@ -23,11 +23,18 @@ async function requireUser() {
   return r.ok ? r.uid : null
 }
 async function accessibleJourney(uid, journeyId, need = 'read') {
-  const { role, journey } = await auth.resolveJourneyAccess(db.call(this), uid, journeyId)
-  if (!role || !journey) return null
-  if (need === 'write' && role === 'viewer') return null
-  return journey
+  const access = await journeyAccess.call(this, uid, journeyId, need)
+  return access ? access.journey : null
 }
+/** 完整访问上下文（含 matrix），供数据组授权判断使用 */
+async function journeyAccess(uid, journeyId, need = 'read') {
+  const access = await auth.resolveJourneyAccess(db.call(this), uid, journeyId)
+  if (!access.role || !access.journey) return null
+  if (need === 'write' && access.role === 'viewer') return null
+  return access
+}
+/** 情绪与状态数据组：普通家庭记录可授权，EPDS 仍由 strict 红线单独限制 */
+const EMOTION_CODES = new Set(['mood', 'symptom'])
 async function accessRole(uid, journeyId) {
   const { role } = await auth.resolveJourneyAccess(db.call(this), uid, journeyId)
   return role
@@ -238,6 +245,11 @@ module.exports = {
     const j = await accessibleJourney.call(this, uid, params.journeyId, 'write')
     if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
     const code = params.code
+    if (EMOTION_CODES.has(code)) {
+      const access = await journeyAccess.call(this, uid, params.journeyId, 'write')
+      if (!access) return auth.fail('NOT_FOUND', '旅程不存在')
+      if (!auth.canAccessGroup(access, 'emotions', 'write')) return auth.fail('PERMISSION_DENIED', '家人未开放情绪数据')
+    }
     const v = validateMetric(code, params.value || {})
     if (v.error) return auth.fail('PARAM_ERROR', v.error)
     const ts = params.ts || Date.now()
@@ -269,13 +281,19 @@ module.exports = {
   async listMetrics(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await accessibleJourney.call(this, uid, params.journeyId)
-    if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
+    const access = await journeyAccess.call(this, uid, params.journeyId)
+    if (!access) return auth.fail('NOT_FOUND', '旅程不存在')
+    const j = access.journey
+    const emotionsAllowed = auth.canAccessGroup(access, 'emotions')
+    if (params.code && EMOTION_CODES.has(params.code) && !emotionsAllowed) {
+      return auth.fail('PERMISSION_DENIED', '家人未开放情绪数据')
+    }
     const q = { journey_id: j._id }
     if (params.code) q.code = params.code
     const res = await db.call(this).collection(LOGS).where(q).orderBy('ts', 'desc').limit(Math.min(500, +params.limit || 100)).get()
-    // strict 红线：只保留本人（安全审计 C2/C4）
+    // strict 红线：只保留本人（安全审计 C2/C4）；情绪组未授权时同时剔除情绪类记录（H1）
     let data = auth.visibilityFilter(res.data, uid)
+    if (!emotionsAllowed) data = data.filter(d => !EMOTION_CODES.has(d.code))
     if (params.from || params.to) {
       const from = params.from ? parseDate(params.from) : 0
       const to = params.to ? parseDate(params.to) + DAY : Infinity
@@ -287,10 +305,13 @@ module.exports = {
   async latestMetrics(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await accessibleJourney.call(this, uid, params.journeyId)
-    if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
+    const access = await journeyAccess.call(this, uid, params.journeyId)
+    if (!access) return auth.fail('NOT_FOUND', '旅程不存在')
+    const j = access.journey
+    const emotionsAllowed = auth.canAccessGroup(access, 'emotions')
     const out = {}
     for (const code of params.codes || []) {
+      if (EMOTION_CODES.has(code) && !emotionsAllowed) { out[code] = null; continue }
       // 取 5 条再过滤：strict 记录被剔除后仍能取到下一条可见记录
       const r = await db.call(this).collection(LOGS).where({ journey_id: j._id, code }).orderBy('ts', 'desc').limit(5).get()
       out[code] = auth.visibilityFilter(r.data, uid)[0] || null
@@ -450,8 +471,10 @@ module.exports = {
   async addDiary(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await accessibleJourney.call(this, uid, params.journeyId, 'write')
-    if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
+    const access = await journeyAccess.call(this, uid, params.journeyId, 'write')
+    if (!access) return auth.fail('NOT_FOUND', '旅程不存在')
+    if (!auth.canAccessGroup(access, 'diary', 'write')) return auth.fail('PERMISSION_DENIED', '家人未开放日记数据')
+    const j = access.journey
     const text = String(params.text || '').trim().slice(0, 2000)
     if (!text) return auth.fail('PARAM_ERROR', '日记内容不能为空')
     const ts = params.ts || Date.now()
@@ -473,8 +496,10 @@ module.exports = {
   async listDiaries(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await accessibleJourney.call(this, uid, params.journeyId)
-    if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
+    const access = await journeyAccess.call(this, uid, params.journeyId)
+    if (!access) return auth.fail('NOT_FOUND', '旅程不存在')
+    if (!auth.canAccessGroup(access, 'diary')) return auth.fail('PERMISSION_DENIED', '家人未开放日记数据')
+    const j = access.journey
     const res = await db.call(this).collection('lb-diaries').where({ journey_id: j._id }).orderBy('ts', 'desc').limit(50).get()
     return auth.ok({ diaries: res.data })
   },

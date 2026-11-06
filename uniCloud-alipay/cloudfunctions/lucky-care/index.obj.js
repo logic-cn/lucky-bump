@@ -15,10 +15,15 @@ async function requireUser() {
   return r.ok ? r.uid : null
 }
 async function accessibleJourney(uid, journeyId, need = 'read') {
-  const { role, journey } = await auth.resolveJourneyAccess(db.call(this), uid, journeyId)
-  if (!role || !journey) return null
-  if (need === 'write' && role === 'viewer') return null
-  return journey
+  const access = await journeyAccess.call(this, uid, journeyId, need)
+  return access ? access.journey : null
+}
+/** 完整访问上下文（含 matrix），供数据组授权判断使用 */
+async function journeyAccess(uid, journeyId, need = 'read') {
+  const access = await auth.resolveJourneyAccess(db.call(this), uid, journeyId)
+  if (!access.role || !access.journey) return null
+  if (need === 'write' && access.role === 'viewer') return null
+  return access
 }
 async function accessRole(uid, journeyId) {
   const { role } = await auth.resolveJourneyAccess(db.call(this), uid, journeyId)
@@ -92,8 +97,10 @@ module.exports = {
   async generatePlan(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await accessibleJourney.call(this, uid, params.journeyId, 'write')
-    if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
+    const access = await journeyAccess.call(this, uid, params.journeyId, 'write')
+    if (!access) return auth.fail('NOT_FOUND', '旅程不存在')
+    if (!auth.canAccessGroup(access, 'prenatal', 'write')) return auth.fail('PERMISSION_DENIED', '家人未开放产检数据')
+    const j = access.journey
     if (!j.edd || j.delivery_date) return auth.fail('STATE_ERROR', '仅孕期旅程可生成产检排程')
     const col = db.call(this).collection('lb-schedule-items')
     const old = await col.where({ journey_id: j._id, kind: 'prenatal' }).get()
@@ -111,8 +118,10 @@ module.exports = {
   async listPlan(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await accessibleJourney.call(this, uid, params.journeyId)
-    if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
+    const access = await journeyAccess.call(this, uid, params.journeyId)
+    if (!access) return auth.fail('NOT_FOUND', '旅程不存在')
+    if (!auth.canAccessGroup(access, 'prenatal')) return auth.fail('PERMISSION_DENIED', '家人未开放产检数据')
+    const j = access.journey
     const res = await db.call(this).collection('lb-schedule-items')
       .where({ journey_id: j._id, kind: 'prenatal' }).orderBy('plan_date', 'asc').limit(60).get()
     const now = Date.now()
@@ -128,8 +137,10 @@ module.exports = {
   async updateItem(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await accessibleJourney.call(this, uid, params.journeyId, 'write')
-    if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
+    const access = await journeyAccess.call(this, uid, params.journeyId, 'write')
+    if (!access) return auth.fail('NOT_FOUND', '旅程不存在')
+    if (!auth.canAccessGroup(access, 'prenatal', 'write')) return auth.fail('PERMISSION_DENIED', '家人未开放产检数据')
+    const j = access.journey
     const col = db.call(this).collection('lb-schedule-items')
     const r = await col.doc(String(params.itemId)).get()
     const it = r.data[0]
@@ -151,8 +162,14 @@ module.exports = {
   async addVisit(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await accessibleJourney.call(this, uid, params.journeyId, 'write')
-    if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
+    const access = await journeyAccess.call(this, uid, params.journeyId, 'write')
+    if (!access) return auth.fail('NOT_FOUND', '旅程不存在')
+    if (!auth.canAccessGroup(access, 'prenatal', 'write')) return auth.fail('PERMISSION_DENIED', '家人未开放产检数据')
+    const reportFileIds = Array.isArray(params.reportFileIds) ? params.reportFileIds.slice(0, 12) : []
+    if (reportFileIds.length > 0 && !auth.canAccessGroup(access, 'reports', 'write')) {
+      return auth.fail('PERMISSION_DENIED', '家人未开放检查报告数据')
+    }
+    const j = access.journey
     const d = /^(\d{4})-(\d{2})-(\d{2})$/.exec(params.visitDate || '')
     if (!d) return auth.fail('PARAM_ERROR', '产检日期无效')
     const visitTs = Date.UTC(+d[1], +d[2] - 1, +d[3], 12, 0, 0)
@@ -167,7 +184,7 @@ module.exports = {
       week: Math.max(0, Math.min(45, +params.week || 0)), items,
       cost_yuan: Math.max(0, +params.costYuan || 0),
       conclusion: String(params.conclusion || '').slice(0, 500),
-      report_file_ids: Array.isArray(params.reportFileIds) ? params.reportFileIds.slice(0, 12) : [],
+      report_file_ids: reportFileIds,
       sensitivity: 'reports', created_at: Date.now()
     })
     await auth.logEvent(db.call(this), { userId: uid, journeyId: j._id, event: 'record_create', props: { type: 'visit' } })
@@ -189,9 +206,17 @@ module.exports = {
   async listVisits(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await accessibleJourney.call(this, uid, params.journeyId)
-    if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
+    const access = await journeyAccess.call(this, uid, params.journeyId)
+    if (!access) return auth.fail('NOT_FOUND', '旅程不存在')
+    if (!auth.canAccessGroup(access, 'prenatal')) return auth.fail('PERMISSION_DENIED', '家人未开放产检数据')
+    const reportsAllowed = auth.canAccessGroup(access, 'reports')
+    const j = access.journey
     const res = await db.call(this).collection('lb-prenatal-visits').where({ journey_id: j._id }).orderBy('visit_ts', 'desc').limit(50).get()
-    return auth.ok({ visits: res.data.map(v => Object.assign({}, v, { visitDate: dateOf(v.visit_ts) })), totalCost: res.data.reduce((a, x) => a + (x.cost_yuan || 0), 0) })
+    const visits = res.data.map(v => {
+      const row = Object.assign({}, v, { visitDate: dateOf(v.visit_ts) })
+      if (!reportsAllowed) row.report_file_ids = []
+      return row
+    })
+    return auth.ok({ visits, totalCost: res.data.reduce((a, x) => a + (x.cost_yuan || 0), 0) })
   }
 }

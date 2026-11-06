@@ -10,11 +10,23 @@
 const crypto = require('crypto')
 
 /**
+ * 判断 tokenSecret 是否是可用密钥：拒绝空值、示例占位符与过短字符串，
+ * 避免把 config.example.json 原样复制后当成正式密钥（公开值 = 无签名保护）。
+ */
+function isUsableSecret(secret) {
+  if (typeof secret !== 'string') return false
+  if (secret.length < 32) return false
+  if (secret.includes('<') || secret.includes('>')) return false
+  if (secret.includes('替换') || secret.includes('REPLACE')) return false
+  return true
+}
+
+/**
  * 守卫：配置中心已加载但未配置 tokenSecret → 生产事故，直接抛错。
  * 修复安全审计 H5：此前静默回落到硬编码开发密钥，漏传配置即可被伪造 token。
  */
 function assertSecretConfigured(centerLoaded, conf) {
-  if (centerLoaded && !(conf && conf.tokenSecret)) {
+  if (centerLoaded && !(conf && isUsableSecret(conf.tokenSecret))) {
     throw new Error('[lucky-auth-common] 已加载配置中心但缺少 tokenSecret，拒绝使用开发密钥（请检查 uni-config-center/uni-id/config.json）')
   }
 }
@@ -34,7 +46,7 @@ function readSecretFile() {
     for (const p of candidates) {
       try {
         const conf = JSON.parse(fs.readFileSync(p, 'utf8'))
-        if (conf && conf.tokenSecret) return String(conf.tokenSecret)
+        if (conf && isUsableSecret(conf.tokenSecret)) return String(conf.tokenSecret)
       } catch (e) { /* 尝试下一个路径 */ }
     }
   } catch (e) { /* 读取失败则回落 */ }
@@ -58,7 +70,7 @@ function loadSecret() {
   }
   // 先把两个命名空间都收集齐再判定，避免 lucky-id 空配置时误抛
   for (const conf of configs) {
-    if (conf.tokenSecret) return String(conf.tokenSecret)
+    if (conf && isUsableSecret(conf.tokenSecret)) return String(conf.tokenSecret)
   }
   // 配置中心返回空（HBuilderX 打包后路径可能变化）→ 直接读取同目录配置文件
   const fileSecret = readSecretFile()
@@ -134,8 +146,16 @@ function fail(errCode, errMsg, extra) {
 }
 
 /** 简单登录限速（内存版，生产建议持久化）：key → {count, resetAt} */
+const RATE_MAX_KEYS = 5000
 const _rateBuckets = new Map()
 function rateLimit(key, max, windowMs, now = Date.now()) {
+  // 匿名入口的 key 含用户输入：超限时先清过期项，仍超限则整体重置，避免 Map 无限增长耗尽内存
+  if (_rateBuckets.size > RATE_MAX_KEYS) {
+    for (const [k, b] of _rateBuckets) {
+      if (now > b.resetAt) _rateBuckets.delete(k)
+    }
+    if (_rateBuckets.size > RATE_MAX_KEYS) _rateBuckets.clear()
+  }
   const b = _rateBuckets.get(key)
   if (!b || now > b.resetAt) { _rateBuckets.set(key, { count: 1, resetAt: now + windowMs }); return true }
   if (b.count >= max) return false
@@ -159,6 +179,19 @@ async function requireUser(db, token) {
   // 会话归属必须与 token 中的 uid 一致：即使签名密钥泄露，也不能借自己的 jti 伪造他人身份
   if (tr.data[0].uid !== v.uid) return { ok: false, errCode: 'TOKEN_INVALID', errMsg: 'token 已失效' }
   return { ok: true, uid: v.uid, jti: v.jti }
+}
+
+/**
+ * 数据组授权（H1）：家庭组主人可分别开关 recorder/viewer 的产检、报告、情绪、日记权限。
+ * 主人永远可见；viewer 永远只读；未配置的组按允许处理，兼容历史家庭组。
+ * 调用方需先经 resolveJourneyAccess 取得 access。
+ */
+function canAccessGroup(access, group, need = 'read') {
+  if (!access || !access.role) return false
+  if (access.role === 'owner') return true
+  if (need === 'write' && access.role === 'viewer') return false
+  const roleMatrix = (access.matrix || {})[access.memberRole] || {}
+  return roleMatrix[group] !== false
 }
 
 /**
@@ -203,14 +236,40 @@ function visibilityFilter(records, uid) {
   return (records || []).filter(r => r.sensitivity !== 'strict' || r.user_id === uid)
 }
 
-/** 读取 uni-config-center 命名空间配置；本地测试或未部署时返回空对象 */
+/**
+ * 读取 uni-config-center 命名空间配置；本地测试或未部署时返回空对象。
+ * 兼容两种布局：cloudfunctions/common/<module>/index.js（../uni-config-center）
+ * 与各云对象 vendor 后的 common/lucky-auth-common/index.js（同一路径规则）。
+ * 配置中心 require 失败时直接读文件，避免相对路径变化导致配置静默丢失。
+ */
+function readPluginConfigFile(pluginId) {
+  if (!pluginId) return {}
+  try {
+    const fs = require('fs')
+    const path = require('path')
+    const candidates = [
+      path.join(__dirname, '../uni-config-center', pluginId, 'config.json'),
+      path.join(__dirname, '../../uni-config-center', pluginId, 'config.json'),
+      path.join(process.cwd(), 'common/uni-config-center', pluginId, 'config.json'),
+      path.join(process.cwd(), 'uni-config-center', pluginId, 'config.json')
+    ]
+    for (const p of candidates) {
+      try {
+        const conf = JSON.parse(fs.readFileSync(p, 'utf8'))
+        if (conf && typeof conf === 'object') return conf
+      } catch (e) { /* 尝试下一个路径 */ }
+    }
+  } catch (e) { /* 读取失败视为未配置 */ }
+  return {}
+}
+
 function readConfig(pluginId) {
   try {
     const cc = require('uni-config-center')
-    return cc({ pluginId }).config() || {}
-  } catch (e) {
-    return {}
-  }
+    const conf = cc({ pluginId }).config()
+    if (conf && Object.keys(conf).length > 0) return conf
+  } catch (e) { /* 模块不存在 → 读文件 */ }
+  return readPluginConfigFile(pluginId)
 }
 
 /**
@@ -253,4 +312,4 @@ async function logEvent(db, payload) {
   } catch (e) { /* 埋点失败不影响业务 */ }
 }
 
-module.exports = { createToken, verifyToken, hashPassword, verifyPassword, ok, fail, rateLimit, loadSecret, resolveJourneyAccess, requireUser, visibilityFilter, assertSecretConfigured, readConfig, logEvent, fetchAll }
+module.exports = { createToken, verifyToken, hashPassword, verifyPassword, ok, fail, rateLimit, loadSecret, isUsableSecret, canAccessGroup, resolveJourneyAccess, requireUser, visibilityFilter, assertSecretConfigured, readConfig, logEvent, fetchAll }

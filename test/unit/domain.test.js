@@ -2,6 +2,7 @@
 const test = require('node:test')
 const assert = require('node:assert')
 const { createRuntime, withFixedClock } = require('../harness/unicloud-mock')
+const { CLOUD_ROOT } = require('../harness/cloud-dir')
 
 const NOW = Date.UTC(2026, 9, 26, 14, 0, 0)
 const DAY = 24 * 3600 * 1000
@@ -267,7 +268,7 @@ test('部署自检：lucky-seed.verifySeed 模板完整性与密钥告警', asyn
   assert.equal(seed.epdsItems, 10)
   assert.equal(seed.milestones, 14)
   // 告警必须与实际密钥来源一致：开发默认值告警，正式密钥不告警
-  const secretIsDev = require('../../uniCloud-alipay/cloudfunctions/lucky-seed/common/lucky-auth-common').loadSecret().startsWith('lb-dev-secret')
+  const secretIsDev = require(`${CLOUD_ROOT}/cloudfunctions/lucky-seed/common/lucky-auth-common`).loadSecret().startsWith('lb-dev-secret')
   assert.equal(seed.problems.some(x => String(x).includes('tokenSecret')), secretIsDev, 'tokenSecret 告警应与实际密钥来源一致')
 })
 
@@ -290,8 +291,13 @@ test('撤回注销：匿名入口连续失败后按账号+IP 限速', async () =
   const reg = await withFixedClock(NOW, () => rt.callObject('lucky-id', 'register', { username: 'cancelme99', password: 'password123' }))
   assert.equal(reg.errCode, 0)
   let last = null
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 11; i++) {
     last = await withFixedClock(NOW, () => rt.callObject('lucky-id', 'cancelDeletion', { username: 'cancelme99', password: 'wrong-pass-' + i }))
   }
-  assert.equal(last.errCode, 'TOO_MANY_REQUESTS', '第 6 次应被限速: ' + JSON.stringify(last))
+  assert.equal(last.errCode, 'TOO_MANY_REQUESTS', '第 11 次应被限速: ' + JSON.stringify(last))
+  // 阳性对照：额度内正确密码仍可撤回（本用例账号未申请注销，返回状态错误而非限速）
+  const rt2 = createRuntime()
+  await withFixedClock(NOW, () => rt2.callObject('lucky-id', 'register', { username: 'cancelok99', password: 'password123' }))
+  const blocked = await withFixedClock(NOW, () => rt2.callObject('lucky-id', 'cancelDeletion', { username: 'cancelok99', password: 'password123' }))
+  assert.equal(blocked.errCode, 'STATE_ERROR', '正确密码不应被限流: ' + JSON.stringify(blocked))
 })

@@ -161,7 +161,7 @@ test('安全：接收 journeyId 的读方法必须调用 accessibleJourney', () 
     for (const method of methods) {
       const body = methodBody(src, method)
       if (body == null) { problems.push(`${obj}.${method} 未找到函数定义`); continue }
-      if (!/accessibleJourney\s*\.\s*call|ownedJourney\s*\.\s*call|auth\.resolveJourneyAccess\s*\(/.test(body)) {
+      if (!/accessibleJourney\s*\.\s*call|journeyAccess\s*\.\s*call|ownedJourney\s*\.\s*call|auth\.resolveJourneyAccess\s*\(/.test(body)) {
         problems.push(`${obj}.${method} 缺少旅程归属校验`)
       }
     }

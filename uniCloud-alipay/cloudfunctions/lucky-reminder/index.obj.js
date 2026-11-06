@@ -100,8 +100,10 @@ module.exports = {
   async listDue(params = {}) {
     const uid = await requireUser.call(this)
     if (!uid) return auth.fail('TOKEN_INVALID', '未登录')
-    const j = await accessibleJourney.call(this, uid, params.journeyId)
-    if (!j) return auth.fail('NOT_FOUND', '旅程不存在')
+    const access = await auth.resolveJourneyAccess(db.call(this), uid, params.journeyId)
+    if (!access.role || !access.journey) return auth.fail('NOT_FOUND', '旅程不存在')
+    const j = access.journey
+    const prenatalAllowed = auth.canAccessGroup(access, 'prenatal')
     // 产品红线：哀伤模式零孕育类待办（docs/03）
     if (j.stage_code === 'MOURNING') {
       return auth.ok({ todos: [], serverDate: dateOf(Date.now()) })
@@ -129,7 +131,9 @@ module.exports = {
         todos.push({ source: 'rule', ruleId: r._id, title: r.title, dueTs: due - r.lead_days * DAY, dueDate, urgent: r.urgent, kind: 'reminder' })
       }
     }
-    const plans = await db.call(this).collection('lb-schedule-items').where({ journey_id: j._id, status: 'upcoming' }).orderBy('plan_date', 'asc').limit(30).get()
+    const plans = prenatalAllowed
+      ? await db.call(this).collection('lb-schedule-items').where({ journey_id: j._id, status: 'upcoming' }).orderBy('plan_date', 'asc').limit(30).get()
+      : { data: [] }
     for (const p of plans.data) {
       if (p.plan_date <= horizon) todos.push({ source: 'schedule', scheduleId: p._id, title: p.title, dueTs: p.plan_date, dueDate: dateOf(p.plan_date), prep: p.prep || '', kind: p.kind })
     }

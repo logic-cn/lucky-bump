@@ -15,8 +15,8 @@ vendor() {
     rm -rf "$dest/$mod"
     cp -R "$ROOT/common/$mod" "$dest/$mod"
   done
-  # vendor 副本内 auth-common 改用相对路径引用 uni-config-center
-  sed -i '' "s|require('uni-config-center')|require('./uni-config-center')|" "$dest/lucky-auth-common/index.js"
+  # vendor 副本内 auth-common 改用相对路径引用 uni-config-center（两者同在 common/ 下）
+  sed -i '' "s|require('uni-config-center')|require('../uni-config-center')|" "$dest/lucky-auth-common/index.js"
 }
 
 for obj in lucky-id lucky-journey lucky-data lucky-reminder lucky-family lucky-analytics; do
