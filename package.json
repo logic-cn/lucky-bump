@@ -4,9 +4,9 @@
   "private": true,
   "description": "幸孕记 Lucky Bump - 从备孕到育儿，一条不断档的生命记录（uni-app-x + uniCloud）",
   "scripts": {
-    "test": "node --test \"test/**/*.test.js\"",
-    "test:unit": "node --test \"test/unit/*.test.js\"",
-    "test:e2e": "node --test \"test/e2e/*.test.js\"",
+    "test": "NODE_ENV=test node --test \"test/**/*.test.js\"",
+    "test:unit": "NODE_ENV=test node --test \"test/unit/*.test.js\"",
+    "test:e2e": "NODE_ENV=test node --test \"test/e2e/*.test.js\"",
     "schemas": "python3 scripts/gen_schemas.py",
     "indexes": "python3 scripts/gen_indexes.py",
     "icons": "python3 scripts/gen_icons.py",

@@ -27,6 +27,13 @@ module.exports = {
     const username = String(params.username || '').trim()
     const password = String(params.password || '')
     const nickname = String(params.nickname || '').trim() || ('用户' + username.slice(-4))
+    // 防脚本批量注册：按来源 IP 限速（测试进程跳过，避免用例互相影响）
+    if (process.env.NODE_ENV !== 'test') {
+      const ip = (this.getClientInfo && this.getClientInfo().clientIP) || 'na'
+      if (!auth.rateLimit(`register:${ip}`, 10, 60 * 60 * 1000)) {
+        return auth.fail('TOO_MANY_REQUESTS', '注册过于频繁，请稍后再试')
+      }
+    }
     if (!/^[a-zA-Z0-9_]{4,24}$/.test(username)) return auth.fail('PARAM_ERROR', '用户名需 4-24 位字母数字下划线')
     if (password.length < 8 || password.length > 32) return auth.fail('PARAM_ERROR', '密码长度需 8-32 位')
     const exists = await db.call(this).collection(usersCol).where({ username }).count()
@@ -136,11 +143,13 @@ module.exports = {
     if (typeof uniCloud.sendSms !== 'function') return auth.fail('CONFIG_MISSING', '当前云环境未启用短信扩展库')
     const ttl = Math.min(600, Math.max(60, +cfg.codeTtlSeconds || 300))
     const resend = Math.min(300, Math.max(30, +cfg.resendSeconds || 60))
+    const ip = (this.getClientInfo && this.getClientInfo().clientIP) || ''
+    // 同一 IP 每小时最多 20 次，先于手机号计数判断，避免刷接口提前耗尽真实用户的发送额度
+    if (!auth.rateLimit(`smsip:${ip}`, 20, 60 * 60 * 1000)) return auth.fail('TOO_MANY_REQUESTS', '发送过于频繁，请稍后再试')
     // 同一手机号 60s 内只发一次、每小时最多 5 次
     if (!auth.rateLimit(`sms:${mobile}`, 1, resend * 1000)) return auth.fail('TOO_MANY_REQUESTS', '发送过于频繁，请稍后再试')
     if (!auth.rateLimit(`smsh:${mobile}`, 5, 60 * 60 * 1000)) return auth.fail('TOO_MANY_REQUESTS', '今日验证码次数已达上限，请稍后再试')
     const code = String(crypto.randomInt(0, 1000000)).padStart(6, '0')
-    const ip = (this.getClientInfo && this.getClientInfo().clientIP) || ''
     // 旧验证码作废，只保留最新一条
     await db.call(this).collection('lb-sms-codes').where({ phone: mobile, purpose: 'login', used: false }).update({ used: true })
     await db.call(this).collection('lb-sms-codes').add({
@@ -363,6 +372,11 @@ module.exports = {
   async cancelDeletion(params = {}) {
     const username = String(params.username || '').trim()
     const password = String(params.password || '')
+    // 防密码爆破：该入口匿名可调，必须与登录同级的「账号+IP」限速
+    const rateKey = `cancel:${username}:${this.getClientInfo().clientIP || 'na'}`
+    if (!auth.rateLimit(rateKey, 5, 10 * 60 * 1000)) {
+      return auth.fail('TOO_MANY_REQUESTS', '尝试过于频繁，请稍后再试')
+    }
     const res = await db.call(this).collection(usersCol).where({ username }).get()
     const user = res.data[0]
     if (!user) return auth.fail('ACCOUNT_NOT_EXISTS', '账号不存在')

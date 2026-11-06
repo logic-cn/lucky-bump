@@ -266,8 +266,9 @@ test('部署自检：lucky-seed.verifySeed 模板完整性与密钥告警', asyn
   assert.equal(seed.vaccineProgram, 22)
   assert.equal(seed.epdsItems, 10)
   assert.equal(seed.milestones, 14)
-  // 开发环境：应存在 tokenSecret 告警（生产配置正式密钥后告警消失，见 docs/08 §4）
-  assert.ok(seed.problems.some(x => String(x).includes('tokenSecret')), '开发默认密钥应触发上线告警')
+  // 告警必须与实际密钥来源一致：开发默认值告警，正式密钥不告警
+  const secretIsDev = require('../../uniCloud-alipay/cloudfunctions/lucky-seed/common/lucky-auth-common').loadSecret().startsWith('lb-dev-secret')
+  assert.equal(seed.problems.some(x => String(x).includes('tokenSecret')), secretIsDev, 'tokenSecret 告警应与实际密钥来源一致')
 })
 
 test('登录限速：同账号连续失败 10 次后锁定', async () => {
@@ -282,4 +283,15 @@ test('登录限速：同账号连续失败 10 次后锁定', async () => {
   // 正确密码也被拒绝（锁定期间）
   const ok = await withFixedClock(NOW, () => rt.callObject('lucky-id', 'login', { username: 'lockme99', password: 'password123' }))
   assert.equal(ok.errCode, 'TOO_MANY_REQUESTS')
+})
+
+test('撤回注销：匿名入口连续失败后按账号+IP 限速', async () => {
+  const rt = createRuntime()
+  const reg = await withFixedClock(NOW, () => rt.callObject('lucky-id', 'register', { username: 'cancelme99', password: 'password123' }))
+  assert.equal(reg.errCode, 0)
+  let last = null
+  for (let i = 0; i < 6; i++) {
+    last = await withFixedClock(NOW, () => rt.callObject('lucky-id', 'cancelDeletion', { username: 'cancelme99', password: 'wrong-pass-' + i }))
+  }
+  assert.equal(last.errCode, 'TOO_MANY_REQUESTS', '第 6 次应被限速: ' + JSON.stringify(last))
 })

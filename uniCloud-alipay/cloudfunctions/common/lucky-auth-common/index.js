@@ -19,7 +19,28 @@ function assertSecretConfigured(centerLoaded, conf) {
   }
 }
 
-// 优先读 uni-config-center 的 lucky-id 配置（生产），否则使用内置默认密钥（开发/测试）。
+// 优先读 uni-config-center 的 lucky-id 配置（生产），否则直接读同目录配置文件，最后才回落开发密钥。
+function readSecretFile() {
+  try {
+    const fs = require('fs')
+    const path = require('path')
+    // 兼容 HBuilderX 打包后 __dirname 变化：同时尝试模块相对路径与函数工作目录
+    const candidates = [
+      path.join(__dirname, '../uni-config-center/uni-id/config.json'),
+      path.join(__dirname, '../../uni-config-center/uni-id/config.json'),
+      path.join(process.cwd(), 'common/uni-config-center/uni-id/config.json'),
+      path.join(process.cwd(), 'uni-config-center/uni-id/config.json')
+    ]
+    for (const p of candidates) {
+      try {
+        const conf = JSON.parse(fs.readFileSync(p, 'utf8'))
+        if (conf && conf.tokenSecret) return String(conf.tokenSecret)
+      } catch (e) { /* 尝试下一个路径 */ }
+    }
+  } catch (e) { /* 读取失败则回落 */ }
+  return ''
+}
+
 function loadSecret() {
   let centerLoaded = false
   const configs = []
@@ -34,15 +55,21 @@ function loadSecret() {
   } catch (e) {
     // 配置中心模块本身不存在 → 本地 Node 测试环境，允许回落
     if (centerLoaded) throw e
-    return 'lb-dev-secret-DO-NOT-USE-IN-PRODUCTION'
   }
   // 先把两个命名空间都收集齐再判定，避免 lucky-id 空配置时误抛
   for (const conf of configs) {
     if (conf.tokenSecret) return String(conf.tokenSecret)
   }
+  // 配置中心返回空（HBuilderX 打包后路径可能变化）→ 直接读取同目录配置文件
+  const fileSecret = readSecretFile()
+  if (fileSecret) return fileSecret
   // 配置中心存在但都没有密钥 → fail-closed
-  assertSecretConfigured(true, null)
-  return 'lb-dev-secret-DO-NOT-USE-IN-PRODUCTION' // 不可达，仅满足静态分析
+  if (centerLoaded) assertSecretConfigured(true, null)
+  // 生产/云端不得回落到公开的开发密钥；仅测试进程允许
+  if (process.env.NODE_ENV !== 'test') {
+    throw new Error('[lucky-auth-common] 未找到 tokenSecret 配置，拒绝使用开发密钥（请部署 uni-config-center/uni-id/config.json）')
+  }
+  return 'lb-dev-secret-DO-NOT-USE-IN-PRODUCTION'
 }
 
 function b64url(buf) {
