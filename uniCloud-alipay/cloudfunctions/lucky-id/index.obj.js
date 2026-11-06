@@ -15,13 +15,13 @@ const tokenCol = 'lb-token'
 const USERNAME_RE = /^[a-zA-Z0-9_]{4,24}$/
 
 /**
- * 调用方标识：优先 IP，其次设备 ID；都缺失时返回空串。
- * 空串时只按账号/手机号维度限速，避免退化成全站共享桶把所有人一起锁死。
+ * 调用方 IP：只信任服务端上下文提供的 clientIP。
+ * 不用 deviceId 兜底——它来自客户端，可被随意轮换，不能作为限流边界。
  */
 function clientKey(ctx) {
   try {
     const info = (ctx.getClientInfo && ctx.getClientInfo()) || {}
-    return String(info.clientIP || info.deviceId || '')
+    return String(info.clientIP || '')
   } catch (e) {
     return ''
   }
@@ -44,7 +44,10 @@ module.exports = {
     // 防脚本批量注册：按来源 IP 限速（测试进程跳过，避免用例互相影响）
     if (process.env.NODE_ENV !== 'test') {
       const ipKey = clientKey(this)
-      if (ipKey && !auth.rateLimit(`register:${ipKey}`, 10, 60 * 60 * 1000)) {
+      // 取不到 IP 时退化为高阈值全局桶，而不是完全不限流
+      const limitKey = ipKey ? `register:${ipKey}` : 'register:noip'
+      const max = ipKey ? 10 : 100
+      if (!auth.rateLimit(limitKey, max, 60 * 60 * 1000)) {
         return auth.fail('TOO_MANY_REQUESTS', '注册过于频繁，请稍后再试')
       }
     }

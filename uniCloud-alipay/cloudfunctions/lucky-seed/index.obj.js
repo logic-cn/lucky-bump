@@ -20,8 +20,11 @@ module.exports = {
     if (checks.prenatalTemplates < 7) problems.push('产检模板不完整')
     if (checks.vaccineProgram < 22) problems.push('免疫规划疫苗程序表不完整')
     if (checks.epdsItems !== 10) problems.push('EPDS 量表题数错误')
-    const secret = auth.loadSecret()
-    if (secret.startsWith('lb-dev-secret') || !auth.isUsableSecret(secret)) problems.push('tokenSecret 未配置为正式密钥：请在 uni-config-center 的 uni-id/config.json 配置至少 32 位随机串（上线前必须）')
+    // 生产环境缺少可用密钥时 loadSecret 会 fail-closed 抛错；自检应转成结构化告警而不是云函数错误
+    let secret = ''
+    try { secret = auth.loadSecret() } catch (e) { secret = '' }
+    const secretOk = auth.isUsableSecret(secret) && !secret.startsWith('lb-dev-secret')
+    if (!secretOk) problems.push('tokenSecret 未配置为正式密钥：请在 uni-config-center 的 uni-id/config.json 配置至少 32 位随机串（上线前必须）')
     return auth.ok(Object.assign({ ok: problems.length === 0, problems }, checks))
   }
 }

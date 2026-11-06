@@ -166,7 +166,10 @@ module.exports = {
     if (!access) return auth.fail('NOT_FOUND', '旅程不存在')
     if (!auth.canAccessGroup(access, 'prenatal', 'write')) return auth.fail('PERMISSION_DENIED', '家人未开放产检数据')
     const reportFileIds = Array.isArray(params.reportFileIds) ? params.reportFileIds.slice(0, 12) : []
-    if (reportFileIds.length > 0 && !auth.canAccessGroup(access, 'reports', 'write')) {
+    const wantsReports = reportFileIds.length > 0
+      || String(params.conclusion || '').trim().length > 0
+      || (Array.isArray(params.items) && params.items.some(x => x && String(x.result || '').trim()))
+    if (wantsReports && !auth.canAccessGroup(access, 'reports', 'write')) {
       return auth.fail('PERMISSION_DENIED', '家人未开放检查报告数据')
     }
     const j = access.journey
@@ -214,7 +217,12 @@ module.exports = {
     const res = await db.call(this).collection('lb-prenatal-visits').where({ journey_id: j._id }).orderBy('visit_ts', 'desc').limit(50).get()
     const visits = res.data.map(v => {
       const row = Object.assign({}, v, { visitDate: dateOf(v.visit_ts) })
-      if (!reportsAllowed) row.report_file_ids = []
+      if (!reportsAllowed) {
+        // 检查报告组未授权：结论、报告图、逐项结果都属于报告内容
+        row.report_file_ids = []
+        row.conclusion = ''
+        row.items = (Array.isArray(row.items) ? row.items : []).map(x => ({ code: x.code, name: x.name }))
+      }
       return row
     })
     return auth.ok({ visits, totalCost: res.data.reduce((a, x) => a + (x.cost_yuan || 0), 0) })

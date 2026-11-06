@@ -232,3 +232,45 @@ test('H1：家庭组数据组授权在服务端生效（日记/产检）', async
   const own = await rt.callObject('lucky-record', 'listDiaries', { journeyId: jid }, { token: mom.token })
   assert.equal(own.errCode, 0, JSON.stringify(own))
 })
+
+test('H1：报告组未授权时产检结论与逐项结果不得返回', async () => {
+  const rt = createRuntime()
+  const mom = await rt.callObject('lucky-id', 'register', { username: 'h1rmom', password: 'password123' })
+  const viewer = await rt.callObject('lucky-id', 'register', { username: 'h1rview', password: 'password123' })
+  const mk = await rt.callObject('lucky-journey', 'createJourney', { mode: 'ttc' }, { token: mom.token })
+  const jid = mk.journeyId
+  await rt.callObject('lucky-family', 'getFamily', { journeyId: jid }, { token: mom.token })
+  const inv = await rt.callObject('lucky-family', 'invite', { journeyId: jid, role: 'viewer' }, { token: mom.token })
+  const join = await rt.callObject('lucky-family', 'join', { code: inv.code, nickname: '长辈' }, { token: viewer.token })
+  assert.equal(join.errCode, 0, JSON.stringify(join))
+
+  const add = await rt.callObject('lucky-care', 'addVisit', {
+    journeyId: jid, visitDate: '2026-10-01', hospital: '市妇幼', week: 20,
+    conclusion: '胎心偏快，建议复查',
+    items: [{ code: 'bscan', name: 'B超', result: 'NT 2.1mm', abnormal: true }],
+    reportFileIds: ['cloud://report-1']
+  }, { token: mom.token })
+  assert.equal(add.errCode, 0, JSON.stringify(add))
+
+  // viewer 默认 reports=false：只保留产检基本信息和项目名称
+  const list = await rt.callObject('lucky-care', 'listVisits', { journeyId: jid }, { token: viewer.token })
+  assert.equal(list.errCode, 0, JSON.stringify(list))
+  const row = list.visits[0]
+  assert.equal(row.conclusion, '', '报告组未授权时不应返回检查结论')
+  assert.deepEqual(row.report_file_ids, [], '报告组未授权时不应返回报告文件')
+  assert.equal(row.items[0].result, undefined, '报告组未授权时不应返回逐项结果')
+  assert.equal(row.items[0].abnormal, undefined, '报告组未授权时不应返回异常标记')
+  assert.equal(row.items[0].name, 'B超', '产检项目名称属于产检信息，可保留')
+  // 主人不受影响
+  const own = await rt.callObject('lucky-care', 'listVisits', { journeyId: jid }, { token: mom.token })
+  assert.equal(own.visits[0].conclusion, '胎心偏快，建议复查')
+})
+
+test('限流表容量满时不得清空在用计数', () => {
+  const auth = require(path.join(CLOUD_ROOT, 'cloudfunctions/common/lucky-auth-common'))
+  const now = 1000
+  const victim = `victim:${Date.now()}`
+  for (let i = 0; i < 5100; i++) auth.rateLimit(`flood:${Date.now()}:${i}`, 5, 600000, now)
+  assert.equal(auth.rateLimit(victim, 1, 600000, now), true)
+  assert.equal(auth.rateLimit(victim, 1, 600000, now), false, '容量清扫不应重置正在生效的计数')
+})

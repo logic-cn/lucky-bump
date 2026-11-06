@@ -75,13 +75,11 @@ function loadSecret() {
   // 配置中心返回空（HBuilderX 打包后路径可能变化）→ 直接读取同目录配置文件
   const fileSecret = readSecretFile()
   if (fileSecret) return fileSecret
-  // 配置中心存在但都没有密钥 → fail-closed
+  // 本地测试进程允许回落：干净克隆没有 config.json，不能因此让全部用例失败
+  if (process.env.NODE_ENV === 'test') return 'lb-dev-secret-DO-NOT-USE-IN-PRODUCTION'
+  // 生产/云端：配置中心已加载但无可用密钥 → fail-closed，不得回落到公开开发密钥
   if (centerLoaded) assertSecretConfigured(true, null)
-  // 生产/云端不得回落到公开的开发密钥；仅测试进程允许
-  if (process.env.NODE_ENV !== 'test') {
-    throw new Error('[lucky-auth-common] 未找到 tokenSecret 配置，拒绝使用开发密钥（请部署 uni-config-center/uni-id/config.json）')
-  }
-  return 'lb-dev-secret-DO-NOT-USE-IN-PRODUCTION'
+  throw new Error('[lucky-auth-common] 未找到 tokenSecret 配置，拒绝使用开发密钥（请部署 uni-config-center/uni-id/config.json）')
 }
 
 function b64url(buf) {
@@ -149,12 +147,17 @@ function fail(errCode, errMsg, extra) {
 const RATE_MAX_KEYS = 5000
 const _rateBuckets = new Map()
 function rateLimit(key, max, windowMs, now = Date.now()) {
-  // 匿名入口的 key 含用户输入：超限时先清过期项，仍超限则整体重置，避免 Map 无限增长耗尽内存
+  // 匿名入口的 key 含用户输入：超限时先清过期项，仍超限则按插入顺序淘汰最旧条目。
+  // 不能用 clear()：那会把受害账号/手机号正在生效的计数一起清空，等于一键重置所有限流。
   if (_rateBuckets.size > RATE_MAX_KEYS) {
     for (const [k, b] of _rateBuckets) {
       if (now > b.resetAt) _rateBuckets.delete(k)
     }
-    if (_rateBuckets.size > RATE_MAX_KEYS) _rateBuckets.clear()
+    while (_rateBuckets.size > RATE_MAX_KEYS) {
+      const oldest = _rateBuckets.keys().next().value
+      if (oldest === undefined) break
+      _rateBuckets.delete(oldest)
+    }
   }
   const b = _rateBuckets.get(key)
   if (!b || now > b.resetAt) { _rateBuckets.set(key, { count: 1, resetAt: now + windowMs }); return true }
@@ -186,12 +189,24 @@ async function requireUser(db, token) {
  * 主人永远可见；viewer 永远只读；未配置的组按允许处理，兼容历史家庭组。
  * 调用方需先经 resolveJourneyAccess 取得 access。
  */
+/**
+ * 数据组默认授权（与 lucky-family 新建家庭时写入的默认矩阵保持一致）。
+ * 家庭文档缺失 matrix 或缺少某个组时按此表判断，未知数据组默认拒绝。
+ */
+const DEFAULT_GROUP_MATRIX = {
+  recorder: { prenatal: true, reports: true, emotions: true, diary: true },
+  viewer: { prenatal: true, reports: false, emotions: false, diary: false }
+}
+
 function canAccessGroup(access, group, need = 'read') {
   if (!access || !access.role) return false
   if (access.role === 'owner') return true
   if (need === 'write' && access.role === 'viewer') return false
+  // admin 是家庭管理角色，数据可见性按 recorder 的默认值，可通过 matrix.admin 单独覆盖
+  const role = access.memberRole === 'admin' ? 'recorder' : access.memberRole
   const roleMatrix = (access.matrix || {})[access.memberRole] || {}
-  return roleMatrix[group] !== false
+  if (typeof roleMatrix[group] === 'boolean') return roleMatrix[group]
+  return !!(DEFAULT_GROUP_MATRIX[role] && DEFAULT_GROUP_MATRIX[role][group])
 }
 
 /**
