@@ -1,5 +1,3 @@
-**[English](README.en.md)** · 简体中文
-
 <div align="center">
   <img src="static/mark.png" width="92" alt="Lucky Bump" />
   <h1>幸孕记 Lucky Bump</h1>
@@ -12,6 +10,10 @@
     <img src="https://img.shields.io/badge/pages-54-37A884" alt="54 pages" />
     <img src="https://img.shields.io/badge/tests-160%20passing-37A884" alt="tests" />
     <img src="https://img.shields.io/badge/medical-不做诊断-EF9F2F" alt="not a medical device" />
+  </p>
+
+  <p>
+    <a href="README.en.md">English</a> · <b>简体中文</b>
   </p>
 </div>
 
