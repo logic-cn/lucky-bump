@@ -8,7 +8,7 @@
     <img src="https://img.shields.io/badge/uni--app%20x-vapor-BE2F5C" alt="uni-app x" />
     <img src="https://img.shields.io/badge/uniCloud-支付宝云-6E5BD6" alt="uniCloud" />
     <img src="https://img.shields.io/badge/pages-54-37A884" alt="54 pages" />
-    <img src="https://img.shields.io/badge/tests-153%20passing-37A884" alt="tests" />
+    <img src="https://img.shields.io/badge/tests-160%20passing-37A884" alt="tests" />
     <img src="https://img.shields.io/badge/medical-不做诊断-EF9F2F" alt="not a medical device" />
   </p>
 </div>
@@ -87,7 +87,7 @@
 
 ```bash
 npm install        # 无必需第三方依赖，测试使用 Node 内置 test runner
-npm test           # 全部 153 项测试
+npm test           # 全部 160 项测试
 npm run test:unit  # 单元测试
 npm run test:e2e   # 端到端生命周期测试
 npm run schemas    # 重新生成数据库 schema
@@ -97,6 +97,18 @@ npm run indexes    # 重新生成索引文件
 **运行 App / Web**：用 HBuilderX 打开工程根目录，按 [docs/08-部署与上线指南](docs/08-部署与上线指南.md) 关联 uniCloud 空间、上传云函数并初始化数据库；运行到 Android/iOS 或发行 Web。
 
 > Web 端照片上传需在支付宝云控制台「跨域配置 / Web 安全域名」加入前端域名（含端口）；App 端不受浏览器 CORS 限制。
+>
+> 云空间绑定信息写在 `uniCloud-alipay/spacex.json`（已被 gitignore），首次关联空间时按模板 `spacex.example.json` 自动生成。
+
+## 安全设计
+
+- **所有读写经云对象**：clientDB 全部关闭，前端无法直连数据库；每个方法入口统一 `auth.requireUser` 校验 token 签名、吊销状态与会话 uid。
+- **密钥 fail-closed**：`tokenSecret` 只从 `uni-config-center` 读取，生产环境缺失或仍是示例占位符时拒绝启动，不会回落到公开的开发密钥。
+- **越权防护**：所有 `journeyId` 读方法校验旅程归属；家庭组「产检/报告/情绪/日记」授权矩阵在服务端执行；同房、验孕、EPDS 数据永远只返回本人记录。
+- **匿名入口限流**：注册、短信、登录、找回密码、撤回注销按 IP 与账号维度限流，并设置容量上限避免内存耗尽。
+- **会话可吊销**：退出登录、改密、找回密码、申请注销都会吊销对应 token；token 与 `lb-token` 会话记录双向绑定，不能跨账号复用。
+
+> 限流为单实例内存计数，多实例部署时实际阈值按实例数放大；需要硬上限时应改为 Redis/DB 共享计数（见 docs/08 已知限制）。
 
 ## 工程结构
 
@@ -125,9 +137,9 @@ npm run indexes    # 重新生成索引文件
 
 | 类别 | 文档 |
 |---|---|
-| 产品 | [01-需求分析](docs/01-需求分析报告.md) · [02-产品定位与功能架构](docs/02-产品定位与功能架构.md) · [03-核心功能详细设计](docs/03-核心功能详细设计.md) · [04-数据模型](docs/04-数据模型与页面结构.md) · [05-版本规划与指标](docs/05-版本规划与成功指标.md) |
+| 产品 | [01-需求分析](docs/01-需求分析报告.md) · [02-产品定位与功能架构](docs/02-产品定位与功能架构.md) · [03-核心功能详细设计](docs/03-核心功能详细设计.md) · [04-数据模型](docs/04-数据模型与页面结构.md) |
 | 技术 | [06-技术架构设计](docs/06-技术架构设计.md) · [07-UI设计系统](docs/07-UI设计系统.md) · [08-部署与上线指南](docs/08-部署与上线指南.md) |
-| 专项 | [09-同类产品对标](docs/09-同类产品对标同类产品报告.md) · [10-HBuilderX 平台缺陷](docs/10-HBuilderX平台缺陷报告.md) · [11-外部依赖清单](docs/11-外部依赖与接入清单.md) · [12-上线前定版清单](docs/12-上线前定版与发布清单.md) · [13-商店上架文案](docs/13-商店上架文案与素材清单.md) |
+| 专项 | [10-HBuilderX 平台缺陷](docs/10-HBuilderX平台缺陷报告.md) · [11-外部依赖清单](docs/11-外部依赖与接入清单.md) · [12-上线前定版清单](docs/12-上线前定版与发布清单.md) · [13-商店上架文案](docs/13-商店上架文案与素材清单.md) |
 | 过程 | [DEV-PROGRESS](docs/DEV-PROGRESS.md) |
 
 ## 路线图
@@ -136,6 +148,10 @@ npm run indexes    # 重新生成索引文件
 - **后续**：多语言、家庭多旅程并行、与可穿戴设备/医院系统的受控对接
 
 > 记录功能永远免费；不做开屏第三方广告；不做诊断。
+
+## 许可
+
+本项目基于 [MIT License](LICENSE) 开源。医疗与隐私相关文案、第三方图表规范与商标不在授权范围内。
 
 ---
 

@@ -18,6 +18,9 @@ coverage/
 .env.local
 config/local.*
 
+# 云空间绑定（关联后含真实 spaceId，不入库；模板见 spacex.example.json）
+uniCloud-*/spacex.json
+
 # 生产密钥（模板已入库，真实值不入库）
 uniCloud-*/cloudfunctions/common/uni-config-center/uni-id/config.json
 uniCloud-*/cloudfunctions/common/uni-config-center/lucky-sms/config.json

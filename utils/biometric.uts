@@ -1,6 +1,6 @@
 /**
  * 生物识别能力探测与降级。
- * 设计（docs/superpowers 安全计划 Task 12）：uni-app x 对 startSoterAuthentication 的
+ * 设计：uni-app x 对 startSoterAuthentication 的
  * 支持未经 HBuilderX 实测，UTS 静态类型下引用不存在的 API 会直接编译失败，
  * 因此本版以「能力不可用」为唯一返回值，调用方自动降级为解锁按钮直进。
  * 接入点已留好：确认平台支持后，在 isBiometricAvailable 内补真实探测、

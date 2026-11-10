@@ -456,9 +456,8 @@ test('Web 端选择器绕过：独立选择器页与存储轮询回传接线完�
   }
 })
 
-test('docs 索引：同类产品对标与平台缺陷报告已登记', () => {
+test('docs 索引：平台缺陷报告已登记', () => {
   const readme = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf-8')
-  assert.ok(readme.includes('09-同类产品对标同类产品报告'), 'README 缺 docs/09 链接')
   assert.ok(readme.includes('10-HBuilderX平台缺陷报告'), 'README 缺 docs/10 链接')
 })
 

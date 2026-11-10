@@ -11,7 +11,7 @@
 
 ## 安全加固（2026-11-06）✅
 
-- [x] `requireUser` 校验 token uid 与 `lb-token` 会话 uid 一致，阻断借用他人 jti 伪造身份
+- [x] `requireUser` 校验 token uid 与 `lb-token` 会话 uid 一致，会话不能跨账号复用
 - [x] tokenSecret 读取兼容 HBuilderX 打包路径；生产环境读不到配置或仍是示例占位符时 fail-closed，禁止回落公开开发密钥
 - [x] 注册按 IP（10 次/小时）、短信发送按手机号（5 次/小时）+ IP（20 次/小时）限流；登录/找回密码/撤回注销共享密码尝试预算（10 次/10 分钟）
 - [x] 家庭组「产检/报告/情绪/日记」授权矩阵在服务端执行，关闭后家庭成员无法经列表、时间线、待办读取对应数据
@@ -85,7 +85,7 @@
 
 ### 部署阶段（2026-10-27，用户提供 HBuilderX + uniCloud 空间后）✅
 - [x] DCloud appid 已生成（__UNI__1BC2635，用户在 HBuilderX 中完成）
-- [x] 阿里云空间 lucky-bump（<旧阿里云空间ID>）已关联工程（spacex.json 已回填）
+- [x] 阿里云空间已关联工程（spacex.json 本地回填，文件已 gitignore）
 - [x] **2026-11-03 切换支付宝云**：空间 `<你的服务空间ID>`，云目录 `uniCloud-alipay`；12 云函数 + 31 schema 全量上传，Web 全链路实测通过；阿里云空间保留可回切
 - [x] 9 云对象 + 3 公共模块经 HBuilderX CLI 上传成功；24 张 schema 上传；--initdatabase 完成
 - [x] 生产 tokenSecret 生成并随 uni-config-center 兼容层部署（真实值 gitignore，模板入库）
@@ -94,7 +94,7 @@
 
 ## 遗留说明（不阻塞上线评审）
 
-1. AI 报告识别（V1.1 会员功能，路线图见 docs/05）；前端已预留入口位。
+1. AI 报告识别（后续版本能力）；前端已预留入口位。
 2. 媒体上传（报告照片/日记图片）需 uniCloud 存储空间，前端已留 fileID 占位逻辑。
 4. lbc 组件库为最小集（card/redline/disclaimer），按钮与表单组件在页面内联实现，后续可增量抽取。
 5. 应用锁的端上强制执行（隐私页开关已落本地存储）：触发时机为 App onShow，需接入原生生物识别能力（HBuilderX 环境配置，见 docs/08 §7 依赖用户环境）。
@@ -108,11 +108,11 @@
 
 ### 安全加固轮（2026-10-29）✅
 
-- [x] C5 token 吊销全局生效：鉴权下沉 `auth.requireUser`，9 个云对象统一校验 `lb-token.revoked`
-- [x] C1/C4 strict 红线：`timeline`/`exportAll` 按 `record.user_id === 调用者 uid` 过滤；`role` 与 `dataScope` 拆分，`admin` 不再借用 owner 的数据可见性
-- [x] C2/C3/H2/H3/H4 越权：`listMetrics`/`latestMetrics`/`listCycleEvents`/`listTrackers`/`contractionAdvice`/`reminder.listRules`/`updateRule` 全部收敛到 `accessibleJourney`
-- [x] H6 哀伤门禁：`listDue`/`today` 在 `MOURNING` 下返回空待办
-- [x] H5 密钥 fail-closed：配置中心存在但缺 `tokenSecret` 时抛错
+- [x] token 吊销全局生效：鉴权下沉 `auth.requireUser`，9 个云对象统一校验 `lb-token.revoked`
+- [x] strict 红线：`timeline`/`exportAll` 按 `record.user_id === 调用者 uid` 过滤；`role` 与 `dataScope` 拆分，`admin` 不再借用 owner 的数据可见性
+- [x] 越权修复：`listMetrics`/`latestMetrics`/`listCycleEvents`/`listTrackers`/`contractionAdvice`/`reminder.listRules`/`updateRule` 全部收敛到 `accessibleJourney`
+- [x] 哀伤门禁：`listDue`/`today` 在 `MOURNING` 下返回空待办
+- [x] 密钥 fail-closed：配置中心存在但缺 `tokenSecret` 时抛错
 - [x] 静态回归网：`auth.verifyToken` 禁止直调（logout 白名单）、journeyId 读方法必须做归属校验（test/unit/static.test.js）
 
 ### 功能补齐轮（2026-10-30）✅
@@ -121,7 +121,7 @@
 - [x] 计时器后台恢复：宫缩/亲喂页 onShow 拉取 `activeOnly` 未结束会话，以服务端 `started_at` 接续；超 24h 遗留会话不自动接续，自绘提示条交用户「结束并保存/放弃」（docs/03 M5）
 - [x] 暗色模式：`theme.scss`（.t-light/.t-dark 的 --lb-* 变量，t-light 与 uni.scss 令牌同源）+ `themeStore`（持久化 light/dark）+ 38 页全部令牌化（根节点 themeClass 绑定 + 样式 var() 化）+ settings 真实开关；渐变/图表数据色/按钮白字保留字面量（两主题通用）
 - [x] 应用锁：`pages/account/lock` 启动遮罩页 + `App.uvue` onShow 检测（`isLockRequired`：开关开启且会话未解锁）+ privacy 页真实能力提示；生物识别 Soter 调用待 HBuilderX 验证后接入（biometric.uts 预留接口，当前降级为解锁按钮直进，见 docs/08 §8.9）
-- [x] UI 全面重设计收尾（与守护任务协同）：批次 D/E 审计、全仓旧色一致性扫描、record 页芯片宫格补齐；详见 docs/UI-REDESIGN-PROGRESS.md
+- [x] UI 全面重设计收尾：批次 D/E 审计、全仓旧色一致性扫描、record 页芯片宫格补齐（详见 docs/07 设计系统）
 - [x] 回归：`npm test` 52/52（新增 account/tracker/ui 三套测试 + 静态鉴权网 2 条）
 
 ### 缺口补齐轮（2026-10-30，代码 14 项）✅
@@ -156,9 +156,9 @@
 
 Web 端已可用。后续运行只涉及：1) `npm test` 保持 70/70；2) 上传云函数前先跑 `scripts/sync_commons.sh`；3) 新增云函数 `lucky-maintenance` 与 `lb-audit-logs` 表需在 HBuilderX 上传/初始化；4) 真机运行/云打包按 docs/08 §5（需 HBuilderX 用户操作）；5) 如用户提出功能修改，按 docs/03 规范实现并回归测试（web 端限制见 docs/08 §8）。
 
-## 同类产品对标三波迭代（2026-10-31，对标同类产品，docs/09）
+## 体验迭代三波（2026-10-31）
 
-依据 docs/09-同类产品对标同类产品报告.md 的三波路线完成 18 项开发；`npm test` 101 → 108 全绿。
+按体验评审梳理的三波路线完成 18 项开发；`npm test` 101 → 108 全绿。
 
 ### 波一 · 体验修复
 - [x] 喂养重做：奶量数字直输 + 6 档预设芯片 + 时间补记（默认现在）+ 方式/奶量记忆（`pages/baby/feeding.uvue`）
@@ -275,7 +275,7 @@ Web 端已可用。后续运行只涉及：1) `npm test` 保持 70/70；2) 上�
 - [x] 宝宝发育科普卡：首页孕期限定「本周要点」卡，点按直达知识库
 - [x] 二胎/新旅程闭环：设置页产后阶段显示「开始新的旅程」，确认后 `startNewJourney` + 刷新旅程状态；旧旅程数据完整保留
 - [x] 门禁：新增 `test/unit/features-v15.test.js`（页面注册/后端方法/入口接线/饮水白名单/新旅程阶段），`npm test` 119/119 全绿
-- [ ] 外部依赖（非代码可完成）：服务端远程推送需 uni-push 控制台配置与证书；AI 产检报告解读/试纸判读/儿保单识别需外部 AI 服务与合规评审；蓝牙硬件需平台 SDK；会员体系按产品红线不做付费墙
+- [ ] 外部依赖（非代码可完成）：服务端远程推送需 uni-push 控制台配置与证书；AI 产检报告解读/试纸判读/儿保单识别需外部 AI 服务与合规评审；蓝牙硬件需平台 SDK；记录能力永久免费，不做付费墙
 - [ ] 部署提醒：新增 `lb-child-health` schema 与 `lucky-care`/`lucky-baby`/`lucky-data` 方法需在 HBuilderX 重新上传云端后才生效
 
 ## 30 天清单与定版（2026-11-02）
