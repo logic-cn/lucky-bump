@@ -456,9 +456,13 @@ test('Web 端选择器绕过：独立选择器页与存储轮询回传接线完�
   }
 })
 
-test('docs 索引：平台缺陷报告已登记', () => {
+test('docs 索引：平台缺陷报告已登记，中英文 README 互相链接', () => {
   const readme = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf-8')
   assert.ok(readme.includes('10-HBuilderX平台缺陷报告'), 'README 缺 docs/10 链接')
+  const en = fs.readFileSync(path.join(ROOT, 'README.en.md'), 'utf-8')
+  assert.ok(en.includes('10-HBuilderX平台缺陷报告'), 'README.en 缺 docs/10 链接')
+  assert.ok(readme.includes('README.en.md'), '中文 README 缺英文版入口')
+  assert.ok(en.includes('README.md'), '英文 README 缺中文版入口')
 })
 
 /* ---------------- 可读性下限（小字号不得回流） ---------------- */
